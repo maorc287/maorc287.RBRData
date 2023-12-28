@@ -207,7 +207,7 @@ namespace maorc287.RBRDataPlugin
         }
 
         //The battery data or battery wear value starts at 12 (I don't think it is volts) and diminishes when starting the engine.
-        //When it goes under 11, the battery light in the game dash turns on, the light starts blinking when it goes under 10.
+        //When it goes under 10, the battery light in the game dash turns on, the light starts blinking when it goes under 8. Under 6 Co-Driver Call
         public float GetRBRBatteryData()
         {
             uint processId = GetProcessIdByName(ProcessName);

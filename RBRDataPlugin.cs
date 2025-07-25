@@ -1,4 +1,4 @@
-﻿// RBRAdditionalData - SimHub addon plugin for Richard Burns Rally
+﻿// RBRAdditionalData - SimHub plugin for Richard Burns Rally
 
 using SimHub.Plugins;
 using System;
@@ -41,17 +41,23 @@ namespace maorc287.RBRDataPlugin
         private const int PointerAddressCarMov = 0x008EF660;
         private const int PointerAddressGameMode = 0x007EAC48;
 
-        private const int OffsetGameMode = 0x728;
-        private const int OffsetBatteryStatus = 0x204DCF4;
-        private const int OffsetBatteryWear = 0x2B4;
+        private const int OffsetGameMode = 0x728; //GameModePointer
 
-        private const int OffsetOilPressureRaw1 = 0x139C;
-        private const int OffsetOilPressureRaw2 = 0x13AC;
+        private const int OffsetEngineStatus = 0x2B8; // CarInfoPointer
+        private const int OffsetBatteryStatus = 0x204DCF4; //CarInfoPointer
+        private const int OffsetBatteryWear = 0x2B4; // CarInfoPointer
+        private const int OffsetTurboPressurePascal = 0x18; // CarInfoPointer
 
-        private const int OffsetRBRHUD_OilPressureBar = 0x8CB5F8;
-        private const int OffsetRBRHUD_OilPressurePsi = 0x8CB668;
+        private const int OffsetOilPressureRaw1 = 0x139C; // CarMovPointer
+        private const int OffsetOilPressureRaw2 = 0x13AC; // CarMovPointer
+        private const int OffsetOilTempKelvin = 0x138C;  // CarMovPointer
 
-        private const int OffsetEngineStatus = 0x2B8;
+        /// <summary>
+        /// RBRHUD offsets not always available, only if RBRHUD Add All Telemetry is enabled.
+        /// </summary>
+        private const int OffsetRBRHUD_OilPressureBar = 0x8CB5F8; // RBRHUD
+        private const int OffsetRBRHUD_OilPressurePsi = 0x8CB668; // RBRHUD    
+
 
 
         public static T ReadMemory<T>(IntPtr hProcess, IntPtr address) where T : struct
@@ -110,7 +116,43 @@ namespace maorc287.RBRDataPlugin
             finally { CloseHandle(h); }
         }
 
-        public float GetRBROilPBarData()
+        public float TurboPressureBar()
+        {
+            uint pid = GetProcessIdByName(ProcessName);
+            if (pid == 0) return 0.0f;
+
+            IntPtr h = OpenProcess(ProcessAccessFlags.VirtualMemoryRead, false, (int)pid);
+            if (h == IntPtr.Zero) return 0.0f;
+
+            try
+            {
+                int baseAddr = ReadMemory<int>(h, new IntPtr(PointerAddressCarInfo));
+                float PressurePascal = ReadMemory<float>(h, new IntPtr(baseAddr + OffsetTurboPressurePascal));
+                float PressureBar = PressurePascal / 100000.0f; // Convert Pascal to Bar
+                return PressureBar;
+            }
+            finally { CloseHandle(h); }
+        }
+
+        public float OilTemperatureCelsius()
+        {
+            uint pid = GetProcessIdByName(ProcessName);
+            if (pid == 0) return 0.0f;
+
+            IntPtr h = OpenProcess(ProcessAccessFlags.VirtualMemoryRead, false, (int)pid);
+            if (h == IntPtr.Zero) return 0.0f;
+
+            try
+            {
+                int baseAddr = ReadMemory<int>(h, new IntPtr(PointerAddressCarMov));
+                float tempKelvin = ReadMemory<float>(h, new IntPtr(baseAddr + OffsetOilTempKelvin));
+                float tempCelsius = tempKelvin - 273.15f; // Convert Kelvin to Celsius
+                return tempCelsius;
+            }
+            finally { CloseHandle(h); }
+        }
+
+        public float OilPressureBar()
         {
             uint pid = GetProcessIdByName(ProcessName);
             if (pid == 0 || !IsEngineOn()) return 0f;
@@ -134,7 +176,7 @@ namespace maorc287.RBRDataPlugin
             finally { CloseHandle(h); }
         }
 
-        public float GetRBRBatteryVoltage()
+        public float BatteryVoltage()
         {
             uint pid = GetProcessIdByName(ProcessName);
             if (pid == 0) return 12.8f;
@@ -187,7 +229,9 @@ namespace maorc287.RBRDataPlugin
             SimHub.Logging.Current.Info("[RBRAdditioinalData] Starting the plugin");
 
             PluginManager.AddProperty("RBR.OnStage", GetType(), 0, "");
+            PluginManager.AddProperty("RBR.TurboPressureBar", GetType(), 0, "");
             PluginManager.AddProperty("RBR.OilPressureBar", GetType(), 0, "");
+            PluginManager.AddProperty("RBR.OilTemperature", GetType(), 0, "");
             PluginManager.AddProperty("RBR.BatteryVoltage", GetType(), 0, "");
             PluginManager.AddProperty("RBR.EngineStatus", GetType(), 0, "");
             PluginManager.AddProperty("RBR.BatteryWear", GetType(), 0, "");
@@ -200,9 +244,11 @@ namespace maorc287.RBRDataPlugin
             PluginManager.SetPropertyValue("RBR.OnStage", GetType(), IsRaceOn());
             if (IsRaceOn())
             {
-                PluginManager.SetPropertyValue("RBR.OilPressureBar", GetType(), GetRBROilPBarData());
+                PluginManager.SetPropertyValue("RBR.TurboPressureBar", GetType(), TurboPressureBar());
+                PluginManager.SetPropertyValue("RBR.OilPressureBar", GetType(), OilPressureBar());
+                PluginManager.SetPropertyValue("RBR.OilTemperature", GetType(), OilTemperatureCelsius());
                 PluginManager.SetPropertyValue("RBR.EngineStatus", GetType(), IsEngineOn());
-                PluginManager.SetPropertyValue("RBR.BatteryVoltage", GetType(), GetRBRBatteryVoltage());
+                PluginManager.SetPropertyValue("RBR.BatteryVoltage", GetType(), BatteryVoltage());
                 PluginManager.SetPropertyValue("RBR.BatteryWear", GetType(), GetRBRBatteryData());
                 PluginManager.SetPropertyValue("RBRHUD.OilPressureBar", GetType(), RBRHUDReader.ReadFloat(OffsetRBRHUD_OilPressureBar));
                 PluginManager.SetPropertyValue("RBRHUD.OilPressurePsi", GetType(), RBRHUDReader.ReadFloat(OffsetRBRHUD_OilPressurePsi));

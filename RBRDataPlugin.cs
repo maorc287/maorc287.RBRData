@@ -151,22 +151,6 @@ namespace maorc287.RBRDataExtPlugin
             return snapshot;
         }
 
-        public static IntPtr ResolvePointerChain(IntPtr baseAddress, int[] offsets, Func<IntPtr, IntPtr> readPointer)
-        {
-            IntPtr currentAddress = baseAddress;
-
-            foreach (int offset in offsets)
-            {
-                currentAddress = readPointer(currentAddress); // Dereference
-                if (currentAddress == IntPtr.Zero)
-                    return IntPtr.Zero; // Invalid pointer
-                currentAddress += offset;
-            }
-
-            return currentAddress;
-        }
-
-
     }
 
     internal class RBRData
@@ -212,10 +196,7 @@ namespace maorc287.RBRDataExtPlugin
             public const int GameModeOffset = 0x728;
 
             public const int BatterySatusBasePointer = 0x0127EA70;
-            public const int BatterySatusBaseOffset1 = 0x9C;
-            public const int BatterySatusBaseOffset2 = 0x430;
-            public const int BatterySatusBaseOffset3 = 0x1D0;
-            public const int BatterySatusBaseOffset4 = 0x8C;
+            public static readonly int[] BatteryStatusChain = { 0x9C, 0x430, 0x1D0, 0x8C };
         }
     }
 }

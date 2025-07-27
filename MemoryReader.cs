@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace maorc287.RBRDataExtPlugin
@@ -41,6 +42,27 @@ namespace maorc287.RBRDataExtPlugin
             if (typeof(T) == typeof(byte)) return (T)(object)buffer[0];
 
             throw new NotSupportedException($"Type {typeof(T)} is not supported.");
+        }
+
+        internal static IntPtr ReadPointer(IntPtr hProcess, IntPtr address)
+        {
+            int ptrValue = ReadInt(hProcess, address);
+            return new IntPtr(ptrValue);
+        }
+
+        internal static IntPtr ResolvePointerChain(IntPtr baseAddress, int[] offsets, Func<IntPtr, IntPtr> readPointer)
+        {
+            IntPtr currentAddress = baseAddress;
+
+            foreach (int offset in offsets)
+            {
+                currentAddress = readPointer(currentAddress); // Dereference
+                if (currentAddress == IntPtr.Zero)
+                    return IntPtr.Zero; // Invalid pointer
+                currentAddress += offset;
+            }
+
+            return currentAddress;
         }
 
         internal static float ReadFloat(IntPtr hProcess, IntPtr address) => ReadValue<float>(hProcess, address);

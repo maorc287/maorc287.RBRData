@@ -43,7 +43,8 @@ namespace maorc287.RBRDataExtPlugin
             PluginManager.AddProperty("RBR.OilTemperature", GetType(), 0, "");
             PluginManager.AddProperty("RBR.EngineStatus", GetType(), 0, "");
             PluginManager.AddProperty("RBR.BatteryVoltage", GetType(), 0, "");
-            PluginManager.AddProperty("RBR.BatteryWear", GetType(), 0, "");
+            PluginManager.AddProperty("RBR.BatteryStatus", GetType(), 0, "");
+            PluginManager.AddProperty("RBR.LowBatteryWarning", GetType(), 0, "");
         }
 
         public void End(PluginManager pluginManager) { }
@@ -60,7 +61,8 @@ namespace maorc287.RBRDataExtPlugin
             PluginManager.SetPropertyValue("RBR.OilTemperature", GetType(), snapshot.OilTemperatureC);
             PluginManager.SetPropertyValue("RBR.EngineStatus", GetType(), snapshot.IsEngineOn);
             PluginManager.SetPropertyValue("RBR.BatteryVoltage", GetType(), snapshot.BatteryVoltage);
-            PluginManager.SetPropertyValue("RBR.BatteryWear", GetType(), snapshot.BatteryWear);
+            PluginManager.SetPropertyValue("RBR.BatteryStatus", GetType(), snapshot.BatteryStatus);
+            PluginManager.SetPropertyValue("RBR.LowBatteryWarning", GetType(), snapshot.LowBatteryWarning);
         }
 
         private uint GetProcessIdByName(string processName)
@@ -71,19 +73,6 @@ namespace maorc287.RBRDataExtPlugin
 
         private static float CalculateOilPressure(float rawBase, float pressureRawPascal)
         {
-
-            //Oil Pressure Calculation Decompiled Logic RBRHUD
-            /*
-            float A = 
-            MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.OilPressureRawBase));
-            float B = 
-            MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.OilPressureRawPascal));
-            uint uVar1 = (A > 0.02f) ? 0xFFFFFFFFu : 0u;
-            uint part1 = 0x3f8460fe & uVar1;
-            uint part2 = (~uVar1) & (uint)((A * 1.03421f) / 0.02f);
-            snapshot.OilPressureBar = B * 1e-5f + BitConverter.ToSingle(BitConverter.GetBytes(part1 | part2), 0);
-            */
-
             float adjustment = BitConverter.ToSingle(BitConverter.GetBytes(0x3f8460fe), 0);
 
             float pressureBase = (rawBase > 0.02f) ? adjustment : (rawBase * adjustment) / 0.02f;

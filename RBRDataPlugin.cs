@@ -195,7 +195,7 @@ namespace maorc287.RBRDataExtPlugin
             public const int GameMode = 0x007EAC48;
             public const int GameModeOffset = 0x728;
 
-            public const int BatterySatusBasePointer = 0x0127EA70;
+            public const int BatterySatusBasePointer1 = 0x0127EA70;
             public static readonly int[] BatteryStatusChain = { 0x9C, 0x430, 0x1D0, 0x8C };
         }
     }

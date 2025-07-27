@@ -1,21 +1,21 @@
-﻿// RBRAdditionalData - SimHub plugin for Richard Burns Rally
-
-using SimHub.Plugins;
+﻿using SimHub.Plugins;
 using System;
-using System.Windows.Media;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Windows.Media;
 
-namespace maorc287.RBRDataPlugin
+namespace maorc287.RBRDataExtPlugin
 {
-    [PluginDescription("RBR Additional Data Reader")]
-    [PluginAuthor("mbp187")]
-    [PluginName("RBR Additional Data")]
-
+    [PluginDescription("Richard Burns Rally Additional Data Reader")]
+    [PluginAuthor("maorc287")]
+    [PluginName("RBRDataExt")]
     public class RBRDataPlugin : IPlugin, IDataPlugin, IWPFSettingsV2
     {
-        public Process p;
-        public IntPtr hProcess;
+        public PluginManager PluginManager { get; set; }
+        public ImageSource PictureIcon => this.ToIcon(Properties.Resources.sdkmenuicon);
+        public string LeftMenuTitle => "RBR Data Extension";
+
+        private const string ProcessName = "RichardBurnsRally_SSE";
 
         [Flags]
         public enum ProcessAccessFlags : uint
@@ -26,233 +26,207 @@ namespace maorc287.RBRDataPlugin
         }
 
         [DllImport("kernel32.dll")]
-        public static extern IntPtr OpenProcess(ProcessAccessFlags dwDesiredAccess, bool bInheritHandle, int dwProcessId);
+        private static extern IntPtr OpenProcess(ProcessAccessFlags access, bool inheritHandle, int processId);
 
         [DllImport("kernel32.dll", SetLastError = true)]
-        public static extern bool ReadProcessMemory(IntPtr hProcess, IntPtr lpBaseAddress, [Out] byte[] lpBuffer, uint dwSize, out int lpNumberOfBytesRead);
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        static extern bool CloseHandle(IntPtr hObject);
-
-        private const string ProcessName = "RichardBurnsRally_SSE";
-
-        private const int PointerAddressCarInfo = 0x0165FC68;
-        private const int PointerAddressCarMov = 0x008EF660;
-        private const int PointerAddressGameMode = 0x007EAC48;
-
-        private const int OffsetGameMode = 0x728; //GameModePointer
-
-        private const int OffsetEngineStatus = 0x2B8; // CarInfoPointer
-        private const int OffsetBatteryStatus = 0x204DCF4; //CarInfoPointer
-        private const int OffsetBatteryWear = 0x2B4; // CarInfoPointer
-        private const int OffsetTurboPressurePascal = 0x18; // CarInfoPointer
-
-        private const int OffsetOilPressureRaw1 = 0x139C; // CarMovPointer
-        private const int OffsetOilPressureRaw2 = 0x13AC; // CarMovPointer
-        private const int OffsetOilTempKelvin = 0x138C;  // CarMovPointer
-
-        /// <summary>
-        /// RBRHUD offsets not always available, only if RBRHUD Add All Telemetry is enabled.
-        /// </summary>
-        private const int OffsetRBRHUD_OilPressureBar = 0x8CB5F8; // RBRHUD
-        private const int OffsetRBRHUD_OilPressurePsi = 0x8CB668; // RBRHUD    
-
-
-
-        public static T ReadMemory<T>(IntPtr hProcess, IntPtr address) where T : struct
-        {
-            int size = Marshal.SizeOf<T>();
-            byte[] buffer = new byte[size];
-            if (!ReadProcessMemory(hProcess, address, buffer, (uint)size, out _))
-            {
-                throw new InvalidOperationException($"Failed to read memory at {address:X}");
-            }
-
-            if (typeof(T) == typeof(float)) return (T)(object)BitConverter.ToSingle(buffer, 0);
-            if (typeof(T) == typeof(int)) return (T)(object)BitConverter.ToInt32(buffer, 0);
-            if (typeof(T) == typeof(uint)) return (T)(object)BitConverter.ToUInt32(buffer, 0);
-
-            throw new NotSupportedException($"Unsupported type {typeof(T)}");
-        }
-
-        public uint GetProcessIdByName(string processName)
-        {
-            var processes = Process.GetProcessesByName(processName);
-            return (uint)(processes.Length > 0 ? processes[0].Id : 0);
-        }
-
-        public bool IsRaceOn()
-        {
-            uint pid = GetProcessIdByName(ProcessName);
-            if (pid == 0) return false;
-
-            IntPtr h = OpenProcess(ProcessAccessFlags.VirtualMemoryRead, false, (int)pid);
-            if (h == IntPtr.Zero) return false;
-
-            try
-            {
-                int baseAddr = ReadMemory<int>(h, new IntPtr(PointerAddressGameMode));
-                int gameMode = ReadMemory<int>(h, new IntPtr(baseAddr + OffsetGameMode));
-                return gameMode == 1;
-            }
-            finally { CloseHandle(h); }
-        }
-
-        public bool IsEngineOn()
-        {
-            uint pid = GetProcessIdByName(ProcessName);
-            if (pid == 0) return false;
-
-            IntPtr h = OpenProcess(ProcessAccessFlags.VirtualMemoryRead, false, (int)pid);
-            if (h == IntPtr.Zero) return false;
-
-            try
-            {
-                int baseAddr = ReadMemory<int>(h, new IntPtr(PointerAddressCarInfo));
-                float status = ReadMemory<float>(h, new IntPtr(baseAddr + OffsetEngineStatus));
-                return status == 1.0f;
-            }
-            finally { CloseHandle(h); }
-        }
-
-        public float TurboPressureBar()
-        {
-            uint pid = GetProcessIdByName(ProcessName);
-            if (pid == 0) return 0.0f;
-
-            IntPtr h = OpenProcess(ProcessAccessFlags.VirtualMemoryRead, false, (int)pid);
-            if (h == IntPtr.Zero) return 0.0f;
-
-            try
-            {
-                int baseAddr = ReadMemory<int>(h, new IntPtr(PointerAddressCarInfo));
-                float PressurePascal = ReadMemory<float>(h, new IntPtr(baseAddr + OffsetTurboPressurePascal));
-                float PressureBar = PressurePascal / 100000.0f; // Convert Pascal to Bar
-                return PressureBar;
-            }
-            finally { CloseHandle(h); }
-        }
-
-        public float OilTemperatureCelsius()
-        {
-            uint pid = GetProcessIdByName(ProcessName);
-            if (pid == 0) return 0.0f;
-
-            IntPtr h = OpenProcess(ProcessAccessFlags.VirtualMemoryRead, false, (int)pid);
-            if (h == IntPtr.Zero) return 0.0f;
-
-            try
-            {
-                int baseAddr = ReadMemory<int>(h, new IntPtr(PointerAddressCarMov));
-                float tempKelvin = ReadMemory<float>(h, new IntPtr(baseAddr + OffsetOilTempKelvin));
-                float tempCelsius = tempKelvin - 273.15f; // Convert Kelvin to Celsius
-                return tempCelsius;
-            }
-            finally { CloseHandle(h); }
-        }
-
-        public float OilPressureBar()
-        {
-            uint pid = GetProcessIdByName(ProcessName);
-            if (pid == 0 || !IsEngineOn()) return 0f;
-
-            IntPtr h = OpenProcess(ProcessAccessFlags.VirtualMemoryRead, false, (int)pid);
-            if (h == IntPtr.Zero) return 0f;
-
-            try
-            {
-                int basePtr = ReadMemory<int>(h, new IntPtr(PointerAddressCarMov));
-                float A = ReadMemory<float>(h, new IntPtr(basePtr + OffsetOilPressureRaw1));
-                float B = ReadMemory<float>(h, new IntPtr(basePtr + OffsetOilPressureRaw2));
-
-                uint uVar1 = (A > 0.02f) ? 0xFFFFFFFFu : 0u;
-                uint part1 = 0x3f8460fe & uVar1;
-                uint part2 = (~uVar1) & (uint)((A * 1.03421f) / 0.02f);
-
-                float result = B * 1e-5f + BitConverter.ToSingle(BitConverter.GetBytes(part1 | part2), 0);
-                return result;
-            }
-            finally { CloseHandle(h); }
-        }
-
-        public float BatteryVoltage()
-        {
-            uint pid = GetProcessIdByName(ProcessName);
-            if (pid == 0) return 12.8f;
-
-            IntPtr h = OpenProcess(ProcessAccessFlags.VirtualMemoryRead, false, (int)pid);
-            if (h == IntPtr.Zero) return 12.8f;
-
-            try
-            {
-                int baseAddr = ReadMemory<int>(h, new IntPtr(PointerAddressCarInfo));
-                if (!IsEngineOn())
-                {
-                    float raw = ReadMemory<float>(h, new IntPtr(baseAddr + OffsetBatteryStatus));
-                    return raw * 2.4f + 10.4f;
-                }
-                else
-                {
-                    return 14.5f;
-                }
-            }
-            finally { CloseHandle(h); }
-        }
-
-        public float GetRBRBatteryData()
-        {
-            uint pid = GetProcessIdByName(ProcessName);
-            if (pid == 0) return 12f;
-
-            IntPtr h = OpenProcess(ProcessAccessFlags.VirtualMemoryRead, false, (int)pid);
-            if (h == IntPtr.Zero) return 12f;
-
-            try
-            {
-                int baseAddr = ReadMemory<int>(h, new IntPtr(PointerAddressCarInfo));
-                return ReadMemory<float>(h, new IntPtr(baseAddr + OffsetBatteryWear));
-            }
-            finally { CloseHandle(h); }
-        }
-
-        public PluginManager PluginManager { get; set; }
-
-        public ImageSource PictureIcon => this.ToIcon(Properties.Resources.sdkmenuicon);
-        public string LeftMenuTitle => "RBR Additional Data Reader";
-
-        public void End(PluginManager pluginManager) { }
-        public System.Windows.Controls.Control GetWPFSettingsControl(PluginManager pluginManager) => null;
+        private static extern bool CloseHandle(IntPtr hObject);
 
         public void Init(PluginManager pluginManager)
         {
-            SimHub.Logging.Current.Info("[RBRAdditioinalData] Starting the plugin");
+            SimHub.Logging.Current.Info("[RBRDataExt] Plugin initialized.");
+
+            PluginManager = pluginManager;
 
             PluginManager.AddProperty("RBR.OnStage", GetType(), 0, "");
             PluginManager.AddProperty("RBR.TurboPressureBar", GetType(), 0, "");
             PluginManager.AddProperty("RBR.OilPressureBar", GetType(), 0, "");
             PluginManager.AddProperty("RBR.OilTemperature", GetType(), 0, "");
-            PluginManager.AddProperty("RBR.BatteryVoltage", GetType(), 0, "");
             PluginManager.AddProperty("RBR.EngineStatus", GetType(), 0, "");
+            PluginManager.AddProperty("RBR.BatteryVoltage", GetType(), 0, "");
             PluginManager.AddProperty("RBR.BatteryWear", GetType(), 0, "");
-            PluginManager.AddProperty("RBRHUD.OilPressureBar", GetType(), 0, "");
-            PluginManager.AddProperty("RBRHUD.OilPressurePsi", GetType(), 0, "");
         }
+
+        public void End(PluginManager pluginManager) { }
+
+        public System.Windows.Controls.Control GetWPFSettingsControl(PluginManager pluginManager) => null;
 
         public void DataUpdate(PluginManager pluginManager, ref GameReaderCommon.GameData data)
         {
-            PluginManager.SetPropertyValue("RBR.OnStage", GetType(), IsRaceOn());
-            if (IsRaceOn())
+            var snapshot = ReadRBRData();
+
+            PluginManager.SetPropertyValue("RBR.OnStage", GetType(), snapshot.IsOnStage);
+            PluginManager.SetPropertyValue("RBR.TurboPressureBar", GetType(), snapshot.TurboPressureBar);
+            PluginManager.SetPropertyValue("RBR.OilPressureBar", GetType(), snapshot.OilPressureBar);
+            PluginManager.SetPropertyValue("RBR.OilTemperature", GetType(), snapshot.OilTemperatureC);
+            PluginManager.SetPropertyValue("RBR.EngineStatus", GetType(), snapshot.IsEngineOn);
+            PluginManager.SetPropertyValue("RBR.BatteryVoltage", GetType(), snapshot.BatteryVoltage);
+            PluginManager.SetPropertyValue("RBR.BatteryWear", GetType(), snapshot.BatteryWear);
+        }
+
+        private uint GetProcessIdByName(string processName)
+        {
+            var processes = Process.GetProcessesByName(processName);
+            return (uint)(processes.Length > 0 ? processes[0].Id : 0);
+        }
+
+        private static float CalculateOilPressure(float rawBase, float pressureRawPascal)
+        {
+
+            //Oil Pressure Calculation Decompiled Logic RBRHUD
+            /*
+            float A = 
+            MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.OilPressureRawBase));
+            float B = 
+            MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.OilPressureRawPascal));
+            uint uVar1 = (A > 0.02f) ? 0xFFFFFFFFu : 0u;
+            uint part1 = 0x3f8460fe & uVar1;
+            uint part2 = (~uVar1) & (uint)((A * 1.03421f) / 0.02f);
+            snapshot.OilPressureBar = B * 1e-5f + BitConverter.ToSingle(BitConverter.GetBytes(part1 | part2), 0);
+            */
+
+            float adjustment = BitConverter.ToSingle(BitConverter.GetBytes(0x3f8460fe), 0);
+
+            float pressureBase = (rawBase > 0.02f) ? adjustment : (rawBase * adjustment) / 0.02f;
+            float pressureRawBar = pressureRawPascal * 1e-5f;
+            return pressureBase + pressureRawBar;
+        }
+
+        private RBRData ReadRBRData()
+        {
+            var snapshot = new RBRData();
+            uint pid = GetProcessIdByName(ProcessName);
+            if (pid == 0) return snapshot;
+
+            IntPtr hProcess = OpenProcess(ProcessAccessFlags.VirtualMemoryRead, false, (int)pid);
+            if (hProcess == IntPtr.Zero) return snapshot;
+
+            try
             {
-                PluginManager.SetPropertyValue("RBR.TurboPressureBar", GetType(), TurboPressureBar());
-                PluginManager.SetPropertyValue("RBR.OilPressureBar", GetType(), OilPressureBar());
-                PluginManager.SetPropertyValue("RBR.OilTemperature", GetType(), OilTemperatureCelsius());
-                PluginManager.SetPropertyValue("RBR.EngineStatus", GetType(), IsEngineOn());
-                PluginManager.SetPropertyValue("RBR.BatteryVoltage", GetType(), BatteryVoltage());
-                PluginManager.SetPropertyValue("RBR.BatteryWear", GetType(), GetRBRBatteryData());
-                PluginManager.SetPropertyValue("RBRHUD.OilPressureBar", GetType(), RBRHUDReader.ReadFloat(OffsetRBRHUD_OilPressureBar));
-                PluginManager.SetPropertyValue("RBRHUD.OilPressurePsi", GetType(), RBRHUDReader.ReadFloat(OffsetRBRHUD_OilPressurePsi));
+                int carInfoBase = MemoryReader.ReadInt(hProcess, new IntPtr(Offsets.Pointers.CarInfo));
+                int carMovBase = MemoryReader.ReadInt(hProcess, new IntPtr(Offsets.Pointers.CarMov));
+                int gameModeBase = MemoryReader.ReadInt(hProcess, new IntPtr(Offsets.Pointers.GameMode));
+
+                // Game Mode status 
+                int gameMode = 
+                    MemoryReader.ReadInt(hProcess, new IntPtr(gameModeBase + Offsets.Pointers.GameModeOffset));
+                snapshot.IsOnStage = (gameMode == 1);
+
+                // Early return if not on stage
+                if (!snapshot.IsOnStage) return snapshot;
+
+                // Engine status
+                float engineStatus = 
+                    MemoryReader.ReadFloat(hProcess, new IntPtr(carInfoBase + Offsets.CarInfo.EngineStatus));
+                snapshot.IsEngineOn = (engineStatus == 1.0f);
+
+                // Turbo Pressure from Pascal to Bar
+                float turboPressurePascal = 
+                    MemoryReader.ReadFloat(hProcess, new IntPtr(carInfoBase + Offsets.CarInfo.TurboPressurePascal));
+                snapshot.TurboPressureBar = turboPressurePascal / 100000f;
+
+                // Oil Temperature from Kelvin to Celsius
+                float oilTempK = 
+                    MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.OilTempKelvin));
+                snapshot.OilTemperatureC = oilTempK - 273.15f;
+
+                // Oil Pressure Calculation
+                float oilRawBase = 
+                    MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.OilPressureRawBase));
+                float oilRawPascal = 
+                    MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.OilPressureRawPascal));
+                snapshot.OilPressureBar = CalculateOilPressure(oilRawBase, oilRawPascal);
+
+                // Battery status raw value
+                snapshot.BatteryStatus = 
+                    MemoryReader.ReadFloat(hProcess, new IntPtr(carInfoBase + Offsets.CarInfo.BatteryWear));
+
+                // Battery Voltage Calculation
+                snapshot.BatteryVoltage = snapshot.IsEngineOn
+                    ? 14.5f
+                    : (snapshot.BatteryStatus / 12) * 2.4f + 10.4f;
+
+                // Low Battery Warning 
+                snapshot.LowBatteryWarning =
+                   snapshot.BatteryStatus < 10.0f;
+
             }
+            catch (Exception ex)
+            {
+                SimHub.Logging.Current.Warn($"[RBRDataExt] Failed to read memory: {ex.Message}");
+            }
+            finally
+            {
+                CloseHandle(hProcess);
+            }
+
+            return snapshot;
+        }
+
+        public static IntPtr ResolvePointerChain(IntPtr baseAddress, int[] offsets, Func<IntPtr, IntPtr> readPointer)
+        {
+            IntPtr currentAddress = baseAddress;
+
+            foreach (int offset in offsets)
+            {
+                currentAddress = readPointer(currentAddress); // Dereference
+                if (currentAddress == IntPtr.Zero)
+                    return IntPtr.Zero; // Invalid pointer
+                currentAddress += offset;
+            }
+
+            return currentAddress;
+        }
+
+
+    }
+
+    internal class RBRData
+    {
+        public bool IsOnStage { get; set; } = false;
+        public bool IsEngineOn { get; set; } = false;
+        public float TurboPressureBar { get; set; } = 0.0f;
+        public float OilPressureBar { get; set; } = 0.0f;
+        public float OilTemperatureC { get; set; } = 0.0f;
+        public bool OilPressureWarning { get; set; } = false;
+        public float BatteryVoltage { get; set; } = 12.8f;
+        public float BatteryStatus { get; set; } = 12.0f;
+        public bool LowBatteryWarning { get; set; } = false;
+
+        // Damage values
+        public int OilPumpDamage { get; set; } = 1;
+        public int WaterPumpDamage { get; set; } = 1;
+        public int ElectricSystemDamage { get; set; } = 1;
+
+    }
+
+    internal class Offsets
+    {
+        public static class CarInfo
+        {
+            public const int EngineStatus = 0x2B8;
+            public const int BatteryWear = 0x2B4;
+            public const int TurboPressurePascal = 0x18;
+        }
+
+        public static class CarMov
+        {
+            public const int OilPressureRawBase = 0x139C;
+            public const int OilPressureRawPascal = 0x13AC;
+            public const int OilTempKelvin = 0x138C;
+        }
+
+        public static class Pointers
+        {
+            public const int CarInfo = 0x0165FC68;
+            public const int CarMov = 0x008EF660;
+            public const int GameMode = 0x007EAC48;
+            public const int GameModeOffset = 0x728;
+
+            public const int BatterySatusBasePointer = 0x0127EA70;
+            public const int BatterySatusBaseOffset1 = 0x9C;
+            public const int BatterySatusBaseOffset2 = 0x430;
+            public const int BatterySatusBaseOffset3 = 0x1D0;
+            public const int BatterySatusBaseOffset4 = 0x8C;
         }
     }
 }

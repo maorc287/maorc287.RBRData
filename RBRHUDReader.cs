@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 
-namespace maorc287.RBRDataPlugin
+namespace maorc287.RBRDataExtPlugin
 {
     public static class RBRHUDReader
     {
@@ -40,7 +40,7 @@ namespace maorc287.RBRDataPlugin
             return module?.BaseAddress ?? IntPtr.Zero;
         }
 
-        public static T ReadValue<T>(uint offset) where T : struct
+        internal static T ReadValue<T>(uint offset) where T : struct
         {
             var process = GetProcess();
             if (process == null) return default;
@@ -70,9 +70,9 @@ namespace maorc287.RBRDataPlugin
         }
 
         // Optional helpers
-        public static float ReadFloat(uint offset) => ReadValue<float>(offset);
-        public static int ReadInt(uint offset) => ReadValue<int>(offset);
-        public static byte ReadByte(uint offset) => ReadValue<byte>(offset);
-        public static bool ReadBool(uint offset) => ReadValue<bool>(offset);
+        internal static float ReadFloat(uint offset) => ReadValue<float>(offset);
+        internal static int ReadInt(uint offset) => ReadValue<int>(offset);
+        internal static byte ReadByte(uint offset) => ReadValue<byte>(offset);
+        internal static bool ReadBool(uint offset) => ReadValue<bool>(offset);
     }
 }

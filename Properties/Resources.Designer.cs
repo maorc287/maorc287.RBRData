@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace maorc287.RBRDataPlugin.Properties {
+namespace maorc287.RBRDataExtPlugin.Properties {
     using System;
     
     
@@ -39,7 +39,7 @@ namespace maorc287.RBRDataPlugin.Properties {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("maorc287.RBRDataPlugin.Properties.Resources", typeof(Resources).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("maorc287.RBRDataPluginExt.Properties.Resources", typeof(Resources).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;

@@ -40,7 +40,7 @@ namespace maorc287.RBRDataExtPlugin
             PluginManager.AddProperty("RBR.OnStage", GetType(), 0, "");
             PluginManager.AddProperty("RBR.TurboPressureBar", GetType(), 0, "");
             PluginManager.AddProperty("RBR.OilPressureBar", GetType(), 0, "");
-            PluginManager.AddProperty("RBR.OilTemperature", GetType(), 0, "");
+            PluginManager.AddProperty("RBR.OilTemperatureC", GetType(), 0, "");
             PluginManager.AddProperty("RBR.EngineStatus", GetType(), 0, "");
             PluginManager.AddProperty("RBR.BatteryVoltage", GetType(), 0, "");
             PluginManager.AddProperty("RBR.BatteryStatus", GetType(), 0, "");
@@ -65,7 +65,7 @@ namespace maorc287.RBRDataExtPlugin
             PluginManager.SetPropertyValue("RBR.OnStage", GetType(), rbrData.IsOnStage);
             PluginManager.SetPropertyValue("RBR.TurboPressureBar", GetType(), rbrData.TurboPressureBar);
             PluginManager.SetPropertyValue("RBR.OilPressureBar", GetType(), rbrData.OilPressureBar);
-            PluginManager.SetPropertyValue("RBR.OilTemperature", GetType(), rbrData.OilTemperatureC);
+            PluginManager.SetPropertyValue("RBR.OilTemperatureC", GetType(), rbrData.OilTemperatureC);
             PluginManager.SetPropertyValue("RBR.EngineStatus", GetType(), rbrData.IsEngineOn);
             PluginManager.SetPropertyValue("RBR.BatteryVoltage", GetType(), rbrData.BatteryVoltage);
             PluginManager.SetPropertyValue("RBR.BatteryStatus", GetType(), rbrData.BatteryStatus);

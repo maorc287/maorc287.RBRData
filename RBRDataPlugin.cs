@@ -60,23 +60,23 @@ namespace maorc287.RBRDataExtPlugin
 
         public void DataUpdate(PluginManager pluginManager, ref GameReaderCommon.GameData data)
         {
-            var snapshot = ReadRBRData();
+            var rbrData = ReadRBRData();
 
-            PluginManager.SetPropertyValue("RBR.OnStage", GetType(), snapshot.IsOnStage);
-            PluginManager.SetPropertyValue("RBR.TurboPressureBar", GetType(), snapshot.TurboPressureBar);
-            PluginManager.SetPropertyValue("RBR.OilPressureBar", GetType(), snapshot.OilPressureBar);
-            PluginManager.SetPropertyValue("RBR.OilTemperature", GetType(), snapshot.OilTemperatureC);
-            PluginManager.SetPropertyValue("RBR.EngineStatus", GetType(), snapshot.IsEngineOn);
-            PluginManager.SetPropertyValue("RBR.BatteryVoltage", GetType(), snapshot.BatteryVoltage);
-            PluginManager.SetPropertyValue("RBR.BatteryStatus", GetType(), snapshot.BatteryStatus);
-            PluginManager.SetPropertyValue("RBR.OilPressureWarning", GetType(), snapshot.OilPressureWarning);
-            PluginManager.SetPropertyValue("RBR.LowBatteryWarning", GetType(), snapshot.LowBatteryWarning);
-            PluginManager.SetPropertyValue("RBR.OilPumpDamage", GetType(), snapshot.OilPumpDamage);
-            PluginManager.SetPropertyValue("RBR.WaterPumpDamage", GetType(), snapshot.WaterPumpDamage);
-            PluginManager.SetPropertyValue("RBR.ElectricSystemDamage", GetType(), snapshot.ElectricSystemDamage);
-            PluginManager.SetPropertyValue("RBR.BrakeCircuitDamage", GetType(), snapshot.BrakeCircuitDamage);
-            PluginManager.SetPropertyValue("RBR.WheelLock", GetType(), snapshot.WheelLock);
-            PluginManager.SetPropertyValue("RBR.WheelSlip", GetType(), snapshot.WheelSlip);
+            PluginManager.SetPropertyValue("RBR.OnStage", GetType(), rbrData.IsOnStage);
+            PluginManager.SetPropertyValue("RBR.TurboPressureBar", GetType(), rbrData.TurboPressureBar);
+            PluginManager.SetPropertyValue("RBR.OilPressureBar", GetType(), rbrData.OilPressureBar);
+            PluginManager.SetPropertyValue("RBR.OilTemperature", GetType(), rbrData.OilTemperatureC);
+            PluginManager.SetPropertyValue("RBR.EngineStatus", GetType(), rbrData.IsEngineOn);
+            PluginManager.SetPropertyValue("RBR.BatteryVoltage", GetType(), rbrData.BatteryVoltage);
+            PluginManager.SetPropertyValue("RBR.BatteryStatus", GetType(), rbrData.BatteryStatus);
+            PluginManager.SetPropertyValue("RBR.OilPressureWarning", GetType(), rbrData.OilPressureWarning);
+            PluginManager.SetPropertyValue("RBR.LowBatteryWarning", GetType(), rbrData.LowBatteryWarning);
+            PluginManager.SetPropertyValue("RBR.OilPumpDamage", GetType(), rbrData.OilPumpDamage);
+            PluginManager.SetPropertyValue("RBR.WaterPumpDamage", GetType(), rbrData.WaterPumpDamage);
+            PluginManager.SetPropertyValue("RBR.ElectricSystemDamage", GetType(), rbrData.ElectricSystemDamage);
+            PluginManager.SetPropertyValue("RBR.BrakeCircuitDamage", GetType(), rbrData.BrakeCircuitDamage);
+            PluginManager.SetPropertyValue("RBR.WheelLock", GetType(), rbrData.WheelLock);
+            PluginManager.SetPropertyValue("RBR.WheelSlip", GetType(), rbrData.WheelSlip);
         }
 
         private uint GetProcessIdByName(string processName)
@@ -152,14 +152,14 @@ namespace maorc287.RBRDataExtPlugin
 
         private RBRData ReadRBRData()
         {
-            var snapshot = new RBRData();
+            var rbrData = new RBRData();
             uint pid = GetProcessIdByName(ProcessName);
-            if (pid == 0) return snapshot;
+            if (pid == 0) return rbrData;
 
             IntPtr hProcess = OpenProcess(ProcessAccessFlags.VirtualMemoryRead, false, (int)pid);
-            if (hProcess == IntPtr.Zero) return snapshot;
+            if (hProcess == IntPtr.Zero) return rbrData;
 
-            try
+            try 
             {
                 int carInfoBase = MemoryReader.ReadInt(hProcess, new IntPtr(Offsets.Pointers.CarInfo));
                 int carMovBase = MemoryReader.ReadInt(hProcess, new IntPtr(Offsets.Pointers.CarMov));
@@ -168,49 +168,49 @@ namespace maorc287.RBRDataExtPlugin
                 // Game Mode status 
                 int gameMode = 
                     MemoryReader.ReadInt(hProcess, new IntPtr(gameModeBase + Offsets.Pointers.GameModeOffset));
-                snapshot.IsOnStage = (gameMode == 1);
+                rbrData.IsOnStage = (gameMode == 1);
 
                 // Early return if not on stage
-                if (!snapshot.IsOnStage) return snapshot;
+                if (!rbrData.IsOnStage) return rbrData;
 
                 // Engine status
                 float engineStatus = 
                     MemoryReader.ReadFloat(hProcess, new IntPtr(carInfoBase + Offsets.CarInfo.EngineStatus));
-                snapshot.IsEngineOn = (engineStatus == 1.0f);
+                rbrData.IsEngineOn = (engineStatus == 1.0f);
 
                 // Turbo Pressure from Pascal to Bar
                 float turboPressurePascal = 
                     MemoryReader.ReadFloat(hProcess, new IntPtr(carInfoBase + Offsets.CarInfo.TurboPressurePascal));
-                snapshot.TurboPressureBar = turboPressurePascal / 100000f;
+                rbrData.TurboPressureBar = turboPressurePascal / 100000f;
 
                 // Oil Temperature from Kelvin to Celsius
                 float oilTempK = 
                     MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.OilTempKelvin));
-                snapshot.OilTemperatureC = oilTempK - 273.15f;
+                rbrData.OilTemperatureC = oilTempK - 273.15f;
 
                 // Oil Pressure Calculation
                 float oilRawBase = 
                     MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.OilPressureRawBase));
                 float oilRaw = 
                     MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.OilPressureRaw));
-                snapshot.OilPressureBar = CalculateOilPressure(oilRawBase, oilRaw);
+                rbrData.OilPressureBar = CalculateOilPressure(oilRawBase, oilRaw);
 
-                snapshot.OilPressureWarning = oilRaw < 0.8f;
+                rbrData.OilPressureWarning = oilRaw < 0.8f;
 
                 // Battery status raw value
-                snapshot.BatteryStatus = 
+                rbrData.BatteryStatus = 
                     MemoryReader.ReadFloat(hProcess, new IntPtr(carInfoBase + Offsets.CarInfo.BatteryStatus));
 
                 // Battery Voltage Calculation
-                snapshot.BatteryVoltage = snapshot.IsEngineOn
+                rbrData.BatteryVoltage = rbrData.IsEngineOn
                     ? 14.5f
-                    : (snapshot.BatteryStatus * 0.2f) + 10.4f;
+                    : (rbrData.BatteryStatus * 0.2f) + 10.4f;
 
                 // Low Battery Warning 
-                snapshot.LowBatteryWarning =
-                   snapshot.BatteryStatus < 10.0f;
+                rbrData.LowBatteryWarning =
+                   rbrData.BatteryStatus < 10.0f;
 
-                if (snapshot.IsEngineOn)
+                if (rbrData.IsEngineOn)
                 {
                     float velocityX = MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.VelocityX));
                     float velocityY = MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.VelocityY));
@@ -221,9 +221,9 @@ namespace maorc287.RBRDataExtPlugin
 
                     float wheelSpeed = MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarInfo.WheelSpeed));
 
-                    snapshot.WheelLock = 
+                    rbrData.WheelLock = 
                         CalculateWheelLock(velocityX, velocityY, velocityZ, forwardX, forwardY, forwardZ, wheelSpeed);
-                    snapshot.WheelSlip = 
+                    rbrData.WheelSlip = 
                         CalculateWheelSlip(velocityX, velocityY, velocityZ, forwardX, forwardY, forwardZ, wheelSpeed);
 
                 }
@@ -231,13 +231,13 @@ namespace maorc287.RBRDataExtPlugin
                 // Read damage values
                 int damagePointer =
                     MemoryReader.ReadInt(hProcess, new IntPtr(carMovBase + Offsets.CarMov.DamageStructurePointer));
-                snapshot.OilPumpDamage = 
+                rbrData.OilPumpDamage = 
                     MemoryReader.ReadInt(hProcess, new IntPtr(damagePointer + Offsets.Damage.OilPump));
-                snapshot.WaterPumpDamage = 
+                rbrData.WaterPumpDamage = 
                     MemoryReader.ReadInt(hProcess, new IntPtr(damagePointer + Offsets.Damage.WaterPump));
-                snapshot.ElectricSystemDamage = 
+                rbrData.ElectricSystemDamage = 
                     MemoryReader.ReadInt(hProcess, new IntPtr(damagePointer + Offsets.Damage.ElectricSystem));
-                snapshot.BrakeCircuitDamage = 
+                rbrData.BrakeCircuitDamage = 
                     MemoryReader.ReadInt(hProcess, new IntPtr(damagePointer + Offsets.Damage.BrakeCircuit));
 
             }
@@ -250,7 +250,7 @@ namespace maorc287.RBRDataExtPlugin
                 CloseHandle(hProcess);
             }
 
-            return snapshot;
+            return rbrData;
         }
 
     }

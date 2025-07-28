@@ -85,12 +85,12 @@ namespace maorc287.RBRDataExtPlugin
             return (uint)(processes.Length > 0 ? processes[0].Id : 0);
         }
 
-        private static float CalculateOilPressure(float rawBase, float pressureRawPascal)
+        private static float CalculateOilPressure(float rawBase, float pressureRaw)
         {
             float adjustment = BitConverter.ToSingle(BitConverter.GetBytes(0x3f8460fe), 0);
 
             float pressureBase = (rawBase > 0.02f) ? adjustment : (rawBase * adjustment) / 0.02f;
-            float pressureRawBar = pressureRawPascal * 1e-5f;
+            float pressureRawBar = pressureRaw * 1e-5f;
             return pressureBase + pressureRawBar;
         }
 
@@ -191,11 +191,11 @@ namespace maorc287.RBRDataExtPlugin
                 // Oil Pressure Calculation
                 float oilRawBase = 
                     MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.OilPressureRawBase));
-                float oilRawPascal = 
-                    MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.OilPressureRawPascal));
-                snapshot.OilPressureBar = CalculateOilPressure(oilRawBase, oilRawPascal);
+                float oilRaw = 
+                    MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.OilPressureRaw));
+                snapshot.OilPressureBar = CalculateOilPressure(oilRawBase, oilRaw);
 
-                snapshot.OilPressureWarning = oilRawPascal < 0.8f;
+                snapshot.OilPressureWarning = oilRaw < 0.8f;
 
                 // Battery status raw value
                 snapshot.BatteryStatus = 
@@ -292,7 +292,7 @@ namespace maorc287.RBRDataExtPlugin
         public static class CarMov
         {
             public const int OilPressureRawBase = 0x139C;
-            public const int OilPressureRawPascal = 0x13AC;
+            public const int OilPressureRaw = 0x13AC;
             public const int OilTempKelvin = 0x138C;
             public const int DamageStructurePointer = 0x620;
 

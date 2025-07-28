@@ -9,13 +9,18 @@ namespace maorc287.RBRDataExtPlugin
     [PluginDescription("Richard Burns Rally Additional Data Reader")]
     [PluginAuthor("maorc287")]
     [PluginName("RBRDataExt")]
-    public class RBRDataPlugin : IPlugin, IDataPlugin, IWPFSettingsV2
+
+    public class RBRDataExtPlugin : IPlugin, IDataPlugin, IWPFSettingsV2
     {
         public PluginManager PluginManager { get; set; }
         public ImageSource PictureIcon => this.ToIcon(Properties.Resources.sdkmenuicon);
         public string LeftMenuTitle => "RBR Data Extension";
 
         private const string ProcessName = "RichardBurnsRally_SSE";
+
+        private const float OilPressureAdjustment = 1.03421f; // Base adjustment for oil pressure calculation 
+                            // BitConverter.ToSingle(BitConverter.GetBytes(0x3f8460fe), 0);
+
 
         [Flags]
         public enum ProcessAccessFlags : uint
@@ -44,12 +49,15 @@ namespace maorc287.RBRDataExtPlugin
             PluginManager.AddProperty("RBR.EngineStatus", GetType(), 0, "");
             PluginManager.AddProperty("RBR.BatteryVoltage", GetType(), 0, "");
             PluginManager.AddProperty("RBR.BatteryStatus", GetType(), 0, "");
+
             PluginManager.AddProperty("RBR.OilPressureWarning", GetType(), 0, "");
             PluginManager.AddProperty("RBR.LowBatteryWarning", GetType(), 0, "");
+
             PluginManager.AddProperty("RBR.OilPumpDamage", GetType(), 1, "");
             PluginManager.AddProperty("RBR.WaterPumpDamage", GetType(), 1, "");
             PluginManager.AddProperty("RBR.ElectricSystemDamage", GetType(), 1, "");
             PluginManager.AddProperty("RBR.BrakeCircuitDamage", GetType(), 1, "");
+
             PluginManager.AddProperty("RBR.GroundSpeed", GetType(), 0, "");
             PluginManager.AddProperty("RBR.WheelLock", GetType(), 0, "");
             PluginManager.AddProperty("RBR.WheelSlip", GetType(), 0, "");
@@ -59,6 +67,12 @@ namespace maorc287.RBRDataExtPlugin
 
         public System.Windows.Controls.Control GetWPFSettingsControl(PluginManager pluginManager) => null;
 
+
+        private void SetProperty(string propertyName, object value)
+        {
+            PluginManager.SetPropertyValue(propertyName, GetType(), value);
+        }
+
         public void DataUpdate(PluginManager pluginManager, ref GameReaderCommon.GameData data)
         {
             var rbrData = ReadRBRData();
@@ -67,35 +81,22 @@ namespace maorc287.RBRDataExtPlugin
 
             PluginManager.SetPropertyValue("RBR.OnStage", GetType(), rbrData.IsOnStage);
 
-            if (oilUnit == "Bar")
-            {
-                // Use Bar directly
-                PluginManager.SetPropertyValue("RBR.OilPressure", GetType(), rbrData.OilPressure);
-                PluginManager.SetPropertyValue("RBR.TurboPressure", GetType(), rbrData.TurboPressure);
-            }
-            else if (oilUnit == "Psi")
-            {
-                // Convert to PSI
-                PluginManager.SetPropertyValue("RBR.OilPressure", GetType(), rbrData.OilPressure * 14.5038f);
-                PluginManager.SetPropertyValue("RBR.TurboPressure", GetType(), rbrData.TurboPressure * 14.5038f);
-            }
-            else if (oilUnit == "KPa")
-            {
-                // Convert to KPa
-                PluginManager.SetPropertyValue("RBR.OilPressure", GetType(), rbrData.OilPressure * 100f);
-                PluginManager.SetPropertyValue("RBR.TurboPressure", GetType(), rbrData.TurboPressure * 100f);
-            }
-
+            PluginManager.SetPropertyValue("RBR.OilPressure", GetType(), ConvertPressure(rbrData.OilPressure,oilUnit));
+            PluginManager.SetPropertyValue("RBR.TurboPressure", GetType(), ConvertPressure(rbrData.TurboPressure,oilUnit));
+           
             PluginManager.SetPropertyValue("RBR.OilTemperatureC", GetType(), rbrData.OilTemperatureC);
             PluginManager.SetPropertyValue("RBR.EngineStatus", GetType(), rbrData.IsEngineOn);
             PluginManager.SetPropertyValue("RBR.BatteryVoltage", GetType(), rbrData.BatteryVoltage);
             PluginManager.SetPropertyValue("RBR.BatteryStatus", GetType(), rbrData.BatteryStatus);
+
             PluginManager.SetPropertyValue("RBR.OilPressureWarning", GetType(), rbrData.OilPressureWarning);
             PluginManager.SetPropertyValue("RBR.LowBatteryWarning", GetType(), rbrData.LowBatteryWarning);
+
             PluginManager.SetPropertyValue("RBR.OilPumpDamage", GetType(), rbrData.OilPumpDamage);
             PluginManager.SetPropertyValue("RBR.WaterPumpDamage", GetType(), rbrData.WaterPumpDamage);
             PluginManager.SetPropertyValue("RBR.ElectricSystemDamage", GetType(), rbrData.ElectricSystemDamage);
             PluginManager.SetPropertyValue("RBR.BrakeCircuitDamage", GetType(), rbrData.BrakeCircuitDamage);
+
             PluginManager.SetPropertyValue("RBR.GroundSpeed", GetType(), rbrData.GroundSpeed);
             PluginManager.SetPropertyValue("RBR.WheelLock", GetType(), rbrData.WheelLock);
             PluginManager.SetPropertyValue("RBR.WheelSlip", GetType(), rbrData.WheelSlip);
@@ -110,13 +111,28 @@ namespace maorc287.RBRDataExtPlugin
         private static float CalculateOilPressure(float rawBase, float pressureRaw)
         {
             
-            float adjustment = BitConverter.ToSingle(BitConverter.GetBytes(0x3f8460fe), 0);
-
-            float pressureBase = (rawBase > 0.02f) ? adjustment : (rawBase * adjustment) / 0.02f;
+            float pressureBase = (rawBase > 0.02f) ? OilPressureAdjustment : (rawBase * OilPressureAdjustment) / 0.02f;
             float pressureRawBar = pressureRaw * 1e-5f;
             return pressureBase + pressureRawBar;
         }
-        float CalculateCarSpeed(
+
+        private float ConvertPressure(float pressure, string unit)
+        {
+            switch (unit)
+            {
+                case "Psi":
+                    return pressure * 14.5038f;
+                case "KPa":
+                    return pressure * 100f;
+                case "Bar":
+                    return pressure;
+                default:
+                    return pressure; // default is Bar
+            }
+        }
+
+
+        private float CalculateCarSpeed(
             float velocityX,
             float velocityY,
             float velocityZ,
@@ -129,7 +145,7 @@ namespace maorc287.RBRDataExtPlugin
                     velocityZ * forwardZ) * -3.559f;
         }
 
-        float CalculateWheelLock(
+        private float CalculateWheelLock(
             float carSpeed,
             float wheelSpeed)
         {
@@ -146,7 +162,7 @@ namespace maorc287.RBRDataExtPlugin
             return lockRatio;
         }
 
-        float CalculateWheelSlip(
+        private float CalculateWheelSlip(
             float carSpeed,
             float wheelSpeed)
         {
@@ -163,6 +179,7 @@ namespace maorc287.RBRDataExtPlugin
             return spinRatio;
         }
 
+        private float Clampers(float val) => val < 0f ? 0f : (val > 1f ? 1f : val);
 
         private RBRData ReadRBRData()
         {
@@ -273,19 +290,19 @@ namespace maorc287.RBRDataExtPlugin
         public float TurboPressure { get; set; } = 0.0f;
         public float OilPressure { get; set; } = 0.0f;
         public float OilTemperatureC { get; set; } = 0.0f;
-        public bool OilPressureWarning { get; set; } = false;
         public float BatteryVoltage { get; set; } = 12.8f;
         public float BatteryStatus { get; set; } = 12.0f;
+        public bool OilPressureWarning { get; set; } = false;
         public bool LowBatteryWarning { get; set; } = false;
         public float GroundSpeed { get; set; } = 0.0f;
         public float WheelLock { get; set; } = 0.0f;
         public float WheelSlip { get; set; } = 0.0f;
 
         // Damage values
-        public int OilPumpDamage { get; set; } = 1;
-        public int WaterPumpDamage { get; set; } = 1;
-        public int ElectricSystemDamage { get; set; } = 1;
-        public int BrakeCircuitDamage { get; set; } = 1;
+        public int OilPumpDamage { get; set; } = 0;
+        public int WaterPumpDamage { get; set; } = 0;
+        public int ElectricSystemDamage { get; set; } = 0;
+        public int BrakeCircuitDamage { get; set; } = 0;
 
     }
 

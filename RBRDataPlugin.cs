@@ -50,6 +50,7 @@ namespace maorc287.RBRDataExtPlugin
             PluginManager.AddProperty("RBR.WaterPumpDamage", GetType(), 1, "");
             PluginManager.AddProperty("RBR.ElectricSystemDamage", GetType(), 1, "");
             PluginManager.AddProperty("RBR.BrakeCircuitDamage", GetType(), 1, "");
+            PluginManager.AddProperty("RBR.GroundSpeed", GetType(), 0, "");
             PluginManager.AddProperty("RBR.WheelLock", GetType(), 0, "");
             PluginManager.AddProperty("RBR.WheelSlip", GetType(), 0, "");
         }
@@ -75,6 +76,7 @@ namespace maorc287.RBRDataExtPlugin
             PluginManager.SetPropertyValue("RBR.WaterPumpDamage", GetType(), rbrData.WaterPumpDamage);
             PluginManager.SetPropertyValue("RBR.ElectricSystemDamage", GetType(), rbrData.ElectricSystemDamage);
             PluginManager.SetPropertyValue("RBR.BrakeCircuitDamage", GetType(), rbrData.BrakeCircuitDamage);
+            PluginManager.SetPropertyValue("RBR.GroundSpeed", GetType(), rbrData.GroundSpeed);
             PluginManager.SetPropertyValue("RBR.WheelLock", GetType(), rbrData.WheelLock);
             PluginManager.SetPropertyValue("RBR.WheelSlip", GetType(), rbrData.WheelSlip);
         }
@@ -93,61 +95,52 @@ namespace maorc287.RBRDataExtPlugin
             float pressureRawBar = pressureRaw * 1e-5f;
             return pressureBase + pressureRawBar;
         }
+        float CalculateCarSpeed(
+            float velocityX,
+            float velocityY,
+            float velocityZ,
+            float forwardX,
+            float forwardY,
+            float forwardZ)
+        {
+            return (velocityX * forwardX +
+                    velocityY * forwardY +
+                    velocityZ * forwardZ) * -3.559f;
+        }
 
         float CalculateWheelLock(
-    float velocityX,
-    float velocityY,
-    float velocityZ,
-    float forwardX,
-    float forwardY,
-    float forwardZ,
-    float wheelSpeed)
+            float carSpeed,
+            float wheelSpeed)
         {
-            // Compute car speed along forward direction
-            float carSpeed = (velocityX * forwardX +
-                              velocityY * forwardY +
-                              velocityZ * forwardZ) * -3.559f;
-
             if (carSpeed < 1.0f)
                 return 0.0f;
 
-            // Compute lock ratio
             float lockRatio = (carSpeed - wheelSpeed) / carSpeed;
 
-            // Clamp between 0.0 and 1.0
-            if (lockRatio < 0.0f) lockRatio = 0.0f;
-            if (lockRatio > 1.0f) lockRatio = 1.0f;
+            if (lockRatio < 0.0f)
+                lockRatio = 0.0f;
+            else if (lockRatio > 1.0f)
+                lockRatio = 1.0f;
 
             return lockRatio;
         }
 
         float CalculateWheelSlip(
-    float velocityX,
-    float velocityY,
-    float velocityZ,
-    float forwardX,
-    float forwardY,
-    float forwardZ,
-    float wheelSpeed)
+            float carSpeed,
+            float wheelSpeed)
         {
-            // Compute car speed along forward direction
-            float carSpeed = (velocityX * forwardX +
-                              velocityY * forwardY +
-                              velocityZ * forwardZ) * -3.559f;
-
             if (carSpeed < 1.0f)
                 return 0.0f;
 
-            // Compute spin ratio
             float spinRatio = (wheelSpeed - carSpeed) / carSpeed;
 
-            // Clamp between 0.0 and 1.0
-            if (spinRatio < 0.0f) spinRatio = 0.0f;
-            if (spinRatio > 1.0f) spinRatio = 1.0f;
+            if (spinRatio < 0.0f)
+                spinRatio = 0.0f;
+            else if (spinRatio > 1.0f)
+                spinRatio = 1.0f;
 
             return spinRatio;
         }
-
 
 
         private RBRData ReadRBRData()
@@ -210,23 +203,25 @@ namespace maorc287.RBRDataExtPlugin
                 rbrData.LowBatteryWarning =
                    rbrData.BatteryStatus < 10.0f;
 
-                if (rbrData.IsEngineOn)
-                {
-                    float velocityX = MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.VelocityX));
-                    float velocityY = MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.VelocityY));
-                    float velocityZ = MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.VelocityZ));
-                    float forwardX = MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.ForwardX));
-                    float forwardY = MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.ForwardY));
-                    float forwardZ = MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.ForwardZ));
+                //Velocity and Forward Direction Vectors
+                float velocityX = MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.VelocityX));
+                float velocityY = MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.VelocityY));
+                float velocityZ = MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.VelocityZ));
+                float fwdX = MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.ForwardX));
+                float fwdY = MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.ForwardY));
+                float fwdZ = MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.ForwardZ));
 
-                    float wheelSpeed = MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarInfo.WheelSpeed));
+                // Calculate ground speed and wheel lock/slip
+                float wheelSpeed = MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarInfo.WheelSpeed));
+                float groundSpeed = CalculateCarSpeed(velocityX, velocityY, velocityZ, fwdX, fwdY, fwdZ);
+                float wheelLock = CalculateWheelLock(groundSpeed, wheelSpeed);
+                float wheelSlip = CalculateWheelSlip(groundSpeed, wheelSpeed);
 
-                    rbrData.WheelLock =
-                        CalculateWheelLock(velocityX, velocityY, velocityZ, forwardX, forwardY, forwardZ, wheelSpeed);
-                    rbrData.WheelSlip =
-                        CalculateWheelSlip(velocityX, velocityY, velocityZ, forwardX, forwardY, forwardZ, wheelSpeed);
+                // Assign calculated values to RBRData
+                rbrData.GroundSpeed = groundSpeed;
+                rbrData.WheelLock = wheelLock;
+                rbrData.WheelSlip = wheelSlip;
 
-                }
 
                 // Read damage values
                 int damagePointer =
@@ -266,6 +261,7 @@ namespace maorc287.RBRDataExtPlugin
         public float BatteryVoltage { get; set; } = 12.8f;
         public float BatteryStatus { get; set; } = 12.0f;
         public bool LowBatteryWarning { get; set; } = false;
+        public float GroundSpeed { get; set; } = 0.0f;
         public float WheelLock { get; set; } = 0.0f;
         public float WheelSlip { get; set; } = 0.0f;
 

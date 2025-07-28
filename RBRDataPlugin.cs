@@ -213,16 +213,11 @@ namespace maorc287.RBRDataExtPlugin
 
                 // Calculate ground speed and wheel lock/slip
                 float wheelSpeed = MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarInfo.WheelSpeed));
-                float groundSpeed = CalculateCarSpeed(velocityX, velocityY, velocityZ, fwdX, fwdY, fwdZ);
-                float wheelLock = CalculateWheelLock(groundSpeed, wheelSpeed);
-                float wheelSlip = CalculateWheelSlip(groundSpeed, wheelSpeed);
+                rbrData.GroundSpeed = CalculateCarSpeed(velocityX, velocityY, velocityZ, fwdX, fwdY, fwdZ);
+                rbrData.WheelLock = CalculateWheelLock(rbrData.GroundSpeed , wheelSpeed);
+                rbrData.WheelSlip = CalculateWheelSlip(rbrData.GroundSpeed, wheelSpeed);
 
-                // Assign calculated values to RBRData
-                rbrData.GroundSpeed = groundSpeed;
-                rbrData.WheelLock = wheelLock;
-                rbrData.WheelSlip = wheelSlip;
-
-
+  
                 // Read damage values
                 int damagePointer =
                     MemoryReader.ReadInt(hProcess, new IntPtr(carMovBase + Offsets.CarMov.DamageStructurePointer));

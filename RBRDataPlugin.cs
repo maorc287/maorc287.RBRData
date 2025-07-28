@@ -38,8 +38,8 @@ namespace maorc287.RBRDataExtPlugin
             PluginManager = pluginManager;
 
             PluginManager.AddProperty("RBR.OnStage", GetType(), 0, "");
-            PluginManager.AddProperty("RBR.TurboPressureBar", GetType(), 0, "");
-            PluginManager.AddProperty("RBR.OilPressureBar", GetType(), 0, "");
+            PluginManager.AddProperty("RBR.TurboPressure", GetType(), 0, "");
+            PluginManager.AddProperty("RBR.OilPressure", GetType(), 0, "");
             PluginManager.AddProperty("RBR.OilTemperatureC", GetType(), 0, "");
             PluginManager.AddProperty("RBR.EngineStatus", GetType(), 0, "");
             PluginManager.AddProperty("RBR.BatteryVoltage", GetType(), 0, "");
@@ -63,9 +63,29 @@ namespace maorc287.RBRDataExtPlugin
         {
             var rbrData = ReadRBRData();
 
+            string oilUnit = (string)PluginManager.GetPropertyValue("DataCorePlugin.GameData.OilPressureUnit");
+
             PluginManager.SetPropertyValue("RBR.OnStage", GetType(), rbrData.IsOnStage);
-            PluginManager.SetPropertyValue("RBR.TurboPressureBar", GetType(), rbrData.TurboPressureBar);
-            PluginManager.SetPropertyValue("RBR.OilPressureBar", GetType(), rbrData.OilPressureBar);
+
+            if (oilUnit == "Bar")
+            {
+                // Use Bar directly
+                PluginManager.SetPropertyValue("RBR.OilPressure", GetType(), rbrData.OilPressure);
+                PluginManager.SetPropertyValue("RBR.TurboPressure", GetType(), rbrData.TurboPressure);
+            }
+            else if (oilUnit == "Psi")
+            {
+                // Convert to PSI
+                PluginManager.SetPropertyValue("RBR.OilPressure", GetType(), rbrData.OilPressure * 14.5038f);
+                PluginManager.SetPropertyValue("RBR.TurboPressure", GetType(), rbrData.TurboPressure * 14.5038f);
+            }
+            else if (oilUnit == "KPa")
+            {
+                // Convert to KPa
+                PluginManager.SetPropertyValue("RBR.OilPressure", GetType(), rbrData.OilPressure * 100f);
+                PluginManager.SetPropertyValue("RBR.TurboPressure", GetType(), rbrData.TurboPressure * 100f);
+            }
+
             PluginManager.SetPropertyValue("RBR.OilTemperatureC", GetType(), rbrData.OilTemperatureC);
             PluginManager.SetPropertyValue("RBR.EngineStatus", GetType(), rbrData.IsEngineOn);
             PluginManager.SetPropertyValue("RBR.BatteryVoltage", GetType(), rbrData.BatteryVoltage);
@@ -89,6 +109,7 @@ namespace maorc287.RBRDataExtPlugin
 
         private static float CalculateOilPressure(float rawBase, float pressureRaw)
         {
+            
             float adjustment = BitConverter.ToSingle(BitConverter.GetBytes(0x3f8460fe), 0);
 
             float pressureBase = (rawBase > 0.02f) ? adjustment : (rawBase * adjustment) / 0.02f;
@@ -172,9 +193,9 @@ namespace maorc287.RBRDataExtPlugin
                 rbrData.IsEngineOn = (engineStatus == 1.0f);
 
                 // Turbo Pressure from Pascal to Bar
-                float turboPressurePascal =
-                    MemoryReader.ReadFloat(hProcess, new IntPtr(carInfoBase + Offsets.CarInfo.TurboPressurePascal));
-                rbrData.TurboPressureBar = turboPressurePascal / 100000f;
+
+                rbrData.TurboPressure =
+                    MemoryReader.ReadFloat(hProcess, new IntPtr(carInfoBase + Offsets.CarInfo.TurboPressure)) / 100000f;
 
                 // Oil Temperature from Kelvin to Celsius
                 float oilTempK =
@@ -186,7 +207,7 @@ namespace maorc287.RBRDataExtPlugin
                     MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.OilPressureRawBase));
                 float oilRaw =
                     MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.OilPressureRaw));
-                rbrData.OilPressureBar = CalculateOilPressure(oilRawBase, oilRaw);
+                rbrData.OilPressure = CalculateOilPressure(oilRawBase, oilRaw);
 
                 rbrData.OilPressureWarning = oilRaw < 0.8f;
 
@@ -249,8 +270,8 @@ namespace maorc287.RBRDataExtPlugin
     {
         public bool IsOnStage { get; set; } = false;
         public bool IsEngineOn { get; set; } = false;
-        public float TurboPressureBar { get; set; } = 0.0f;
-        public float OilPressureBar { get; set; } = 0.0f;
+        public float TurboPressure { get; set; } = 0.0f;
+        public float OilPressure { get; set; } = 0.0f;
         public float OilTemperatureC { get; set; } = 0.0f;
         public bool OilPressureWarning { get; set; } = false;
         public float BatteryVoltage { get; set; } = 12.8f;
@@ -273,7 +294,7 @@ namespace maorc287.RBRDataExtPlugin
         public static class CarInfo
         {
             public const int WheelSpeed = 0xC;
-            public const int TurboPressurePascal = 0x18;
+            public const int TurboPressure = 0x18;
             public const int WaterTemperatureCelsius = 0x14;
             public const int EngineStatus = 0x2B8;
             public const int BatteryStatus = 0x2B4;

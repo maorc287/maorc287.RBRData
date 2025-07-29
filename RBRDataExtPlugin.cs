@@ -60,7 +60,7 @@ namespace maorc287.RBRDataExtPlugin
 
             PluginManager.AddProperty("RBR.GroundSpeed", GetType(), 0, "");
             PluginManager.AddProperty("RBR.WheelLock", GetType(), 0, "");
-            PluginManager.AddProperty("RBR.WheelSlip", GetType(), 0, "");
+            PluginManager.AddProperty("RBR.WheelSpin", GetType(), 0, "");
         }
 
         public void End(PluginManager pluginManager) { }
@@ -79,27 +79,27 @@ namespace maorc287.RBRDataExtPlugin
 
             string oilUnit = (string)PluginManager.GetPropertyValue("DataCorePlugin.GameData.OilPressureUnit");
 
-            PluginManager.SetPropertyValue("RBR.OnStage", GetType(), rbrData.IsOnStage);
+            SetProperty("RBR.OnStage", rbrData.IsOnStage);
+            SetProperty("RBR.EngineStatus", rbrData.IsEngineOn);
 
-            PluginManager.SetPropertyValue("RBR.OilPressure", GetType(), ConvertPressure(rbrData.OilPressure,oilUnit));
-            PluginManager.SetPropertyValue("RBR.TurboPressure", GetType(), ConvertPressure(rbrData.TurboPressure,oilUnit));
+            SetProperty("RBR.OilPressure", ConvertPressure(rbrData.OilPressure,oilUnit));
+            SetProperty("RBR.TurboPressure", ConvertPressure(rbrData.TurboPressure, oilUnit));
            
-            PluginManager.SetPropertyValue("RBR.OilTemperatureC", GetType(), rbrData.OilTemperatureC);
-            PluginManager.SetPropertyValue("RBR.EngineStatus", GetType(), rbrData.IsEngineOn);
-            PluginManager.SetPropertyValue("RBR.BatteryVoltage", GetType(), rbrData.BatteryVoltage);
-            PluginManager.SetPropertyValue("RBR.BatteryStatus", GetType(), rbrData.BatteryStatus);
+            SetProperty("RBR.OilTemperatureC", rbrData.OilTemperatureC);
+            SetProperty("RBR.BatteryVoltage", rbrData.BatteryVoltage);
+            SetProperty("RBR.BatteryStatus", rbrData.BatteryStatus);
 
-            PluginManager.SetPropertyValue("RBR.OilPressureWarning", GetType(), rbrData.OilPressureWarning);
-            PluginManager.SetPropertyValue("RBR.LowBatteryWarning", GetType(), rbrData.LowBatteryWarning);
+            SetProperty("RBR.OilPressureWarning", rbrData.OilPressureWarning);
+            SetProperty("RBR.LowBatteryWarning", rbrData.LowBatteryWarning);
 
-            PluginManager.SetPropertyValue("RBR.OilPumpDamage", GetType(), rbrData.OilPumpDamage);
-            PluginManager.SetPropertyValue("RBR.WaterPumpDamage", GetType(), rbrData.WaterPumpDamage);
-            PluginManager.SetPropertyValue("RBR.ElectricSystemDamage", GetType(), rbrData.ElectricSystemDamage);
-            PluginManager.SetPropertyValue("RBR.BrakeCircuitDamage", GetType(), rbrData.BrakeCircuitDamage);
+            SetProperty("RBR.OilPumpDamage", rbrData.OilPumpDamage);
+            SetProperty("RBR.WaterPumpDamage", rbrData.WaterPumpDamage);
+            SetProperty("RBR.ElectricSystemDamage", rbrData.ElectricSystemDamage);
+            SetProperty("RBR.BrakeCircuitDamage", rbrData.BrakeCircuitDamage);
 
-            PluginManager.SetPropertyValue("RBR.GroundSpeed", GetType(), rbrData.GroundSpeed);
-            PluginManager.SetPropertyValue("RBR.WheelLock", GetType(), rbrData.WheelLock);
-            PluginManager.SetPropertyValue("RBR.WheelSlip", GetType(), rbrData.WheelSlip);
+            SetProperty("RBR.GroundSpeed", rbrData.GroundSpeed);
+            SetProperty("RBR.WheelLock", rbrData.WheelLock);
+            SetProperty("RBR.WheelSpin", rbrData.WheelSpin);
         }
 
         private uint GetProcessIdByName(string processName)
@@ -162,7 +162,7 @@ namespace maorc287.RBRDataExtPlugin
             return lockRatio;
         }
 
-        private float CalculateWheelSlip(
+        private float CalculateWheelSpin(
             float carSpeed,
             float wheelSpeed)
         {
@@ -253,7 +253,7 @@ namespace maorc287.RBRDataExtPlugin
                 float wheelSpeed = MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarInfo.WheelSpeed));
                 rbrData.GroundSpeed = CalculateCarSpeed(velocityX, velocityY, velocityZ, fwdX, fwdY, fwdZ);
                 rbrData.WheelLock = CalculateWheelLock(rbrData.GroundSpeed , wheelSpeed);
-                rbrData.WheelSlip = CalculateWheelSlip(rbrData.GroundSpeed, wheelSpeed);
+                rbrData.WheelSpin = CalculateWheelSpin(rbrData.GroundSpeed, wheelSpeed);
 
   
                 // Read damage values
@@ -296,7 +296,7 @@ namespace maorc287.RBRDataExtPlugin
         public bool LowBatteryWarning { get; set; } = false;
         public float GroundSpeed { get; set; } = 0.0f;
         public float WheelLock { get; set; } = 0.0f;
-        public float WheelSlip { get; set; } = 0.0f;
+        public float WheelSpin { get; set; } = 0.0f;
 
         // Damage values
         public int OilPumpDamage { get; set; } = 0;

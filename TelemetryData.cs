@@ -19,6 +19,7 @@ namespace maorc287.RBRDataPluginExt
         // BitConverter.ToSingle(BitConverter.GetBytes(0x3f8460fe), 0);
         private const float OilPressureAdjustment = 1.03421f;
 
+        /// Computes the oil pressure based on raw base and pressure values.
         private static float ComputeOilPressure(float rawBase, float pressureRaw)
         {
 
@@ -27,6 +28,7 @@ namespace maorc287.RBRDataPluginExt
             return pressureBase + pressureRawBar;
         }
 
+        /// Formats the pressure value based on the specified unit.
         internal static float FormatPressure(float pressure, string unit)
         {
             switch (unit)
@@ -42,7 +44,7 @@ namespace maorc287.RBRDataPluginExt
             }
         }
 
-
+        /// Computes the ground speed based on velocity and forward direction vectors.
         private static float ComputeGroundSpeed(
             float velocityX,
             float velocityY,
@@ -56,6 +58,7 @@ namespace maorc287.RBRDataPluginExt
                     velocityZ * forwardZ) * -3.559f;
         }
 
+        /// Computes the wheel lock ratio based on car speed and wheel speed.
         private static float ComputeWheelLockRatio(
             float carSpeed,
             float wheelSpeed)
@@ -68,6 +71,7 @@ namespace maorc287.RBRDataPluginExt
             return Clampers(lockRatio);
         }
 
+        /// Computes the wheel spin ratio based on car speed and wheel speed.
         private static float ComputeWheelSpinRatio(
             float carSpeed,
             float wheelSpeed)
@@ -80,11 +84,17 @@ namespace maorc287.RBRDataPluginExt
             return Clampers(spinRatio);
         }
 
+        /// Clamps a value between 0 and 1.
         private static float Clampers(float val) => val < 0f ? 0f : (val > 1f ? 1f : val);
 
-        internal static RBRData ReadTelemetryData()
+
+        /// Reads telemetry data from the Richard Burns Rally process.
+        /// this method accesses the game's memory to retrieve various telemetry values.
+        /// as a result, it requires the game to be running and the process to be accessible.
+        /// without the game running, it will return default values.
+        internal static RBRTelemetryData ReadTelemetryData()
         {
-            var rbrData = new RBRData();
+            var rbrData = new RBRTelemetryData();
             uint pid = MemoryReader.GetProcessIdByName(RBRProcessName);
             if (pid == 0) return rbrData;
 
@@ -127,6 +137,7 @@ namespace maorc287.RBRDataPluginExt
                     MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.OilPressureRaw));
                 rbrData.OilPressure = ComputeOilPressure(oilRawBase, oilRaw);
 
+                //Warning for low oil pressure under 0.8 raw value
                 rbrData.OilPressureWarning = oilRaw < 0.8f;
 
                 // Battery status raw value
@@ -138,7 +149,7 @@ namespace maorc287.RBRDataPluginExt
                     ? 14.5f
                     : (rbrData.BatteryStatus * 0.2f) + 10.4f;
 
-                // Low Battery Warning 
+                // Low Battery Warning when battery status is below 10 (max value is 12)
                 rbrData.LowBatteryWarning =
                    rbrData.BatteryStatus < 10.0f;
 
@@ -185,7 +196,8 @@ namespace maorc287.RBRDataPluginExt
 
     }
 
-    internal class RBRData
+    /// Class to hold telemetry data read from the game
+    internal class RBRTelemetryData
     {
         public bool IsOnStage { get; set; } = false;
         public bool IsEngineOn { get; set; } = false;

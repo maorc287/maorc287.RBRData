@@ -93,9 +93,9 @@ namespace maorc287.RBRDataPluginExt
 
             try
             {
-                int carInfoBase = MemoryReader.ReadInt(hProcess, new IntPtr(Offsets.Pointers.CarInfo));
-                int carMovBase = MemoryReader.ReadInt(hProcess, new IntPtr(Offsets.Pointers.CarMov));
-                int gameModeBase = MemoryReader.ReadInt(hProcess, new IntPtr(Offsets.Pointers.GameMode));
+                uint carInfoBase = MemoryReader.ReadUInt(hProcess, new IntPtr(Offsets.Pointers.CarInfo));
+                uint carMovBase = MemoryReader.ReadUInt(hProcess, new IntPtr(Offsets.Pointers.CarMov));
+                uint gameModeBase = MemoryReader.ReadUInt(hProcess, new IntPtr(Offsets.Pointers.GameMode));
 
                 // Game Mode status 
                 int gameMode =

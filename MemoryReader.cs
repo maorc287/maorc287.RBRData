@@ -68,7 +68,7 @@ namespace maorc287.RBRDataExtPlugin
 
         internal static IntPtr ReadPointer(IntPtr hProcess, IntPtr address)
         {
-            int ptrValue = ReadInt(hProcess, address);
+            uint ptrValue = ReadUInt(hProcess, address);
             return new IntPtr(ptrValue);
         }
 

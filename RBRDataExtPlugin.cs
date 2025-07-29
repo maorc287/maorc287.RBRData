@@ -55,15 +55,15 @@ namespace maorc287.RBRDataExtPlugin
         {
             var rbrData = TelemetryData.ReadRBRData();
 
-            string oilUnit = (string)PluginManager.GetPropertyValue("DataCorePlugin.GameData.OilPressureUnit");
+            string pressureUnit = (string)PluginManager.GetPropertyValue("DataCorePlugin.GameData.OilPressureUnit");
 
             PluginManager.SetPropertyValue("RBR.OnStage", GetType(), rbrData.IsOnStage);
             PluginManager.SetPropertyValue("RBR.EngineStatus", GetType(), rbrData.IsEngineOn);
 
             PluginManager.SetPropertyValue("RBR.OilPressure", GetType(), 
-                TelemetryData.ConvertPressure(rbrData.OilPressure, oilUnit));
+                TelemetryData.ConvertPressure(rbrData.OilPressure, pressureUnit));
             PluginManager.SetPropertyValue("RBR.TurboPressure", GetType(), 
-                TelemetryData.ConvertPressure(rbrData.TurboPressure, oilUnit));
+                TelemetryData.ConvertPressure(rbrData.TurboPressure, pressureUnit));
 
             PluginManager.SetPropertyValue("RBR.OilTemperatureC", GetType(), rbrData.OilTemperatureC);
             PluginManager.SetPropertyValue("RBR.BatteryVoltage", GetType(), rbrData.BatteryVoltage);

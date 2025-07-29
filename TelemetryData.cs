@@ -19,7 +19,7 @@ namespace maorc287.RBRDataPluginExt
         // BitConverter.ToSingle(BitConverter.GetBytes(0x3f8460fe), 0);
         private const float OilPressureAdjustment = 1.03421f;
 
-        private static float CalculateOilPressure(float rawBase, float pressureRaw)
+        private static float ComputeOilPressure(float rawBase, float pressureRaw)
         {
 
             float pressureBase = (rawBase > 0.02f) ? OilPressureAdjustment : (rawBase * OilPressureAdjustment) / 0.02f;
@@ -27,7 +27,7 @@ namespace maorc287.RBRDataPluginExt
             return pressureBase + pressureRawBar;
         }
 
-        internal static float ConvertPressure(float pressure, string unit)
+        internal static float FormatPressure(float pressure, string unit)
         {
             switch (unit)
             {
@@ -43,7 +43,7 @@ namespace maorc287.RBRDataPluginExt
         }
 
 
-        private static float CalculateCarSpeed(
+        private static float ComputeGroundSpeed(
             float velocityX,
             float velocityY,
             float velocityZ,
@@ -56,7 +56,7 @@ namespace maorc287.RBRDataPluginExt
                     velocityZ * forwardZ) * -3.559f;
         }
 
-        private static float CalculateWheelLock(
+        private static float ComputeWheelLockRatio(
             float carSpeed,
             float wheelSpeed)
         {
@@ -68,7 +68,7 @@ namespace maorc287.RBRDataPluginExt
             return Clampers(lockRatio);
         }
 
-        private static float CalculateWheelSpin(
+        private static float ComputeWheelSpinRatio(
             float carSpeed,
             float wheelSpeed)
         {
@@ -82,7 +82,7 @@ namespace maorc287.RBRDataPluginExt
 
         private static float Clampers(float val) => val < 0f ? 0f : (val > 1f ? 1f : val);
 
-        internal static RBRData ReadRBRData()
+        internal static RBRData ReadTelemetryData()
         {
             var rbrData = new RBRData();
             uint pid = MemoryReader.GetProcessIdByName(RBRProcessName);
@@ -125,7 +125,7 @@ namespace maorc287.RBRDataPluginExt
                     MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.OilPressureRawBase));
                 float oilRaw =
                     MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.OilPressureRaw));
-                rbrData.OilPressure = CalculateOilPressure(oilRawBase, oilRaw);
+                rbrData.OilPressure = ComputeOilPressure(oilRawBase, oilRaw);
 
                 rbrData.OilPressureWarning = oilRaw < 0.8f;
 
@@ -151,10 +151,11 @@ namespace maorc287.RBRDataPluginExt
                 float fwdZ = MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.ForwardZ));
 
                 // Calculate ground speed and wheel lock/slip
-                float wheelSpeed = MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarInfo.WheelSpeed));
-                rbrData.GroundSpeed = CalculateCarSpeed(velocityX, velocityY, velocityZ, fwdX, fwdY, fwdZ);
-                rbrData.WheelLock = CalculateWheelLock(rbrData.GroundSpeed, wheelSpeed);
-                rbrData.WheelSpin = CalculateWheelSpin(rbrData.GroundSpeed, wheelSpeed);
+                float wheelSpeed = 
+                    MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarInfo.WheelSpeed));
+                rbrData.GroundSpeed = ComputeGroundSpeed(velocityX, velocityY, velocityZ, fwdX, fwdY, fwdZ);
+                rbrData.WheelLock = ComputeWheelLockRatio(rbrData.GroundSpeed, wheelSpeed);
+                rbrData.WheelSpin = ComputeWheelSpinRatio(rbrData.GroundSpeed, wheelSpeed);
 
 
                 // Read damage values

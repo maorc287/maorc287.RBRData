@@ -60,8 +60,10 @@ namespace maorc287.RBRDataExtPlugin
             PluginManager.SetPropertyValue("RBR.OnStage", GetType(), rbrData.IsOnStage);
             PluginManager.SetPropertyValue("RBR.EngineStatus", GetType(), rbrData.IsEngineOn);
 
-            PluginManager.SetPropertyValue("RBR.OilPressure", GetType(), TelemetryData.ConvertPressure(rbrData.OilPressure, oilUnit));
-            PluginManager.SetPropertyValue("RBR.TurboPressure", GetType(), TelemetryData.ConvertPressure(rbrData.TurboPressure, oilUnit));
+            PluginManager.SetPropertyValue("RBR.OilPressure", GetType(), 
+                TelemetryData.ConvertPressure(rbrData.OilPressure, oilUnit));
+            PluginManager.SetPropertyValue("RBR.TurboPressure", GetType(), 
+                TelemetryData.ConvertPressure(rbrData.TurboPressure, oilUnit));
 
             PluginManager.SetPropertyValue("RBR.OilTemperatureC", GetType(), rbrData.OilTemperatureC);
             PluginManager.SetPropertyValue("RBR.BatteryVoltage", GetType(), rbrData.BatteryVoltage);

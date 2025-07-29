@@ -1,10 +1,33 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace maorc287.RBRDataExtPlugin
 {
     public static class MemoryReader
     {
+        [Flags]
+        public enum ProcessAccessFlags : uint
+        {
+            VirtualMemoryRead = 0x00000010,
+            VirtualMemoryWrite = 0x00000020,
+            VirtualMemoryOperation = 0x00000008
+        }
+
+        // Import necessary functions from kernel32.dll for process memory access
+        [DllImport("kernel32.dll")]
+        internal static extern IntPtr OpenProcess(ProcessAccessFlags access, bool inheritHandle, int processId);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        internal static extern bool CloseHandle(IntPtr hObject);
+
+        internal static uint GetProcessIdByName(string processName)
+        {
+            var processes = Process.GetProcessesByName(processName);
+            return (uint)(processes.Length > 0 ? processes[0].Id : 0);
+        }
+
+
         [DllImport("kernel32.dll", SetLastError = true)]
         private static extern bool ReadProcessMemory(
             IntPtr hProcess,

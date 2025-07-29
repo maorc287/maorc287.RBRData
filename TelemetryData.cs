@@ -12,30 +12,12 @@ namespace maorc287.RBRDataPluginExt
 
     internal static class TelemetryData
     {
+        // Process name for Richard Burns Rally
         private const string RBRProcessName = "RichardBurnsRally_SSE";
 
-        private const float OilPressureAdjustment = 1.03421f; // Base adjustment for oil pressure calculation 
-                                                              // BitConverter.ToSingle(BitConverter.GetBytes(0x3f8460fe), 0);
-
-        [Flags]
-        public enum ProcessAccessFlags : uint
-        {
-            VirtualMemoryRead = 0x00000010,
-            VirtualMemoryWrite = 0x00000020,
-            VirtualMemoryOperation = 0x00000008
-        }
-
-        [DllImport("kernel32.dll")]
-        private static extern IntPtr OpenProcess(ProcessAccessFlags access, bool inheritHandle, int processId);
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern bool CloseHandle(IntPtr hObject);
-
-        private static uint GetProcessIdByName(string processName)
-        {
-            var processes = Process.GetProcessesByName(processName);
-            return (uint)(processes.Length > 0 ? processes[0].Id : 0);
-        }
+        // Base adjustment for oil pressure calculation 
+        // BitConverter.ToSingle(BitConverter.GetBytes(0x3f8460fe), 0);
+        private const float OilPressureAdjustment = 1.03421f;
 
         private static float CalculateOilPressure(float rawBase, float pressureRaw)
         {
@@ -103,10 +85,10 @@ namespace maorc287.RBRDataPluginExt
         internal static RBRData ReadRBRData()
         {
             var rbrData = new RBRData();
-            uint pid = GetProcessIdByName(RBRProcessName);
+            uint pid = MemoryReader.GetProcessIdByName(RBRProcessName);
             if (pid == 0) return rbrData;
 
-            IntPtr hProcess = OpenProcess(ProcessAccessFlags.VirtualMemoryRead, false, (int)pid);
+            IntPtr hProcess = MemoryReader.OpenProcess(MemoryReader.ProcessAccessFlags.VirtualMemoryRead, false, (int)pid);
             if (hProcess == IntPtr.Zero) return rbrData;
 
             try
@@ -194,7 +176,7 @@ namespace maorc287.RBRDataPluginExt
             }
             finally
             {
-                CloseHandle(hProcess);
+                MemoryReader.CloseHandle(hProcess);
             }
 
             return rbrData;

@@ -1,3 +1,7 @@
+// Description: A class to read values from the RBRHUD.dll in Richard Burns Rally.
+// This class provides methods to read various data types from the memory of the RBRHUD process.
+// It is currently not in use.
+
 using System;
 using System.Diagnostics;
 using System.Linq;

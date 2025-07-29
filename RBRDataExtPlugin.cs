@@ -51,38 +51,33 @@ namespace maorc287.RBRDataExtPlugin
         public System.Windows.Controls.Control GetWPFSettingsControl(PluginManager pluginManager) => null;
 
 
-        private void SetProperty(string propertyName, object value)
-        {
-            PluginManager.SetPropertyValue(propertyName, GetType(), value);
-        }
-
         public void DataUpdate(PluginManager pluginManager, ref GameReaderCommon.GameData data)
         {
             var rbrData = TelemetryData.ReadRBRData();
 
             string oilUnit = (string)PluginManager.GetPropertyValue("DataCorePlugin.GameData.OilPressureUnit");
 
-            SetProperty("RBR.OnStage", rbrData.IsOnStage);
-            SetProperty("RBR.EngineStatus", rbrData.IsEngineOn);
+            PluginManager.SetPropertyValue("RBR.OnStage", GetType(), rbrData.IsOnStage);
+            PluginManager.SetPropertyValue("RBR.EngineStatus", GetType(), rbrData.IsEngineOn);
 
-            SetProperty("RBR.OilPressure", TelemetryData.ConvertPressure(rbrData.OilPressure, oilUnit));
-            SetProperty("RBR.TurboPressure", TelemetryData.ConvertPressure(rbrData.TurboPressure, oilUnit));
+            PluginManager.SetPropertyValue("RBR.OilPressure", GetType(), TelemetryData.ConvertPressure(rbrData.OilPressure, oilUnit));
+            PluginManager.SetPropertyValue("RBR.TurboPressure", GetType(), TelemetryData.ConvertPressure(rbrData.TurboPressure, oilUnit));
 
-            SetProperty("RBR.OilTemperatureC", rbrData.OilTemperatureC);
-            SetProperty("RBR.BatteryVoltage", rbrData.BatteryVoltage);
-            SetProperty("RBR.BatteryStatus", rbrData.BatteryStatus);
+            PluginManager.SetPropertyValue("RBR.OilTemperatureC", GetType(), rbrData.OilTemperatureC);
+            PluginManager.SetPropertyValue("RBR.BatteryVoltage", GetType(), rbrData.BatteryVoltage);
+            PluginManager.SetPropertyValue("RBR.BatteryStatus", GetType(), rbrData.BatteryStatus);
 
-            SetProperty("RBR.OilPressureWarning", rbrData.OilPressureWarning);
-            SetProperty("RBR.LowBatteryWarning", rbrData.LowBatteryWarning);
+            PluginManager.SetPropertyValue("RBR.OilPressureWarning", GetType(), rbrData.OilPressureWarning);
+            PluginManager.SetPropertyValue("RBR.LowBatteryWarning", GetType(), rbrData.LowBatteryWarning);
 
-            SetProperty("RBR.OilPumpDamage", rbrData.OilPumpDamage);
-            SetProperty("RBR.WaterPumpDamage", rbrData.WaterPumpDamage);
-            SetProperty("RBR.ElectricSystemDamage", rbrData.ElectricSystemDamage);
-            SetProperty("RBR.BrakeCircuitDamage", rbrData.BrakeCircuitDamage);
+            PluginManager.SetPropertyValue("RBR.OilPumpDamage", GetType(), rbrData.OilPumpDamage);
+            PluginManager.SetPropertyValue("RBR.WaterPumpDamage", GetType(), rbrData.WaterPumpDamage);
+            PluginManager.SetPropertyValue("RBR.ElectricSystemDamage", GetType(), rbrData.ElectricSystemDamage);
+            PluginManager.SetPropertyValue("RBR.BrakeCircuitDamage", GetType(), rbrData.BrakeCircuitDamage);
 
-            SetProperty("RBR.GroundSpeed", rbrData.GroundSpeed);
-            SetProperty("RBR.WheelLock", rbrData.WheelLock);
-            SetProperty("RBR.WheelSpin", rbrData.WheelSpin);
+            PluginManager.SetPropertyValue("RBR.GroundSpeed", GetType(), rbrData.GroundSpeed);
+            PluginManager.SetPropertyValue("RBR.WheelLock", GetType(), rbrData.WheelLock);
+            PluginManager.SetPropertyValue("RBR.WheelSpin", GetType(), rbrData.WheelSpin);
         }
     }
 }

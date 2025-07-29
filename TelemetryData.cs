@@ -17,13 +17,13 @@ namespace maorc287.RBRDataPluginExt
 
         // Base adjustment for oil pressure calculation 
         // BitConverter.ToSingle(BitConverter.GetBytes(0x3f8460fe), 0);
-        private const float OilPressureAdjustment = 1.03421f;
+        private const float OilPressureBaseAdjustment = 1.03421f;
 
         /// Computes the oil pressure based on raw base and pressure values.
         private static float ComputeOilPressure(float rawBase, float pressureRaw)
         {
 
-            float pressureBase = (rawBase > 0.02f) ? OilPressureAdjustment : (rawBase * OilPressureAdjustment) / 0.02f;
+            float pressureBase = (rawBase > 0.02f) ? OilPressureBaseAdjustment : (rawBase * OilPressureBaseAdjustment) / 0.02f;
             float pressureRawBar = pressureRaw * 1e-5f;
             return pressureBase + pressureRawBar;
         }
@@ -58,28 +58,28 @@ namespace maorc287.RBRDataPluginExt
                     velocityZ * forwardZ) * -3.559f;
         }
 
-        /// Computes the wheel lock ratio based on car speed and wheel speed.
+        /// Computes the wheel lock ratio based on ground speed and wheel speed.
         private static float ComputeWheelLockRatio(
-            float carSpeed,
+            float groundSpeed,
             float wheelSpeed)
         {
-            if (carSpeed < 1.0f)
+            if (groundSpeed < 1.0f)
                 return 0.0f;
 
-            float lockRatio = (carSpeed - wheelSpeed) / carSpeed;
+            float lockRatio = (groundSpeed - wheelSpeed) / groundSpeed;
 
             return Clampers(lockRatio);
         }
 
-        /// Computes the wheel spin ratio based on car speed and wheel speed.
+        /// Computes the wheel spin ratio based on ground speed and wheel speed.
         private static float ComputeWheelSpinRatio(
-            float carSpeed,
+            float groundSpeed,
             float wheelSpeed)
         {
-            if (carSpeed < 1.0f)
+            if (groundSpeed < 1.0f)
                 return 0.0f;
 
-            float spinRatio = (wheelSpeed - carSpeed) / carSpeed;
+            float spinRatio = (wheelSpeed - groundSpeed) / groundSpeed;
 
             return Clampers(spinRatio);
         }
@@ -91,7 +91,7 @@ namespace maorc287.RBRDataPluginExt
         /// Reads telemetry data from the Richard Burns Rally process.
         /// this method accesses the game's memory to retrieve various telemetry values.
         /// as a result, it requires the game to be running and the process to be accessible.
-        /// without the game running, it will return default values.
+        /// without the game running and on stage, it will return default values.
         internal static RBRTelemetryData ReadTelemetryData()
         {
             var rbrData = new RBRTelemetryData();
@@ -161,7 +161,7 @@ namespace maorc287.RBRDataPluginExt
                 float fwdY = MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.ForwardY));
                 float fwdZ = MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.ForwardZ));
 
-                // Calculate ground speed and wheel lock/slip
+                // Calculate ground speed and wheel lock/spin ratios
                 float wheelSpeed = 
                     MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarInfo.WheelSpeed));
                 rbrData.GroundSpeed = ComputeGroundSpeed(velocityX, velocityY, velocityZ, fwdX, fwdY, fwdZ);

@@ -28,7 +28,8 @@ namespace maorc287.RBRDataExtPlugin
             PluginManager.AddProperty("RBR.OnStage", GetType(), 0, "");
             PluginManager.AddProperty("RBR.TurboPressure", GetType(), 0, "");
             PluginManager.AddProperty("RBR.OilPressure", GetType(), 0, "");
-            PluginManager.AddProperty("RBR.OilTemperatureC", GetType(), 0, "");
+            PluginManager.AddProperty("RBR.RadiatorCoolantTemeperature", GetType(), 0, "");
+            PluginManager.AddProperty("RBR.OilTemperature", GetType(), 0, "");
             PluginManager.AddProperty("RBR.EngineStatus", GetType(), 0, "");
             PluginManager.AddProperty("RBR.BatteryVoltage", GetType(), 0, "");
             PluginManager.AddProperty("RBR.BatteryStatus", GetType(), 0, "");
@@ -56,6 +57,8 @@ namespace maorc287.RBRDataExtPlugin
             var rbrData = TelemetryData.ReadTelemetryData();
 
             string pressureUnit = (string)PluginManager.GetPropertyValue("DataCorePlugin.GameData.OilPressureUnit");
+            string temperatureUnit = (string)PluginManager.GetPropertyValue("DataCorePlugin.GameData.TemperatureUnit");
+
 
             PluginManager.SetPropertyValue("RBR.OnStage", GetType(), rbrData.IsOnStage);
             PluginManager.SetPropertyValue("RBR.EngineStatus", GetType(), rbrData.IsEngineOn);
@@ -65,7 +68,11 @@ namespace maorc287.RBRDataExtPlugin
             PluginManager.SetPropertyValue("RBR.TurboPressure", GetType(), 
                 TelemetryData.FormatPressure(rbrData.TurboPressure, pressureUnit));
 
-            PluginManager.SetPropertyValue("RBR.OilTemperatureC", GetType(), rbrData.OilTemperatureC);
+            PluginManager.SetPropertyValue("RBR.RadiatorCoolantTemeperature", GetType(),
+                TelemetryData.FormatTemperature(rbrData.RadiatorCoolantTemperature, temperatureUnit));
+            PluginManager.SetPropertyValue("RBR.OilTemperature", GetType(), 
+                TelemetryData.FormatTemperature(rbrData.OilTemperature, temperatureUnit));
+
             PluginManager.SetPropertyValue("RBR.BatteryVoltage", GetType(), rbrData.BatteryVoltage);
             PluginManager.SetPropertyValue("RBR.BatteryStatus", GetType(), rbrData.BatteryStatus);
 

@@ -44,6 +44,23 @@ namespace maorc287.RBRDataPluginExt
             }
         }
 
+        /// Converts a temperature value from Celsius to Fahrenheit.
+        internal static float FormatTemperature(float temperature, string unit)
+        {
+            switch (unit)
+            {
+                case "Celcius":
+                    return temperature - 273.15f;
+                case "Fahrenheit":
+                    return (temperature * 9 / 5) + 32;
+                case "Kelvin":
+                    return temperature; // already Kelvin
+                default:
+                    return temperature - 273.15f; // default is Celsius
+            }
+        }
+
+
         /// Computes the ground speed based on velocity and forward direction vectors.
         private static float ComputeGroundSpeed(
             float velocityX,
@@ -121,14 +138,16 @@ namespace maorc287.RBRDataPluginExt
                 rbrData.IsEngineOn = (engineStatus == 1.0f);
 
                 // Turbo Pressure from Pascal to Bar
-
                 rbrData.TurboPressure =
                     MemoryReader.ReadFloat(hProcess, new IntPtr(carInfoBase + Offsets.CarInfo.TurboPressure)) / 100000f;
 
-                // Oil Temperature from Kelvin to Celsius
-                float oilTempK =
+                // Radiator Coolant Temperature is in Kelvin, it will be formatted later by SimHub
+                rbrData.RadiatorCoolantTemperature = 
+                    MemoryReader.ReadFloat(hProcess, new IntPtr(carInfoBase + Offsets.CarMov.RadiatorCoolantTemperature));
+
+                // Oil Temperature value is in kelvin, it will be formatted letter by SimHub
+                rbrData.OilTemperature =
                     MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.OilTempKelvin));
-                rbrData.OilTemperatureC = oilTempK - 273.15f;
 
                 // Oil Pressure Calculation
                 float oilRawBase =
@@ -202,8 +221,9 @@ namespace maorc287.RBRDataPluginExt
         public bool IsOnStage { get; set; } = false;
         public bool IsEngineOn { get; set; } = false;
         public float TurboPressure { get; set; } = 0.0f;
+        public float RadiatorCoolantTemperature { get; set; } = 0.0f;
         public float OilPressure { get; set; } = 0.0f;
-        public float OilTemperatureC { get; set; } = 0.0f;
+        public float OilTemperature { get; set; } = 0.0f;
         public float BatteryVoltage { get; set; } = 12.8f;
         public float BatteryStatus { get; set; } = 12.0f;
         public bool OilPressureWarning { get; set; } = false;
@@ -229,7 +249,6 @@ namespace maorc287.RBRDataPluginExt
             public const int WaterTemperatureCelsius = 0x14;
             public const int EngineStatus = 0x2B8;
             public const int BatteryStatus = 0x2B4;
-            public const int CoolantTemperatureKelvin = 0x1170;
         }
 
         public static class CarMov
@@ -237,6 +256,7 @@ namespace maorc287.RBRDataPluginExt
             public const int OilPressureRawBase = 0x139C;
             public const int OilPressureRaw = 0x13AC;
             public const int OilTempKelvin = 0x138C;
+            public const int RadiatorCoolantTemperature = 0x1170;
             public const int DamageStructurePointer = 0x620;
 
             // Velocity vector components

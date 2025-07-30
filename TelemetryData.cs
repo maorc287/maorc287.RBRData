@@ -257,7 +257,7 @@ namespace maorc287.RBRDataPluginExt
         public float WheelLock { get; set; } = 0.0f;
         public float WheelSpin { get; set; } = 0.0f;
 
-        // Damage value, when value is 5 means part is lost, 1 means part is working
+        // Damage value, when value is 5 means part is lost, 1 means part is Fine
         // Only BatteryWearLevel has intermediate values, 1 is the best condition, 5 is the worst
 
         public uint OilPumpDamage { get; set; } = 1;

@@ -50,13 +50,13 @@ namespace maorc287.RBRDataPluginExt
             switch (unit)
             {
                 case "Celcius":
-                    return temperature - 273.15f;
+                    return temperature - 273.15f < 0? 0: temperature - 273.15f;
                 case "Fahrenheit":
                     return (temperature * 9 / 5) + 32;
                 case "Kelvin":
                     return temperature; // already Kelvin
                 default:
-                    return temperature - 273.15f; // default is Celsius
+                    return temperature - 273.15f < 0 ? 0 : temperature - 273.15f; // default is Celsius
             }
         }
 
@@ -143,7 +143,7 @@ namespace maorc287.RBRDataPluginExt
 
                 // Radiator Coolant Temperature is in Kelvin, it will be formatted later by SimHub
                 rbrData.RadiatorCoolantTemperature = 
-                    MemoryReader.ReadFloat(hProcess, new IntPtr(carInfoBase + Offsets.CarMov.RadiatorCoolantTemperature));
+                    MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.RadiatorCoolantTemperature));
 
                 // Oil Temperature value is in kelvin, it will be formatted letter by SimHub
                 rbrData.OilTemperature =

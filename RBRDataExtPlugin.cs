@@ -32,7 +32,7 @@ namespace maorc287.RBRDataExtPlugin
             PluginManager.AddProperty("RBR.Data.TurboPressure", GetType(), 0, "");
             PluginManager.AddProperty("RBR.Data.OilPressure", GetType(), 0, "");
             PluginManager.AddProperty("RBR.Data.RadiatorCoolantTemeperature", GetType(), 0, "");
-            PluginManager.AddProperty("RBR>Data.OilTemperature", GetType(), 0, "");
+            PluginManager.AddProperty("RBR.Data.OilTemperature", GetType(), 0, "");
             PluginManager.AddProperty("RBR.Data.BatteryVoltage", GetType(), 0, "");
 
             PluginManager.AddProperty("RBR.Data.GroundSpeed", GetType(), 0, "");
@@ -43,7 +43,7 @@ namespace maorc287.RBRDataExtPlugin
             PluginManager.AddProperty("RBR.Info.OilPressureWarning", GetType(), 0, "");
             PluginManager.AddProperty("RBR.Info.LowBatteryWarning", GetType(), 0, "");
 
-            PluginManager.AddProperty("RBR.Damage.BatteryStatus", GetType(), 0, "");
+            PluginManager.AddProperty("RBR.Damage.BatteryWearLevel", GetType(), 0, "");
             PluginManager.AddProperty("RBR.Damage.OilPumpDamage", GetType(), 1, "");
             PluginManager.AddProperty("RBR.Damage.WaterPumpDamage", GetType(), 1, "");
             PluginManager.AddProperty("RBR.Damage.ElectricSystemDamage", GetType(), 1, "");
@@ -87,7 +87,7 @@ namespace maorc287.RBRDataExtPlugin
             PluginManager.SetPropertyValue("RBR.Info.OilPressureWarning", GetType(), rbrData.OilPressureWarning);
             PluginManager.SetPropertyValue("RBR.Info.LowBatteryWarning", GetType(), rbrData.LowBatteryWarning);
 
-            PluginManager.SetPropertyValue("RBR.Damage.BatteryStatus", GetType(), rbrData.BatteryStatus);
+            PluginManager.SetPropertyValue("RBR.Damage.BatteryWearLevel", GetType(), rbrData.BatteryWearLevel);
             PluginManager.SetPropertyValue("RBR.Damage.OilPumpDamage", GetType(), rbrData.OilPumpDamage);
             PluginManager.SetPropertyValue("RBR.Damage.WaterPumpDamage", GetType(), rbrData.WaterPumpDamage);
             PluginManager.SetPropertyValue("RBR.Damage.ElectricSystemDamage", GetType(), rbrData.ElectricSystemDamage);

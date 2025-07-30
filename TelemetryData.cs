@@ -209,6 +209,7 @@ namespace maorc287.RBRDataPluginExt
                 // Read damage values
                 int damagePointer =
                     MemoryReader.ReadInt(hProcess, new IntPtr(carMovBase + Offsets.CarMov.DamageStructurePointer));
+
                 rbrData.BatteryWear =
                     BatteryWearLevel(MemoryReader.ReadFloat(hProcess, new IntPtr(damagePointer + Offsets.Damage.BatteryWearPercent)));
                 rbrData.OilPumpDamage =
@@ -254,7 +255,7 @@ namespace maorc287.RBRDataPluginExt
 
         // Damage values
         public uint OilPumpDamage { get; set; } = 1;
-        public uint BatteryWear { get; set; } = 1;
+        public uint BatteryWearLevel { get; set; } = 1;
         public uint WaterPumpDamage { get; set; } = 1;
         public uint ElectricSystemDamage { get; set; } = 1;
         public uint BrakeCircuitDamage { get; set; } = 1;

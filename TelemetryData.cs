@@ -156,8 +156,8 @@ namespace maorc287.RBRDataPluginExt
                     MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.OilPressureRaw));
                 rbrData.OilPressure = ComputeOilPressure(oilRawBase, oilRaw);
 
-                //Warning for low oil pressure under 0.8 raw value
-                rbrData.OilPressureWarning = oilRaw < 0.8f;
+                //Warning for low oil pressure under 0.5 raw value
+                rbrData.OilPressureWarning = oilRaw < 0.5f;
 
                 // Battery status raw value
                 rbrData.BatteryStatus =
@@ -273,7 +273,7 @@ namespace maorc287.RBRDataPluginExt
         public static class Damage
         {
             public const int BatteryStatusPercent = 0x8C;
-            public const int OilPump = 0xE8;
+            public const int OilPump = 0xF0;
             public const int WaterPump = 0xDC;
             public const int ElectricSystem = 0x1E8;
             public const int BrakeCircuit = 0x80;

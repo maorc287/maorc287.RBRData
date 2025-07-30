@@ -19,12 +19,13 @@ namespace maorc287.RBRDataPluginExt
         // BitConverter.ToSingle(BitConverter.GetBytes(0x3f8460fe), 0);
         private const float OilPressureBaseAdjustment = 1.03421f;
 
-        /// Computes the oil pressure based on raw base and pressure values.
+        /// Computes the oil pressure based on raw base and pressure values like in RBRHUD.
         private static float ComputeOilPressure(float rawBase, float pressureRaw)
         {
 
-            float pressureBase = (rawBase > 0.02f) ? OilPressureBaseAdjustment : (rawBase * OilPressureBaseAdjustment) / 0.02f;
-            float pressureRawBar = pressureRaw * 1e-5f;
+            float pressureBase = (rawBase > 0.02f) ? OilPressureBaseAdjustment : 
+                (rawBase * OilPressureBaseAdjustment) / 0.02f;
+            float pressureRawBar = pressureRaw * 1e-5f; 
             return pressureBase + pressureRawBar;
         }
 
@@ -104,11 +105,14 @@ namespace maorc287.RBRDataPluginExt
         /// Clamps a value between 0 and 1.
         private static float Clampers(float val) => val < 0f ? 0f : (val > 1f ? 1f : val);
 
+        /// Determines the oil pump damage level based on the oil pump status value.
+        /// Can be either 1 working fine, 5 means oil pump not working.
         private static uint OilPumpDamage(float value)
         {
             return value <= 0.0f ? 5u : 1u;
         }
 
+        /// Determines the battery wear level based on the battery status value. 1 is the best condition, 5 is the worst.
         private static uint BatteryWearLevel(float value)
         {
             if (value > 0.9f) return 1u;
@@ -118,6 +122,7 @@ namespace maorc287.RBRDataPluginExt
             return 5u;
         }
 
+        /// Determines if the part is lost or working no intermediate values like oil pump.
         private static uint PartLost(int value)
         {
             return value == 0 ? 5u : 1u;
@@ -174,15 +179,19 @@ namespace maorc287.RBRDataPluginExt
                 rbrData.OilPressureWarning = oilRaw < 0.5f;
 
                 // Battery status raw value
+                //When it goes under 10.0f, the battery light in the game dash turns on,
+                //the light starts blinking when it goes under 8.0f. Under 6.0f Co-Driver Call
                 rbrData.BatteryStatus =
                     MemoryReader.ReadFloat(hProcess, new IntPtr(carInfoBase + Offsets.CarInfo.BatteryStatus));
 
-                // Battery Voltage Calculation
+                // Battery Voltage Calculation if the engine is on, it will be 14.5V,
+                // otherwise it will be calculated based on battery status
                 rbrData.BatteryVoltage = rbrData.IsEngineOn
                     ? 14.5f
                     : (rbrData.BatteryStatus * 0.2f) + 10.4f;
 
                 // Low Battery Warning when battery status is below 10 (max value is 12)
+                // or if we use BatteryWearPercent from damage offset it will be below 0.833f (healthy battery is 1.0f)
                 rbrData.LowBatteryWarning =
                    rbrData.BatteryStatus < 10.0f;
 
@@ -261,6 +270,7 @@ namespace maorc287.RBRDataPluginExt
     {
         public static class CarInfo
         {
+            //These data is already available in SimHub
             public const int WheelSpeed = 0xC;
             public const int TurboPressure = 0x18;
             public const int WaterTemperatureCelsius = 0x14;
@@ -270,10 +280,14 @@ namespace maorc287.RBRDataPluginExt
 
         public static class CarMov
         {
+            // New offsets to calculate oil pressure Using the same RBRHUD function
             public const int OilPressureRawBase = 0x139C;
             public const int OilPressureRaw = 0x13AC;
+
+            // NGP telemetry provides these values already but they can be used also in the Original RBR
             public const int OilTempKelvin = 0x138C;
             public const int RadiatorCoolantTemperature = 0x1170;
+
             public const int DamageStructurePointer = 0x620;
 
             // Velocity vector components
@@ -289,8 +303,11 @@ namespace maorc287.RBRDataPluginExt
 
         public static class Damage
         {
+            // Battery wear level, 1.0f is the best condition gradually decrease to 0.0f when igniting the car
             public const int BatteryWearPercent = 0x8C;
+            // Oil pump status starts at 1.0f, negative float value means not working
             public const int OilPump = 0xF0;
+            // These Parts start all at value 1, when value is 0 means not working and lost
             public const int WaterPump = 0xDC;
             public const int ElectricSystem = 0x1E8;
             public const int BrakeCircuit = 0x80;

@@ -210,7 +210,7 @@ namespace maorc287.RBRDataPluginExt
                 int damagePointer =
                     MemoryReader.ReadInt(hProcess, new IntPtr(carMovBase + Offsets.CarMov.DamageStructurePointer));
 
-                rbrData.BatteryWear =
+                rbrData.BatteryWearLevel =
                     BatteryWearLevel(MemoryReader.ReadFloat(hProcess, new IntPtr(damagePointer + Offsets.Damage.BatteryWearPercent)));
                 rbrData.OilPumpDamage =
                     OilPumpDamage(MemoryReader.ReadFloat(hProcess, new IntPtr(damagePointer + Offsets.Damage.OilPump)));

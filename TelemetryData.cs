@@ -104,6 +104,24 @@ namespace maorc287.RBRDataPluginExt
         /// Clamps a value between 0 and 1.
         private static float Clampers(float val) => val < 0f ? 0f : (val > 1f ? 1f : val);
 
+        private static uint OilPumpDamage(float value)
+        {
+            return value <= 0.0f ? 5u : 1u;
+        }
+
+        private static uint BatteryWearLevel(float value)
+        {
+            if (value > 0.9f) return 1u;
+            if (value > 0.8f) return 2u;
+            if (value > 0.65f) return 3u;
+            if (value > 0.5f) return 4u;
+            return 5u;
+        }
+
+        private static uint PartLost(int value)
+        {
+            return value == 0 ? 5u : 1u;
+        }
 
         /// Reads telemetry data from the Richard Burns Rally process.
         /// this method accesses the game's memory to retrieve various telemetry values.
@@ -191,14 +209,16 @@ namespace maorc287.RBRDataPluginExt
                 // Read damage values
                 int damagePointer =
                     MemoryReader.ReadInt(hProcess, new IntPtr(carMovBase + Offsets.CarMov.DamageStructurePointer));
+                rbrData.BatteryWear =
+                    BatteryWearLevel(MemoryReader.ReadFloat(hProcess, new IntPtr(damagePointer + Offsets.Damage.BatteryWearPercent)));
                 rbrData.OilPumpDamage =
-                    MemoryReader.ReadInt(hProcess, new IntPtr(damagePointer + Offsets.Damage.OilPump));
+                    OilPumpDamage(MemoryReader.ReadFloat(hProcess, new IntPtr(damagePointer + Offsets.Damage.OilPump)));
                 rbrData.WaterPumpDamage =
-                    MemoryReader.ReadInt(hProcess, new IntPtr(damagePointer + Offsets.Damage.WaterPump));
+                    PartLost(MemoryReader.ReadInt(hProcess, new IntPtr(damagePointer + Offsets.Damage.WaterPump)));
                 rbrData.ElectricSystemDamage =
-                    MemoryReader.ReadInt(hProcess, new IntPtr(damagePointer + Offsets.Damage.ElectricSystem));
+                    PartLost(MemoryReader.ReadInt(hProcess, new IntPtr(damagePointer + Offsets.Damage.ElectricSystem)));
                 rbrData.BrakeCircuitDamage =
-                    MemoryReader.ReadInt(hProcess, new IntPtr(damagePointer + Offsets.Damage.BrakeCircuit));
+                    PartLost(MemoryReader.ReadInt(hProcess, new IntPtr(damagePointer + Offsets.Damage.BrakeCircuit)));
 
             }
             catch (Exception ex)
@@ -233,10 +253,11 @@ namespace maorc287.RBRDataPluginExt
         public float WheelSpin { get; set; } = 0.0f;
 
         // Damage values
-        public int OilPumpDamage { get; set; } = 0;
-        public int WaterPumpDamage { get; set; } = 0;
-        public int ElectricSystemDamage { get; set; } = 0;
-        public int BrakeCircuitDamage { get; set; } = 0;
+        public uint OilPumpDamage { get; set; } = 1;
+        public uint BatteryWear { get; set; } = 1;
+        public uint WaterPumpDamage { get; set; } = 1;
+        public uint ElectricSystemDamage { get; set; } = 1;
+        public uint BrakeCircuitDamage { get; set; } = 1;
 
     }
 
@@ -272,7 +293,7 @@ namespace maorc287.RBRDataPluginExt
 
         public static class Damage
         {
-            public const int BatteryStatusPercent = 0x8C;
+            public const int BatteryWearPercent = 0x8C;
             public const int OilPump = 0xF0;
             public const int WaterPump = 0xDC;
             public const int ElectricSystem = 0x1E8;

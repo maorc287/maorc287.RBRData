@@ -155,10 +155,6 @@ namespace maorc287.RBRDataPluginExt
                     MemoryReader.ReadFloat(hProcess, new IntPtr(carInfoBase + Offsets.CarInfo.EngineStatus));
                 rbrData.IsEngineOn = (engineStatus == 1.0f);
 
-                // Turbo Pressure from Pascal to Bar
-                rbrData.TurboPressure =
-                    MemoryReader.ReadFloat(hProcess, new IntPtr(carInfoBase + Offsets.CarInfo.TurboPressure)) / 100000f;
-
                 // Radiator Coolant Temperature is in Kelvin, it will be formatted later by SimHub
                 rbrData.RadiatorCoolantTemperature = 
                     MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.RadiatorCoolantTemperature));
@@ -241,7 +237,6 @@ namespace maorc287.RBRDataPluginExt
     {
         public bool IsOnStage { get; set; } = false;
         public bool IsEngineOn { get; set; } = false;
-        public float TurboPressure { get; set; } = 0.0f;
         public float RadiatorCoolantTemperature { get; set; } = 0.0f;
         public float OilPressure { get; set; } = 0.0f;
         public float OilTemperature { get; set; } = 0.0f;

@@ -29,7 +29,6 @@ namespace maorc287.RBRDataExtPlugin
 
             PluginManager.AddProperty("RBR.Data.EngineStatus", GetType(), 0, "");
 
-            PluginManager.AddProperty("RBR.Data.TurboPressure", GetType(), 0, "");
             PluginManager.AddProperty("RBR.Data.OilPressure", GetType(), 0, "");
             PluginManager.AddProperty("RBR.Data.RadiatorCoolantTemeperature", GetType(), 0, "");
             PluginManager.AddProperty("RBR.Data.OilTemperature", GetType(), 0, "");
@@ -70,8 +69,6 @@ namespace maorc287.RBRDataExtPlugin
 
             PluginManager.SetPropertyValue("RBR.Data.OilPressure", GetType(), 
                 TelemetryData.FormatPressure(rbrData.OilPressure, pressureUnit));
-            PluginManager.SetPropertyValue("RBR.Data.TurboPressure", GetType(), 
-                TelemetryData.FormatPressure(rbrData.TurboPressure, pressureUnit));
 
             PluginManager.SetPropertyValue("RBR.Data.RadiatorCoolantTemeperature", GetType(),
                 TelemetryData.FormatTemperature(rbrData.RadiatorCoolantTemperature, temperatureUnit));

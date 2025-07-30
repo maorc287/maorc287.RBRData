@@ -44,7 +44,7 @@ namespace maorc287.RBRDataPluginExt
             }
         }
 
-        /// Converts a temperature value from Celsius to Fahrenheit.
+        /// Formats the temperature value based on the specified unit.
         internal static float FormatTemperature(float temperature, string unit)
         {
             switch (unit)

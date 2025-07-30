@@ -160,11 +160,11 @@ namespace maorc287.RBRDataPluginExt
                     MemoryReader.ReadFloat(hProcess, new IntPtr(carInfoBase + Offsets.CarInfo.EngineStatus));
                 rbrData.IsEngineOn = (engineStatus == 1.0f);
 
-                // Radiator Coolant Temperature is in Kelvin, it will be formatted later by SimHub
+                // Radiator Coolant Temperature is in Kelvin, it will be formatted later 
                 rbrData.RadiatorCoolantTemperature = 
                     MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.RadiatorCoolantTemperature));
 
-                // Oil Temperature value is in kelvin, it will be formatted letter by SimHub
+                // Oil Temperature value is in kelvin, it will be formatted later 
                 rbrData.OilTemperature =
                     MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.OilTempKelvin));
 
@@ -257,7 +257,9 @@ namespace maorc287.RBRDataPluginExt
         public float WheelLock { get; set; } = 0.0f;
         public float WheelSpin { get; set; } = 0.0f;
 
-        // Damage values
+        // Damage value, when value is 5 means part is lost, 1 means part is working
+        // Only BatteryWearLevel has intermediate values, 1 is the best condition, 5 is the worst
+
         public uint OilPumpDamage { get; set; } = 1;
         public uint BatteryWearLevel { get; set; } = 1;
         public uint WaterPumpDamage { get; set; } = 1;
@@ -280,7 +282,7 @@ namespace maorc287.RBRDataPluginExt
 
         public static class CarMov
         {
-            // New offsets to calculate oil pressure Using the same RBRHUD function
+            // New offsets to calculate oil pressure like in RBRHUD 
             public const int OilPressureRawBase = 0x139C;
             public const int OilPressureRaw = 0x13AC;
 
@@ -288,6 +290,7 @@ namespace maorc287.RBRDataPluginExt
             public const int OilTempKelvin = 0x138C;
             public const int RadiatorCoolantTemperature = 0x1170;
 
+            // Offset for the damage structure pointer
             public const int DamageStructurePointer = 0x620;
 
             // Velocity vector components
@@ -300,6 +303,9 @@ namespace maorc287.RBRDataPluginExt
             public const int ForwardY = 0x120;
             public const int ForwardZ = 0x124;
         }
+
+        //Incomplete offsets for damage structure (still need to be woked on)
+        //These offsets are used to read the damage structure from the game memory
 
         public static class Damage
         {

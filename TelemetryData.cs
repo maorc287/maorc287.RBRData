@@ -286,7 +286,7 @@ namespace maorc287.RBRDataPluginExt
             public const int OilPressureRawBase = 0x139C;
             public const int OilPressureRaw = 0x13AC;
 
-            // NGP telemetry provides these values already but they can be used also in the Original RBR
+            // NGP telemetry provides these values already but they can also be used in the Original RBR
             public const int OilTempKelvin = 0x138C;
             public const int RadiatorCoolantTemperature = 0x1170;
 

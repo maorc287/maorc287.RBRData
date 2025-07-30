@@ -50,7 +50,7 @@ namespace maorc287.RBRDataPluginExt
             switch (unit)
             {
                 case "Celcius":
-                    return temperature - 273.15f < 0? 0: temperature - 273.15f;
+                    return temperature - 273.15f < 0 ? 0 : temperature - 273.15f;
                 case "Fahrenheit":
                     return (temperature * 9 / 5) + 32;
                 case "Kelvin":
@@ -260,14 +260,14 @@ namespace maorc287.RBRDataPluginExt
             public const int DamageStructurePointer = 0x620;
 
             // Velocity vector components
-            public const int VelocityX = 0x120;
-            public const int VelocityY = 0x124;
-            public const int VelocityZ = 0x11C;
+            public const int VelocityX = 0x1C0;
+            public const int VelocityY = 0x1C4;
+            public const int VelocityZ = 0x1C8;
 
             // Forward direction vector components
-            public const int ForwardX = 0x1C4;
-            public const int ForwardY = 0x1C8;
-            public const int ForwardZ = 0x1C0;
+            public const int ForwardX = 0x11C;
+            public const int ForwardY = 0x120;
+            public const int ForwardZ = 0x124;
         }
 
         public static class Damage

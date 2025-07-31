@@ -172,7 +172,11 @@ namespace maorc287.RBRDataPluginExt
                 rbrData.IsOnStage = (gameMode == 1);
 
                 // Early return if not on stage
-                if (!rbrData.IsOnStage) return LatestValidTelemetry;
+                if (!rbrData.IsOnStage) 
+                { 
+                    LatestValidTelemetry.IsOnStage = false;
+                    return LatestValidTelemetry; 
+                }
 
                 // Read damage values
                 int damagePointer =

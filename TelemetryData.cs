@@ -12,6 +12,8 @@ namespace maorc287.RBRDataPluginExt
 
     internal static class TelemetryData
     {
+        internal static RBRTelemetryData LatestValidTelemetry { get; private set; } = new RBRTelemetryData();
+
         // Process name for Richard Burns Rally
         private const string RBRProcessName = "RichardBurnsRally_SSE";
 
@@ -170,7 +172,7 @@ namespace maorc287.RBRDataPluginExt
                 rbrData.IsOnStage = (gameMode == 1);
 
                 // Early return if not on stage
-                if (!rbrData.IsOnStage) return rbrData;
+                if (!rbrData.IsOnStage) return LatestValidTelemetry;
 
                 // Read damage values
                 int damagePointer =
@@ -256,8 +258,6 @@ namespace maorc287.RBRDataPluginExt
                 rbrData.WheelLock = ComputeWheelLockRatio(rbrData.GroundSpeed, wheelSpeed);
                 rbrData.WheelSpin = ComputeWheelSpinRatio(rbrData.GroundSpeed, wheelSpeed);
 
-
-               
             }
             catch (Exception ex)
             {
@@ -267,7 +267,7 @@ namespace maorc287.RBRDataPluginExt
             {
                 MemoryReader.CloseHandle(hProcess);
             }
-
+            LatestValidTelemetry = rbrData; // Update the latest valid telemetry data
             return rbrData;
         }
 

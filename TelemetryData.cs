@@ -19,7 +19,8 @@ namespace maorc287.RBRDataPluginExt
         // BitConverter.ToSingle(BitConverter.GetBytes(0x3f8460fe), 0);
         private const float OilPressureBaseAdjustment = 1.03421f;
 
-        /// Computes the oil pressure based on raw base and pressure values like in RBRHUD.
+
+        /// Computes the oil pressure from raw values using RBRHUD logic.
         private static float ComputeOilPressure(float rawBase, float pressureRaw)
         {
 
@@ -32,14 +33,16 @@ namespace maorc287.RBRDataPluginExt
         /// Formats the pressure value based on the specified unit.
         internal static float FormatPressure(float pressure, string unit)
         {
+            if (string.IsNullOrEmpty(unit)) return pressure;
+
+            unit = unit.Trim().ToLowerInvariant();
             switch (unit)
             {
-                case "Psi":
+                case "psi":
                     return pressure * 14.5038f;
-                case "KPa":
+                case "kpa":
                     return pressure * 100f;
-                case "Bar":
-                    return pressure;
+                case "bar":
                 default:
                     return pressure; // default is Bar
             }
@@ -48,16 +51,22 @@ namespace maorc287.RBRDataPluginExt
         /// Formats the temperature value based on the specified unit.
         internal static float FormatTemperature(float temperature, string unit)
         {
+            float tempC = temperature - 273.15f;
+            if (tempC < 0f) tempC = 0f;
+
+            if (string.IsNullOrEmpty(unit)) return tempC;
+
+            unit = unit.Trim().ToLowerInvariant();
             switch (unit)
             {
-                case "Celcius":
-                    return temperature - 273.15f < 0 ? 0 : temperature - 273.15f;
-                case "Fahrenheit":
-                    return (temperature * 9 / 5) + 32;
-                case "Kelvin":
-                    return temperature; // already Kelvin
+                case "celcius":
+                    return tempC;
+                case "fahrenheit":
+                    return (tempC * 9f / 5f) + 32f;
+                case "kelvin":
+                    return temperature;
                 default:
-                    return temperature - 273.15f < 0 ? 0 : temperature - 273.15f; // default is Celsius
+                    return tempC; // default is Celsius
             }
         }
 
@@ -106,14 +115,21 @@ namespace maorc287.RBRDataPluginExt
         private static float Clampers(float val) => val < 0f ? 0f : (val > 1f ? 1f : val);
 
         /// Determines the oil pump damage level based on the oil pump status value.
-        /// Can be either 1 working fine, 5 means oil pump not working.
-        private static uint OilPumpDamage(float value)
+        /// the value is a float where 1.0f means the oil pump is working fine.
+        /// It decreases according to the damage level.
+        /// when the value is lower than 1.0f the oil pressure decreases causing loss of power and performance.
+        /// Reaching the value less than or equal to 0.0f, it means the oil pump is not working anymore.
+        private static uint OilPumpDamageLevel(float value)
         {
-            return value <= 0.0f ? 5u : 1u;
+            if (value > 0.9f) return 1u;
+            if (value > 0.6f) return 2u;
+            if (value > 0.2f) return 3u;
+            if (value > 0.0f) return 4u;
+            return 5u;
         }
 
         /// Determines the battery wear level based on the battery status value. 1 is the best condition, 5 is the worst.
-        private static uint BatteryWearLevel(float value)
+        private static uint BatteryHealthLevel(float value)
         {
             if (value > 0.9f) return 1u;
             if (value > 0.8f) return 2u;
@@ -122,8 +138,8 @@ namespace maorc287.RBRDataPluginExt
             return 5u;
         }
 
-        /// Determines if the part is lost or working no intermediate values like oil pump.
-        private static uint PartLost(int value)
+        /// Determines if the part is lost or working no intermediate values.
+        private static uint PartWorkingStatus(int value)
         {
             return value == 0 ? 5u : 1u;
         }
@@ -147,6 +163,7 @@ namespace maorc287.RBRDataPluginExt
                 uint carMovBase = MemoryReader.ReadUInt(hProcess, new IntPtr(Offsets.Pointers.CarMov));
                 uint gameModeBase = MemoryReader.ReadUInt(hProcess, new IntPtr(Offsets.Pointers.GameMode));
 
+
                 // Game Mode status 
                 int gameMode =
                     MemoryReader.ReadInt(hProcess, new IntPtr(gameModeBase + Offsets.Pointers.GameModeOffset));
@@ -154,6 +171,26 @@ namespace maorc287.RBRDataPluginExt
 
                 // Early return if not on stage
                 if (!rbrData.IsOnStage) return rbrData;
+
+                // Read damage values
+                int damagePointer =
+                    MemoryReader.ReadInt(hProcess, new IntPtr(carMovBase + Offsets.CarMov.DamageStructurePointer));
+                if (damagePointer == 0)
+                {
+                    SimHub.Logging.Current.Warn("[RBRDataExt] Damage structure pointer is null, cannot read damage values.");
+                    return rbrData; // Return early if damage structure pointer is null
+                }
+                rbrData.BatteryWearLevel =
+                    BatteryHealthLevel(MemoryReader.ReadFloat(hProcess, new IntPtr(damagePointer + Offsets.Damage.BatteryWearPercent)));
+                rbrData.OilPumpDamage =
+                    OilPumpDamageLevel(MemoryReader.ReadFloat(hProcess, new IntPtr(damagePointer + Offsets.Damage.OilPump)));
+                rbrData.WaterPumpDamage =
+                    PartWorkingStatus(MemoryReader.ReadInt(hProcess, new IntPtr(damagePointer + Offsets.Damage.WaterPump)));
+                rbrData.ElectricSystemDamage =
+                    PartWorkingStatus(MemoryReader.ReadInt(hProcess, new IntPtr(damagePointer + Offsets.Damage.ElectricSystem)));
+                rbrData.BrakeCircuitDamage =
+                    PartWorkingStatus(MemoryReader.ReadInt(hProcess, new IntPtr(damagePointer + Offsets.Damage.BrakeCircuit)));
+
 
                 // Engine status
                 float engineStatus =
@@ -168,6 +205,9 @@ namespace maorc287.RBRDataPluginExt
                 rbrData.OilTemperature =
                     MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.OilTempKelvin));
 
+                // Oil Temperature Warning when oil temperature is above 140 Celsius
+                rbrData.OilTemperatureWarning = rbrData.OilTemperature > 140.0f + 273.15f; 
+
                 // Oil Pressure Calculation
                 float oilRawBase =
                     MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.OilPressureRawBase));
@@ -175,8 +215,14 @@ namespace maorc287.RBRDataPluginExt
                     MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.OilPressureRaw));
                 rbrData.OilPressure = ComputeOilPressure(oilRawBase, oilRaw);
 
-                //Warning for low oil pressure under 0.5 raw value
-                rbrData.OilPressureWarning = oilRaw < 0.5f;
+                //Warning for low oil pressure under 0.5 raw value or if the oil pump is damaged at level 2 or higher
+                rbrData.OilPressureWarning = oilRaw < 0.5f | rbrData.OilPumpDamage >= 2;
+
+                //Water Temperature in Celsius
+                float waterTemperature =
+                    MemoryReader.ReadFloat(hProcess, new IntPtr(carInfoBase + Offsets.CarInfo.WaterTemperatureCelsius));
+                // Water Temperature Warning when water temperature is above 120 Celsius
+                rbrData.WaterTemperatureWarning = waterTemperature > 120.0f;
 
                 // Battery status raw value
                 //When it goes under 10.0f, the battery light in the game dash turns on,
@@ -211,21 +257,7 @@ namespace maorc287.RBRDataPluginExt
                 rbrData.WheelSpin = ComputeWheelSpinRatio(rbrData.GroundSpeed, wheelSpeed);
 
 
-                // Read damage values
-                int damagePointer =
-                    MemoryReader.ReadInt(hProcess, new IntPtr(carMovBase + Offsets.CarMov.DamageStructurePointer));
-
-                rbrData.BatteryWearLevel =
-                    BatteryWearLevel(MemoryReader.ReadFloat(hProcess, new IntPtr(damagePointer + Offsets.Damage.BatteryWearPercent)));
-                rbrData.OilPumpDamage =
-                    OilPumpDamage(MemoryReader.ReadFloat(hProcess, new IntPtr(damagePointer + Offsets.Damage.OilPump)));
-                rbrData.WaterPumpDamage =
-                    PartLost(MemoryReader.ReadInt(hProcess, new IntPtr(damagePointer + Offsets.Damage.WaterPump)));
-                rbrData.ElectricSystemDamage =
-                    PartLost(MemoryReader.ReadInt(hProcess, new IntPtr(damagePointer + Offsets.Damage.ElectricSystem)));
-                rbrData.BrakeCircuitDamage =
-                    PartLost(MemoryReader.ReadInt(hProcess, new IntPtr(damagePointer + Offsets.Damage.BrakeCircuit)));
-
+               
             }
             catch (Exception ex)
             {
@@ -246,19 +278,23 @@ namespace maorc287.RBRDataPluginExt
     {
         public bool IsOnStage { get; set; } = false;
         public bool IsEngineOn { get; set; } = false;
+
+        public bool OilPressureWarning { get; set; } = false;
+        public bool LowBatteryWarning { get; set; } = false;
+        public bool WaterTemperatureWarning { get; set; } = false;
+        public bool OilTemperatureWarning { get; set; } = false;
+
         public float RadiatorCoolantTemperature { get; set; } = 0.0f;
         public float OilPressure { get; set; } = 0.0f;
         public float OilTemperature { get; set; } = 0.0f;
         public float BatteryVoltage { get; set; } = 12.8f;
         public float BatteryStatus { get; set; } = 12.0f;
-        public bool OilPressureWarning { get; set; } = false;
-        public bool LowBatteryWarning { get; set; } = false;
         public float GroundSpeed { get; set; } = 0.0f;
         public float WheelLock { get; set; } = 0.0f;
         public float WheelSpin { get; set; } = 0.0f;
 
         // Damage value, when value is 5 means part is lost, 1 means part is Fine
-        // Only BatteryWearLevel has intermediate values, 1 is the best condition, 5 is the worst
+        // Only BatteryHealthLevel has intermediate values, 1 is the best condition, 5 is the worst
 
         public uint OilPumpDamage { get; set; } = 1;
         public uint BatteryWearLevel { get; set; } = 1;
@@ -272,7 +308,7 @@ namespace maorc287.RBRDataPluginExt
     {
         public static class CarInfo
         {
-            //These data is already available in SimHub
+            //This data is already available in SimHub
             public const int WheelSpeed = 0xC;
             public const int TurboPressure = 0x18;
             public const int WaterTemperatureCelsius = 0x14;

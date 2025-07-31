@@ -25,7 +25,6 @@ namespace maorc287.RBRDataPluginExt
         /// Computes the oil pressure from raw values using RBRHUD logic.
         private static float ComputeOilPressure(float rawBase, float pressureRaw)
         {
-
             float pressureBase = (rawBase > 0.02f) ? OilPressureBaseAdjustment : 
                 (rawBase * OilPressureBaseAdjustment) / 0.02f;
             float pressureRawBar = pressureRaw * 1e-5f; 
@@ -130,7 +129,8 @@ namespace maorc287.RBRDataPluginExt
             return 5u;
         }
 
-        /// Determines the battery wear level based on the battery status value. 1 is the best condition, 5 is the worst.
+        /// Determines the battery wear level based on the battery status value. 
+        /// 1 is the best condition, 5 is the worst.
         private static uint BatteryHealthLevel(float value)
         {
             if (value > 0.9f) return 1u;
@@ -180,7 +180,7 @@ namespace maorc287.RBRDataPluginExt
                 if (damagePointer == 0)
                 {
                     SimHub.Logging.Current.Warn("[RBRDataExt] Damage structure pointer is null, cannot read damage values.");
-                    return rbrData; // Return early if damage structure pointer is null
+                    return LatestValidTelemetry; // Return early if damage structure pointer is null
                 }
                 rbrData.BatteryWearLevel =
                     BatteryHealthLevel(MemoryReader.ReadFloat(hProcess, new IntPtr(damagePointer + Offsets.Damage.BatteryWearPercent)));
@@ -267,7 +267,8 @@ namespace maorc287.RBRDataPluginExt
             {
                 MemoryReader.CloseHandle(hProcess);
             }
-            LatestValidTelemetry = rbrData; // Update the latest valid telemetry data
+            // Update the latest valid telemetry data
+            LatestValidTelemetry = rbrData; 
             return rbrData;
         }
 

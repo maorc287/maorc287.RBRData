@@ -17,8 +17,6 @@ namespace maorc287.RBRDataExtPlugin
         public ImageSource PictureIcon => this.ToIcon(Properties.Resources.sdkmenuicon);
         public string LeftMenuTitle => "RBR Data Extension";
 
-    
-
         public void Init(PluginManager pluginManager)
         {
             SimHub.Logging.Current.Info("[RBRDataExt] Plugin initialized.");
@@ -93,8 +91,6 @@ namespace maorc287.RBRDataExtPlugin
             PluginManager.SetPropertyValue("RBR.Damage.WaterPumpDamage", GetType(), rbrData.WaterPumpDamage);
             PluginManager.SetPropertyValue("RBR.Damage.ElectricSystemDamage", GetType(), rbrData.ElectricSystemDamage);
             PluginManager.SetPropertyValue("RBR.Damage.BrakeCircuitDamage", GetType(), rbrData.BrakeCircuitDamage);
-
-
         }
     }
 }

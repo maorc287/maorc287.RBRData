@@ -31,7 +31,7 @@ namespace maorc287.RBRDataPluginExt
             return pressureBase + pressureRawBar;
         }
 
-        /// Formats the pressure value based on the specified unit.
+        /// Formats the pressure intercoolerCondition based on the specified unit.
         internal static float FormatPressure(float pressure, string unit)
         {
             if (string.IsNullOrEmpty(unit)) return pressure;
@@ -49,7 +49,7 @@ namespace maorc287.RBRDataPluginExt
             }
         }
 
-        /// Formats the temperature value based on the specified unit.
+        /// Formats the temperature intercoolerCondition based on the specified unit.
         internal static float FormatTemperature(float temperature, string unit)
         {
             float tempC = temperature - 273.15f;
@@ -112,33 +112,132 @@ namespace maorc287.RBRDataPluginExt
             return Clampers(spinRatio);
         }
 
-        /// Clamps a value between 0 and 1.
+        /// Clamps a intercoolerCondition between 0 and 1.
         private static float Clampers(float val) => val < 0f ? 0f : (val > 1f ? 1f : val);
 
-        /// Determines the oil pump damage level based on the oil pump status value.
-        /// the value is a float where 1.0f means the oil pump is working fine.
-        /// It decreases according to the damage level.
-        /// when the value is lower than 1.0f the oil pressure decreases causing loss of power and performance.
-        /// Reaching the value less than or equal to 0.0f, it means the oil pump is not working anymore.
-        private static uint OilPumpDamageLevel(float value)
+        /// <summary>
+        /// Determines the damage level of the oil pump based on its current health oilPumpCondition.
+        /// </summary>
+        /// <param name="oilPumpCondition">
+        /// The oil pump status as a float:
+        /// - 1.0 means the oil pump is fully functional (no damage).
+        /// - Values decrease as damage increases.
+        /// - 0.0 or below means the oil pump has completely failed.
+        /// </param>
+        /// <returns>
+        /// An integer damage level code:
+        /// 1 = Fine (near perfect condition),
+        /// 2 = Light damage,
+        /// 3 = Medium damage,
+        /// 4 = Severe damage (significant loss of performance),
+        /// 5 = Lost, Oil pump failure (no longer working).
+        /// </returns>
+        private static uint OilPumpDamageLevel(float oilPumpCondition)
         {
-            if (value > 0.9f) return 1u;
-            if (value > 0.6f) return 2u;
-            if (value > 0.2f) return 3u;
-            if (value > 0.0f) return 4u;
-            return 5u;
+            // If oil pump health is above 90%, consider it healthy
+            if (oilPumpCondition > 0.9f)
+                return 1;
+
+            // If health is between 60% and 90%, light damage
+            if (oilPumpCondition > 0.6f)
+                return 2;
+
+            // If health is between 20% and 60%, medium damage
+            if (oilPumpCondition > 0.2f)
+                return 3;
+
+            // If health is between 0% and 20%, severe damage causing noticeable loss
+            if (oilPumpCondition > 0.0f)
+                return 4;
+
+            // If health is 0% or below, oil pump has failed completely
+            return 5;
         }
 
-        /// Determines the battery wear level based on the battery status value. 
-        /// 1 is the best condition, 5 is the worst.
-        private static uint BatteryHealthLevel(float value)
+
+        /// <summary>
+        /// Determines the battery wear level based on the raw battery status batteryCondition normalized to 0.0–1.0 scale.
+        /// </summary>
+        /// <param name="batteryCondition">
+        /// Battery status normalized as a float between 0.0 and 1.0, where 1.0 represents full health (12 raw batteryCondition).
+        /// 
+        /// Raw thresholds for in-game warnings (out of 12):
+        /// - Below 10.0 (≈ 0.833) turns battery warning light on.
+        /// - Below 8.0  (≈ 0.667) starts blinking battery warning light.
+        /// - Below 6.0  (≈ 0.5) triggers Co-Driver call about battery issues.
+        /// </param>
+        /// <returns>
+        /// An integer wear level code:
+        /// 1 = Fine (above ~0.9),
+        /// 2 = Light (above ~0.8),
+        /// 3 = Medium (above ~0.65),
+        /// 4 = Severe (above ~0.5),
+        /// 5 = Battery failure or very poor condition (0.5 or below). Not able to start the car.
+        /// </returns>
+        private static uint BatteryHealthLevel(float batteryCondition)
         {
-            if (value > 0.9f) return 1u;
-            if (value > 0.8f) return 2u;
-            if (value > 0.65f) return 3u;
-            if (value > 0.5f) return 4u;
-            return 5u;
+            if (batteryCondition > 0.9f)
+                return 1;  // Fine
+
+            if (batteryCondition > 0.8f)
+                return 2;  // Light
+
+            if (batteryCondition > 0.65f)
+                return 3;  // Medium
+
+            if (batteryCondition > 0.5f)
+                return 4;  // Severe
+
+            return 5;      // Lost
         }
+
+
+        /// <summary>
+        /// Categorizes the intercooler damage based on the damage float intercoolerCondition.
+        /// Lower values indicate better condition. Higher values indicate more damage.
+        /// </summary>
+        /// <param name="intercoolerCondition">
+        /// The intercooler damage intercoolerCondition (0.0 = no damage, 0.4 = fully damaged).</param>
+        /// <returns>
+        /// An integer representing damage severity:
+        /// 1 = Fine, 2 = Light, 3 = Medium, 4 = Severe, 5 = Lost.
+        /// </returns>
+        private static int IntercoolerDamageLevel(float intercoolerCondition)
+        {
+            if (intercoolerCondition < 0.01f)
+                return 1; // Fine
+            if (intercoolerCondition < 0.05f)
+                return 2; // Light
+            if (intercoolerCondition < 0.1f)
+                return 3; // Medium
+            if (intercoolerCondition < 0.4f)
+                return 4; // Severe
+
+            return 5; // Lost
+        }
+
+        /// <summary>
+        /// Categorizes radiator damage based on a damage float radiatorCondition.
+        /// Lower values mean healthier radiator. Higher values indicate more severe damage.
+        /// </summary>
+        /// <param name="radiatorCondition">
+        /// Radiator damage radiatorCondition (0.0 = perfect, 0.2 = lost).</param>
+        /// <returns>
+        /// Damage severity level:
+        /// 1 = Fine, 2 = Light, 3 = Medium, 5 = Lost.
+        /// </returns>
+        private static int RadiatorDamageLevel(float radiatorCondition)
+        {
+            if (radiatorCondition < 0.005f)
+                return 1; // Fine
+            if (radiatorCondition < 0.03f)
+                return 2; // Light
+            if (radiatorCondition < 0.2f)
+                return 3; // Medium
+
+            return 5; // Lost
+        }
+
 
         /// Determines if the part is lost or working no intermediate values.
         private static uint PartWorkingStatus(int value)
@@ -207,7 +306,7 @@ namespace maorc287.RBRDataPluginExt
                 rbrData.RadiatorCoolantTemperature = 
                     MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.RadiatorCoolantTemperature));
 
-                // Oil Temperature value is in kelvin, it will be formatted later 
+                // Oil Temperature Value is in kelvin, it will be formatted later 
                 rbrData.OilTemperature =
                     MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.OilTempKelvin));
 
@@ -221,7 +320,7 @@ namespace maorc287.RBRDataPluginExt
                     MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.OilPressureRaw));
                 rbrData.OilPressure = ComputeOilPressure(oilRawBase, oilRaw);
 
-                //Warning for low oil pressure under 0.5 raw value or if the oil pump is damaged at level 2 or higher
+                //Warning for low oil pressure under 0.5 raw Value or if the oil pump is damaged at level 2 or higher
                 rbrData.OilPressureWarning = oilRaw < 0.5f | rbrData.OilPumpDamage >= 2;
 
                 //Water Temperature in Celsius
@@ -230,7 +329,7 @@ namespace maorc287.RBRDataPluginExt
                 // Water Temperature Warning when water temperature is above 120 Celsius
                 rbrData.WaterTemperatureWarning = waterTemperature > 120.0f;
 
-                // Battery status raw value
+                // Battery status raw Value
                 //When it goes under 10.0f, the battery light in the game dash turns on,
                 //the light starts blinking when it goes under 8.0f. Under 6.0f Co-Driver Call
                 rbrData.BatteryStatus =
@@ -242,7 +341,7 @@ namespace maorc287.RBRDataPluginExt
                     ? 14.5f
                     : (rbrData.BatteryStatus * 0.2f) + 10.4f;
 
-                // Low Battery Warning when battery status is below 10 (max value is 12)
+                // Low Battery Warning when battery status is below 10 (max Value is 12)
                 // or if we use BatteryWearPercent from damage offset it will be below 0.833f (healthy battery is 1.0f)
                 rbrData.LowBatteryWarning =
                    rbrData.BatteryStatus < 10.0f;
@@ -298,7 +397,7 @@ namespace maorc287.RBRDataPluginExt
         public float WheelLock { get; set; } = 0.0f;
         public float WheelSpin { get; set; } = 0.0f;
 
-        // Damage value, when value is 5 means part is lost, 1 means part is Fine
+        // Damage Value, when Value is 5 means part is lost, 1 means part is Fine
         // Only BatteryHealthLevel has intermediate values, 1 is the best condition, 5 is the worst
 
         public uint OilPumpDamage { get; set; } = 1;
@@ -352,12 +451,25 @@ namespace maorc287.RBRDataPluginExt
         {
             // Battery wear level, 1.0f is the best condition gradually decrease to 0.0f when igniting the car
             public const int BatteryWearPercent = 0x8C;
-            // Oil pump status starts at 1.0f, negative float value means not working
+            // Oil pump status starts at 1.0f, negative float Value means not working
             public const int OilPump = 0xF0;
-            // These Parts start all at value 1, when value is 0 means not working and lost
+            public const int OilCoolerDamage = 0xF4;
+            // These Parts start all at Value 1, when Value is 0 means not working and lost
             public const int WaterPump = 0xDC;
             public const int ElectricSystem = 0x1E8;
             public const int BrakeCircuit = 0x80;
+            public const int GearboxActuatorDamage = 0x78;
+            // 10 Parameters for Gearbox Damage all float values, 1.0f is the best condition,
+            //0x48 is the first parameter, 0x6C is the last (4bytes interval)
+            //I will write only the first offset, the rest can be calculated
+            public const int GearboxDamage = 0x48;
+
+            public const int RadiatiorDamage = 0xE8;
+            public const int StarterDamage = 0x7C;
+            public const int HydraulicsDamage = 0x90;
+            public const int IntercoolerDamage = 0xF8;
+
+
         }
 
         public static class Pointers

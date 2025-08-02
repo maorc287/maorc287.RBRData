@@ -115,6 +115,7 @@ namespace maorc287.RBRDataPluginExt
         /// Clamps a intercoolerCondition between 0 and 1.
         private static float Clampers(float val) => val < 0f ? 0f : (val > 1f ? 1f : val);
 
+
         /// <summary>
         /// Determines the damage level of the oil pump based on its current health oilPumpCondition.
         /// </summary>
@@ -134,24 +135,19 @@ namespace maorc287.RBRDataPluginExt
         /// </returns>
         private static uint OilPumpDamageLevel(float oilPumpCondition)
         {
-            // If oil pump health is above 90%, consider it healthy
             if (oilPumpCondition > 0.9f)
-                return 1;
+                return 1u;
 
-            // If health is between 60% and 90%, light damage
             if (oilPumpCondition > 0.6f)
-                return 2;
+                return 2u;
 
-            // If health is between 20% and 60%, medium damage
             if (oilPumpCondition > 0.2f)
-                return 3;
+                return 3u;
 
-            // If health is between 0% and 20%, severe damage causing noticeable loss
             if (oilPumpCondition > 0.0f)
-                return 4;
+                return 4u;
 
-            // If health is 0% or below, oil pump has failed completely
-            return 5;
+            return 5u;
         }
 
 
@@ -159,12 +155,12 @@ namespace maorc287.RBRDataPluginExt
         /// Determines the battery wear level based on the raw battery status batteryCondition normalized to 0.0–1.0 scale.
         /// </summary>
         /// <param name="batteryCondition">
-        /// Battery status normalized as a float between 0.0 and 1.0, where 1.0 represents full health (12 raw batteryCondition).
+        /// Battery status normalized as a float between 0.0 and 1.0, where 1.0 represents full health.
         /// 
-        /// Raw thresholds for in-game warnings (out of 12):
-        /// - Below 10.0 (≈ 0.833) turns battery warning light on.
-        /// - Below 8.0  (≈ 0.667) starts blinking battery warning light.
-        /// - Below 6.0  (≈ 0.5) triggers Co-Driver call about battery issues.
+        /// Raw thresholds for in-game warnings (out of 12 in BatterySatauts 0x2B4):
+        /// - Below 0.833 (≈ 10.0) turns battery warning light on.
+        /// - Below 0.667  (≈ 8.0) starts blinking battery warning light.
+        /// - Below 0.5  (≈  6.0) triggers Co-Driver call about battery issues.
         /// </param>
         /// <returns>
         /// An integer wear level code:
@@ -177,18 +173,18 @@ namespace maorc287.RBRDataPluginExt
         private static uint BatteryHealthLevel(float batteryCondition)
         {
             if (batteryCondition > 0.9f)
-                return 1;  // Fine
+                return 1u;  // Fine
 
             if (batteryCondition > 0.8f)
-                return 2;  // Light
+                return 2u;  // Light
 
             if (batteryCondition > 0.65f)
-                return 3;  // Medium
+                return 3u;  // Medium
 
             if (batteryCondition > 0.5f)
-                return 4;  // Severe
+                return 4u;  // Severe
 
-            return 5;      // Lost
+            return 5u;      // Lost
         }
 
 
@@ -202,18 +198,21 @@ namespace maorc287.RBRDataPluginExt
         /// An integer representing damage severity:
         /// 1 = Fine, 2 = Light, 3 = Medium, 4 = Severe, 5 = Lost.
         /// </returns>
-        private static int IntercoolerDamageLevel(float intercoolerCondition)
+        private static uint IntercoolerDamageLevel(float intercoolerCondition)
         {
             if (intercoolerCondition < 0.01f)
-                return 1; // Fine
-            if (intercoolerCondition < 0.05f)
-                return 2; // Light
-            if (intercoolerCondition < 0.1f)
-                return 3; // Medium
-            if (intercoolerCondition < 0.4f)
-                return 4; // Severe
+                return 1u; // Fine
 
-            return 5; // Lost
+            if (intercoolerCondition < 0.05f)
+                return 2u; // Light
+
+            if (intercoolerCondition < 0.1f)
+                return 3u; // Medium
+
+            if (intercoolerCondition < 0.4f)
+                return 4u; // Severe
+
+            return 5u; // Lost
         }
 
         /// <summary>
@@ -226,16 +225,18 @@ namespace maorc287.RBRDataPluginExt
         /// Damage severity level:
         /// 1 = Fine, 2 = Light, 3 = Medium, 5 = Lost.
         /// </returns>
-        private static int RadiatorDamageLevel(float radiatorCondition)
+        private static uint RadiatorDamageLevel(float radiatorCondition)
         {
             if (radiatorCondition < 0.005f)
-                return 1; // Fine
-            if (radiatorCondition < 0.03f)
-                return 2; // Light
-            if (radiatorCondition < 0.2f)
-                return 3; // Medium
+                return 1u; // Fine
 
-            return 5; // Lost
+            if (radiatorCondition < 0.03f)
+                return 2u; // Light
+
+            if (radiatorCondition < 0.2f)
+                return 3u; // Medium
+
+            return 5u; // Lost
         }
 
 
@@ -243,6 +244,12 @@ namespace maorc287.RBRDataPluginExt
         private static uint PartWorkingStatus(int value)
         {
             return value == 0 ? 5u : 1u;
+        }
+
+        /// Determines if the part is lost or working no intermediate values.
+        private static uint InversePartWorkingStatus(int value)
+        {
+            return value == 0 ? 1u : 5u;
         }
 
         /// Reads telemetry data from the Richard Burns Rally process.
@@ -295,6 +302,21 @@ namespace maorc287.RBRDataPluginExt
                     PartWorkingStatus(MemoryReader.ReadInt(hProcess, new IntPtr(damagePointer + Offsets.Damage.ElectricSystem)));
                 rbrData.BrakeCircuitDamage =
                     PartWorkingStatus(MemoryReader.ReadInt(hProcess, new IntPtr(damagePointer + Offsets.Damage.BrakeCircuit)));
+                rbrData.GearboxActuatorDamage =
+                    PartWorkingStatus(MemoryReader.ReadInt(hProcess, new IntPtr(damagePointer + Offsets.Damage.GearboxActuatorDamage)));
+                rbrData.RadiatorDamage =
+                    RadiatorDamageLevel(MemoryReader.ReadFloat(hProcess, new IntPtr(damagePointer + Offsets.Damage.RadiatiorDamage)));
+                rbrData.IntercoolerDamage = 
+                    IntercoolerDamageLevel(MemoryReader.ReadFloat(hProcess, new IntPtr(damagePointer + Offsets.Damage.IntercoolerDamage)));
+                rbrData.StarterDamage = 
+                    PartWorkingStatus(MemoryReader.ReadInt(hProcess, new IntPtr(damagePointer + Offsets.Damage.StarterDamage)));
+                rbrData.HydraulicsDamage = 
+                    PartWorkingStatus(MemoryReader.ReadInt(hProcess, new IntPtr(damagePointer + Offsets.Damage.HydraulicsDamage))); 
+                rbrData.StarterDamage = 
+                    PartWorkingStatus(MemoryReader.ReadInt(hProcess, new IntPtr(damagePointer + Offsets.Damage.StarterDamage)));
+                
+                rbrData.OilCoolerDamage = 
+                    InversePartWorkingStatus(MemoryReader.ReadInt(hProcess, new IntPtr(damagePointer + Offsets.Damage.OilCoolerDamage)));
 
 
                 // Engine status
@@ -405,6 +427,13 @@ namespace maorc287.RBRDataPluginExt
         public uint WaterPumpDamage { get; set; } = 1;
         public uint ElectricSystemDamage { get; set; } = 1;
         public uint BrakeCircuitDamage { get; set; } = 1;
+        public uint IntercoolerDamage { get; set; } = 1;
+        public uint RadiatorDamage { get; set; } = 1;
+        public uint GearboxActuatorDamage { get; set; } = 1;
+        public uint StarterDamage { get; set; } = 1;
+        public uint HydraulicsDamage { get; set; } = 1;
+        public uint GearboxDamage { get; set; } = 1;
+        public uint OilCoolerDamage { get; set; } = 1;
 
     }
 
@@ -459,6 +488,7 @@ namespace maorc287.RBRDataPluginExt
             public const int ElectricSystem = 0x1E8;
             public const int BrakeCircuit = 0x80;
             public const int GearboxActuatorDamage = 0x78;
+
             // 10 Parameters for Gearbox Damage all float values, 1.0f is the best condition,
             //0x48 is the first parameter, 0x6C is the last (4bytes interval)
             //I will write only the first offset, the rest can be calculated

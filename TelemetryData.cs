@@ -420,6 +420,10 @@ namespace maorc287.RBRDataPluginExt
         public float WheelSpin { get; set; } = 0.0f;
 
         // Damage Value, when Value is 5 means part is lost, 1 means part is Fine
+<<<<<<< HEAD
+=======
+
+>>>>>>> e978014fcce9d3b8b294f347163e135593a79687
         public uint OilPumpDamage { get; set; } = 1;
         public uint BatteryWearLevel { get; set; } = 1;
         public uint WaterPumpDamage { get; set; } = 1;

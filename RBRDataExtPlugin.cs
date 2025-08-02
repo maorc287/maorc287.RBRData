@@ -1,8 +1,5 @@
 ﻿using maorc287.RBRDataPluginExt;
 using SimHub.Plugins;
-using System;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Windows.Media;
 
 namespace maorc287.RBRDataExtPlugin

@@ -20,9 +20,9 @@ namespace maorc287.RBRDataPluginExt
         /// Computes the oil pressure from raw values using RBRHUD logic.
         private static float ComputeOilPressure(float rawBase, float pressureRaw)
         {
-            float pressureBase = (rawBase > 0.02f) ? OilPressureBaseAdjustment : 
+            float pressureBase = (rawBase > 0.02f) ? OilPressureBaseAdjustment :
                 (rawBase * OilPressureBaseAdjustment) / 0.02f;
-            float pressureRawBar = pressureRaw * 1e-5f; 
+            float pressureRawBar = pressureRaw * 1e-5f;
             return pressureBase + pressureRawBar;
         }
 
@@ -251,133 +251,101 @@ namespace maorc287.RBRDataPluginExt
         /// this method accesses the game's memory to retrieve various telemetry values.
         /// as a result, it requires the game to be running and the process to be accessible.
         /// without the game running and on stage, it will return default values.
+        /// 
         internal static RBRTelemetryData ReadTelemetryData()
         {
             var rbrData = new RBRTelemetryData();
-            uint pid = MemoryReader.GetProcessIdByName(RBRProcessName);
-            if (pid == 0) return rbrData;
 
-            IntPtr hProcess = MemoryReader.OpenProcess(MemoryReader.ProcessAccessFlags.VirtualMemoryRead, false, (int)pid);
+            IntPtr hProcess = MemoryReader.GetOrOpenProcessHandle(RBRProcessName);
             if (hProcess == IntPtr.Zero) return rbrData;
 
             try
             {
-                uint carInfoBase = MemoryReader.ReadUInt(hProcess, new IntPtr(Offsets.Pointers.CarInfo));
-                uint carMovBase = MemoryReader.ReadUInt(hProcess, new IntPtr(Offsets.Pointers.CarMov));
-                uint gameModeBase = MemoryReader.ReadUInt(hProcess, new IntPtr(Offsets.Pointers.GameMode));
+                IntPtr carInfoBasePtr = (IntPtr)MemoryReader.ReadUInt(hProcess, (IntPtr)Offsets.Pointers.CarInfo);
+                IntPtr carMovBasePtr = (IntPtr)MemoryReader.ReadUInt(hProcess, (IntPtr)Offsets.Pointers.CarMov);
+                IntPtr gameModeBasePtr = (IntPtr)MemoryReader.ReadUInt(hProcess, (IntPtr)Offsets.Pointers.GameMode);
 
-
-                // Game Mode status 
-                int gameMode =
-                    MemoryReader.ReadInt(hProcess, new IntPtr(gameModeBase + Offsets.Pointers.GameModeOffset));
+                IntPtr gameModePtr = gameModeBasePtr + Offsets.Pointers.GameModeOffset;
+                int gameMode = MemoryReader.ReadInt(hProcess, gameModePtr);
                 rbrData.IsOnStage = (gameMode == 1);
 
-                // Early return if not on stage
-                if (!rbrData.IsOnStage) 
-                { 
+                if (!rbrData.IsOnStage)
+                {
                     LatestValidTelemetry.IsOnStage = false;
-                    return LatestValidTelemetry; 
+                    return LatestValidTelemetry;
                 }
 
-                // Read damage values
-                int damagePointer =
-                    MemoryReader.ReadInt(hProcess, new IntPtr(carMovBase + Offsets.CarMov.DamageStructurePointer));
+                IntPtr damageStructPtr = carMovBasePtr + Offsets.CarMov.DamageStructurePointer;
+                int damagePointer = MemoryReader.ReadInt(hProcess, damageStructPtr);
                 if (damagePointer == 0)
                 {
                     SimHub.Logging.Current.Warn("[RBRDataExt] Damage structure pointer is null, cannot read damage values.");
-                    return LatestValidTelemetry; // Return early if damage structure pointer is null
+                    return LatestValidTelemetry;
                 }
+                IntPtr damageBasePtr = (IntPtr)damagePointer;
+
                 rbrData.BatteryWearLevel =
-                    BatteryHealthLevel(MemoryReader.ReadFloat(hProcess, new IntPtr(damagePointer + Offsets.Damage.BatteryWearPercent)));
+                    BatteryHealthLevel(MemoryReader.ReadFloat(hProcess, damageBasePtr + Offsets.Damage.BatteryWearPercent));
                 rbrData.OilPumpDamage =
-                    OilPumpDamageLevel(MemoryReader.ReadFloat(hProcess, new IntPtr(damagePointer + Offsets.Damage.OilPump)));
+                    OilPumpDamageLevel(MemoryReader.ReadFloat(hProcess, damageBasePtr + Offsets.Damage.OilPump));
                 rbrData.WaterPumpDamage =
-                    PartWorkingStatus(MemoryReader.ReadInt(hProcess, new IntPtr(damagePointer + Offsets.Damage.WaterPump)));
+                    PartWorkingStatus(MemoryReader.ReadInt(hProcess, damageBasePtr + Offsets.Damage.WaterPump));
                 rbrData.ElectricSystemDamage =
-                    PartWorkingStatus(MemoryReader.ReadInt(hProcess, new IntPtr(damagePointer + Offsets.Damage.ElectricSystem)));
+                    PartWorkingStatus(MemoryReader.ReadInt(hProcess, damageBasePtr + Offsets.Damage.ElectricSystem));
                 rbrData.BrakeCircuitDamage =
-                    PartWorkingStatus(MemoryReader.ReadInt(hProcess, new IntPtr(damagePointer + Offsets.Damage.BrakeCircuit)));
+                    PartWorkingStatus(MemoryReader.ReadInt(hProcess, damageBasePtr + Offsets.Damage.BrakeCircuit));
                 rbrData.GearboxActuatorDamage =
-                    PartWorkingStatus(MemoryReader.ReadInt(hProcess, new IntPtr(damagePointer + Offsets.Damage.GearboxActuatorDamage)));
+                    PartWorkingStatus(MemoryReader.ReadInt(hProcess, damageBasePtr + Offsets.Damage.GearboxActuatorDamage));
                 rbrData.RadiatorDamage =
-                    RadiatorDamageLevel(MemoryReader.ReadFloat(hProcess, new IntPtr(damagePointer + Offsets.Damage.RadiatiorDamage)));
-                rbrData.IntercoolerDamage = 
-                    IntercoolerDamageLevel(MemoryReader.ReadFloat(hProcess, new IntPtr(damagePointer + Offsets.Damage.IntercoolerDamage)));
-                rbrData.StarterDamage = 
-                    PartWorkingStatus(MemoryReader.ReadInt(hProcess, new IntPtr(damagePointer + Offsets.Damage.StarterDamage)));
-                rbrData.HydraulicsDamage = 
-                    PartWorkingStatus(MemoryReader.ReadInt(hProcess, new IntPtr(damagePointer + Offsets.Damage.HydraulicsDamage))); 
-                rbrData.StarterDamage = 
-                    PartWorkingStatus(MemoryReader.ReadInt(hProcess, new IntPtr(damagePointer + Offsets.Damage.StarterDamage)));
-                
-                rbrData.OilCoolerDamage = 
-                    InversePartWorkingStatus(MemoryReader.ReadInt(hProcess, new IntPtr(damagePointer + Offsets.Damage.OilCoolerDamage)));
+                    RadiatorDamageLevel(MemoryReader.ReadFloat(hProcess, damageBasePtr + Offsets.Damage.RadiatiorDamage));
+                rbrData.IntercoolerDamage =
+                    IntercoolerDamageLevel(MemoryReader.ReadFloat(hProcess, damageBasePtr + Offsets.Damage.IntercoolerDamage));
+                rbrData.StarterDamage =
+                    PartWorkingStatus(MemoryReader.ReadInt(hProcess, damageBasePtr + Offsets.Damage.StarterDamage));
+                rbrData.HydraulicsDamage =
+                    PartWorkingStatus(MemoryReader.ReadInt(hProcess, damageBasePtr + Offsets.Damage.HydraulicsDamage));
+                rbrData.OilCoolerDamage =
+                    InversePartWorkingStatus(MemoryReader.ReadInt(hProcess, damageBasePtr + Offsets.Damage.OilCoolerDamage));
 
+                rbrData.IsEngineOn =
+                    MemoryReader.ReadFloat(hProcess, carInfoBasePtr + Offsets.CarInfo.EngineStatus) == 1.0f;
 
-                // Engine status
-                float engineStatus =
-                    MemoryReader.ReadFloat(hProcess, new IntPtr(carInfoBase + Offsets.CarInfo.EngineStatus));
-                rbrData.IsEngineOn = (engineStatus == 1.0f);
+                rbrData.RadiatorCoolantTemperature =
+                    MemoryReader.ReadFloat(hProcess, carMovBasePtr + Offsets.CarMov.RadiatorCoolantTemperature);
 
-                // Radiator Coolant Temperature is in Kelvin, it will be formatted later 
-                rbrData.RadiatorCoolantTemperature = 
-                    MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.RadiatorCoolantTemperature));
-
-                // Oil Temperature Value is in kelvin, it will be formatted later 
                 rbrData.OilTemperature =
-                    MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.OilTempKelvin));
+                    MemoryReader.ReadFloat(hProcess, carMovBasePtr + Offsets.CarMov.OilTempKelvin);
 
-                // Oil Temperature Warning when oil temperature is above 140 Celsius
-                rbrData.OilTemperatureWarning = rbrData.OilTemperature > 140.0f + 273.15f; 
+                rbrData.OilTemperatureWarning = rbrData.OilTemperature > 140.0f + 273.15f;
 
-                // Oil Pressure Calculation
                 float oilRawBase =
-                    MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.OilPressureRawBase));
+                    MemoryReader.ReadFloat(hProcess, carMovBasePtr + Offsets.CarMov.OilPressureRawBase);
                 float oilRaw =
-                    MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.OilPressureRaw));
+                    MemoryReader.ReadFloat(hProcess, carMovBasePtr + Offsets.CarMov.OilPressureRaw);
                 rbrData.OilPressure = ComputeOilPressure(oilRawBase, oilRaw);
 
-                //Warning for low oil pressure under 0.5 raw Value or if the oil pump is damaged at level 2 or higher
-                rbrData.OilPressureWarning = oilRaw < 0.5f | rbrData.OilPumpDamage >= 2;
+                rbrData.OilPressureWarning = !rbrData.IsEngineOn || rbrData.OilPumpDamage >= 2;
 
-                //Water Temperature in Celsius
                 float waterTemperature =
-                    MemoryReader.ReadFloat(hProcess, new IntPtr(carInfoBase + Offsets.CarInfo.WaterTemperatureCelsius));
-                // Water Temperature Warning when water temperature is above 120 Celsius
+                    MemoryReader.ReadFloat(hProcess, carInfoBasePtr + Offsets.CarInfo.WaterTemperatureCelsius);
                 rbrData.WaterTemperatureWarning = waterTemperature > 120.0f;
 
-                // Battery status raw Value
-                //When it goes under 10.0f, the battery light in the game dash turns on,
-                //the light starts blinking when it goes under 8.0f. Under 6.0f Co-Driver Call
                 rbrData.BatteryStatus =
-                    MemoryReader.ReadFloat(hProcess, new IntPtr(carInfoBase + Offsets.CarInfo.BatteryStatus));
+                    MemoryReader.ReadFloat(hProcess, carInfoBasePtr + Offsets.CarInfo.BatteryStatus);
+                rbrData.BatteryVoltage = rbrData.IsEngineOn ? 14.5f : (rbrData.BatteryStatus * 0.2f) + 10.4f;
+                rbrData.LowBatteryWarning = rbrData.BatteryStatus < 10.0f;
 
-                // Battery Voltage Calculation if the engine is on, it will be 14.5V,
-                // otherwise it will be calculated based on battery status
-                rbrData.BatteryVoltage = rbrData.IsEngineOn
-                    ? 14.5f
-                    : (rbrData.BatteryStatus * 0.2f) + 10.4f;
+                float velocityX = MemoryReader.ReadFloat(hProcess, carMovBasePtr + Offsets.CarMov.VelocityX);
+                float velocityY = MemoryReader.ReadFloat(hProcess, carMovBasePtr + Offsets.CarMov.VelocityY);
+                float velocityZ = MemoryReader.ReadFloat(hProcess, carMovBasePtr + Offsets.CarMov.VelocityZ);
+                float fwdX = MemoryReader.ReadFloat(hProcess, carMovBasePtr + Offsets.CarMov.ForwardX);
+                float fwdY = MemoryReader.ReadFloat(hProcess, carMovBasePtr + Offsets.CarMov.ForwardY);
+                float fwdZ = MemoryReader.ReadFloat(hProcess, carMovBasePtr + Offsets.CarMov.ForwardZ);
 
-                // Low Battery Warning when battery status is below 10 (max Value is 12)
-                // or if we use BatteryWearPercent from damage offset it will be below 0.833f (healthy battery is 1.0f)
-                rbrData.LowBatteryWarning =
-                   rbrData.BatteryStatus < 10.0f;
-
-                //Velocity and Forward Direction Vectors
-                float velocityX = MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.VelocityX));
-                float velocityY = MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.VelocityY));
-                float velocityZ = MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.VelocityZ));
-                float fwdX = MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.ForwardX));
-                float fwdY = MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.ForwardY));
-                float fwdZ = MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.ForwardZ));
-
-                // Calculate ground speed and wheel lock/spin ratios
-                float wheelSpeed = 
-                    MemoryReader.ReadFloat(hProcess, new IntPtr(carInfoBase + Offsets.CarInfo.WheelSpeed));
+                float wheelSpeed = MemoryReader.ReadFloat(hProcess, carInfoBasePtr + Offsets.CarInfo.WheelSpeed);
                 rbrData.GroundSpeed = ComputeGroundSpeed(velocityX, velocityY, velocityZ, fwdX, fwdY, fwdZ);
                 rbrData.WheelLock = ComputeWheelLockRatio(rbrData.GroundSpeed, wheelSpeed);
                 rbrData.WheelSpin = ComputeWheelSpinRatio(rbrData.GroundSpeed, wheelSpeed);
-
             }
             catch (Exception ex)
             {
@@ -385,123 +353,265 @@ namespace maorc287.RBRDataPluginExt
             }
             finally
             {
-                MemoryReader.CloseHandle(hProcess);
             }
-            // Update the latest valid telemetry data
-            LatestValidTelemetry = rbrData; 
+
+            LatestValidTelemetry = rbrData;
             return rbrData;
         }
 
-    }
+        /*
+         internal static RBRTelemetryData ReadTelemetryData()
+         {
+             var rbrData = new RBRTelemetryData();
+             uint pid = MemoryReader.GetProcessIdByName(RBRProcessName);
+             if (pid == 0) return rbrData;
 
-    /// Class to hold telemetry data read from the game
-    internal class RBRTelemetryData
-    {
-        public bool IsOnStage { get; set; } = false;
-        public bool IsEngineOn { get; set; } = false;
+             IntPtr hProcess = MemoryReader.OpenProcess(MemoryReader.ProcessAccessFlags.VirtualMemoryRead, false, (int)pid);
+             if (hProcess == IntPtr.Zero) return rbrData;
 
-        public bool OilPressureWarning { get; set; } = false;
-        public bool LowBatteryWarning { get; set; } = false;
-        public bool WaterTemperatureWarning { get; set; } = false;
-        public bool OilTemperatureWarning { get; set; } = false;
+             try
+             {
+                 uint carInfoBase = MemoryReader.ReadUInt(hProcess, new IntPtr(Offsets.Pointers.CarInfo));
+                 uint carMovBase = MemoryReader.ReadUInt(hProcess, new IntPtr(Offsets.Pointers.CarMov));
+                 uint gameModeBase = MemoryReader.ReadUInt(hProcess, new IntPtr(Offsets.Pointers.GameMode));
 
-        public float RadiatorCoolantTemperature { get; set; } = 0.0f;
-        public float OilPressure { get; set; } = 0.0f;
-        public float OilTemperature { get; set; } = 0.0f;
-        public float BatteryVoltage { get; set; } = 12.8f;
-        public float BatteryStatus { get; set; } = 12.0f;
-        public float GroundSpeed { get; set; } = 0.0f;
-        public float WheelLock { get; set; } = 0.0f;
-        public float WheelSpin { get; set; } = 0.0f;
 
-       // Damage Value, when Value is 5 means part is lost, 1 means part is Fine
-        public uint OilPumpDamage { get; set; } = 1;
-        public uint BatteryWearLevel { get; set; } = 1;
-        public uint WaterPumpDamage { get; set; } = 1;
-        public uint ElectricSystemDamage { get; set; } = 1;
-        public uint BrakeCircuitDamage { get; set; } = 1;
-        public uint IntercoolerDamage { get; set; } = 1;
-        public uint RadiatorDamage { get; set; } = 1;
-        public uint GearboxActuatorDamage { get; set; } = 1;
-        public uint StarterDamage { get; set; } = 1;
-        public uint HydraulicsDamage { get; set; } = 1;
-        public uint GearboxDamage { get; set; } = 1;
-        public uint OilCoolerDamage { get; set; } = 1;
-    }
+                 // Game Mode status 
+                 int gameMode =
+                     MemoryReader.ReadInt(hProcess, new IntPtr(gameModeBase + Offsets.Pointers.GameModeOffset));
+                 rbrData.IsOnStage = (gameMode == 1);
 
-    internal class Offsets
-    {
-        public static class CarInfo
+                 // Early return if not on stage
+                 if (!rbrData.IsOnStage) 
+                 { 
+                     LatestValidTelemetry.IsOnStage = false;
+                     return LatestValidTelemetry; 
+                 }
+
+                 // Read damage values
+                 int damagePointer =
+                     MemoryReader.ReadInt(hProcess, new IntPtr(carMovBase + Offsets.CarMov.DamageStructurePointer));
+                 if (damagePointer == 0)
+                 {
+                     SimHub.Logging.Current.Warn("[RBRDataExt] Damage structure pointer is null, cannot read damage values.");
+                     return LatestValidTelemetry; // Return early if damage structure pointer is null
+                 }
+                 rbrData.BatteryWearLevel =
+                     BatteryHealthLevel(MemoryReader.ReadFloat(hProcess, new IntPtr(damagePointer + Offsets.Damage.BatteryWearPercent)));
+                 rbrData.OilPumpDamage =
+                     OilPumpDamageLevel(MemoryReader.ReadFloat(hProcess, new IntPtr(damagePointer + Offsets.Damage.OilPump)));
+                 rbrData.WaterPumpDamage =
+                     PartWorkingStatus(MemoryReader.ReadInt(hProcess, new IntPtr(damagePointer + Offsets.Damage.WaterPump)));
+                 rbrData.ElectricSystemDamage =
+                     PartWorkingStatus(MemoryReader.ReadInt(hProcess, new IntPtr(damagePointer + Offsets.Damage.ElectricSystem)));
+                 rbrData.BrakeCircuitDamage =
+                     PartWorkingStatus(MemoryReader.ReadInt(hProcess, new IntPtr(damagePointer + Offsets.Damage.BrakeCircuit)));
+                 rbrData.GearboxActuatorDamage =
+                     PartWorkingStatus(MemoryReader.ReadInt(hProcess, new IntPtr(damagePointer + Offsets.Damage.GearboxActuatorDamage)));
+                 rbrData.RadiatorDamage =
+                     RadiatorDamageLevel(MemoryReader.ReadFloat(hProcess, new IntPtr(damagePointer + Offsets.Damage.RadiatiorDamage)));
+                 rbrData.IntercoolerDamage = 
+                     IntercoolerDamageLevel(MemoryReader.ReadFloat(hProcess, new IntPtr(damagePointer + Offsets.Damage.IntercoolerDamage)));
+                 rbrData.StarterDamage = 
+                     PartWorkingStatus(MemoryReader.ReadInt(hProcess, new IntPtr(damagePointer + Offsets.Damage.StarterDamage)));
+                 rbrData.HydraulicsDamage = 
+                     PartWorkingStatus(MemoryReader.ReadInt(hProcess, new IntPtr(damagePointer + Offsets.Damage.HydraulicsDamage))); 
+                 rbrData.StarterDamage = 
+                     PartWorkingStatus(MemoryReader.ReadInt(hProcess, new IntPtr(damagePointer + Offsets.Damage.StarterDamage)));
+
+                 rbrData.OilCoolerDamage = 
+                     InversePartWorkingStatus(MemoryReader.ReadInt(hProcess, new IntPtr(damagePointer + Offsets.Damage.OilCoolerDamage)));
+
+
+                 // Engine status
+                 float engineStatus =
+                     MemoryReader.ReadFloat(hProcess, new IntPtr(carInfoBase + Offsets.CarInfo.EngineStatus));
+                 rbrData.IsEngineOn = (engineStatus == 1.0f);
+
+                 // Radiator Coolant Temperature is in Kelvin, it will be formatted later 
+                 rbrData.RadiatorCoolantTemperature = 
+                     MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.RadiatorCoolantTemperature));
+
+                 // Oil Temperature Value is in kelvin, it will be formatted later 
+                 rbrData.OilTemperature =
+                     MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.OilTempKelvin));
+
+                 // Oil Temperature Warning when oil temperature is above 140 Celsius
+                 rbrData.OilTemperatureWarning = rbrData.OilTemperature > 140.0f + 273.15f; 
+
+                 // Oil Pressure Calculation
+                 float oilRawBase =
+                     MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.OilPressureRawBase));
+                 float oilRaw =
+                     MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.OilPressureRaw));
+                 rbrData.OilPressure = ComputeOilPressure(oilRawBase, oilRaw);
+
+                 //Warning for low oil pressure under 0.5 raw Value or if the oil pump is damaged at level 2 or higher
+                 rbrData.OilPressureWarning = oilRaw < 0.5f | rbrData.OilPumpDamage >= 2;
+
+                 //Water Temperature in Celsius
+                 float waterTemperature =
+                     MemoryReader.ReadFloat(hProcess, new IntPtr(carInfoBase + Offsets.CarInfo.WaterTemperatureCelsius));
+                 // Water Temperature Warning when water temperature is above 120 Celsius
+                 rbrData.WaterTemperatureWarning = waterTemperature > 120.0f;
+
+                 // Battery status raw Value
+                 //When it goes under 10.0f, the battery light in the game dash turns on,
+                 //the light starts blinking when it goes under 8.0f. Under 6.0f Co-Driver Call
+                 rbrData.BatteryStatus =
+                     MemoryReader.ReadFloat(hProcess, new IntPtr(carInfoBase + Offsets.CarInfo.BatteryStatus));
+
+                 // Battery Voltage Calculation if the engine is on, it will be 14.5V,
+                 // otherwise it will be calculated based on battery status
+                 rbrData.BatteryVoltage = rbrData.IsEngineOn
+                     ? 14.5f
+                     : (rbrData.BatteryStatus * 0.2f) + 10.4f;
+
+                 // Low Battery Warning when battery status is below 10 (max Value is 12)
+                 // or if we use BatteryWearPercent from damage offset it will be below 0.833f (healthy battery is 1.0f)
+                 rbrData.LowBatteryWarning =
+                    rbrData.BatteryStatus < 10.0f;
+
+                 //Velocity and Forward Direction Vectors
+                 float velocityX = MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.VelocityX));
+                 float velocityY = MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.VelocityY));
+                 float velocityZ = MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.VelocityZ));
+                 float fwdX = MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.ForwardX));
+                 float fwdY = MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.ForwardY));
+                 float fwdZ = MemoryReader.ReadFloat(hProcess, new IntPtr(carMovBase + Offsets.CarMov.ForwardZ));
+
+                 // Calculate ground speed and wheel lock/spin ratios
+                 float wheelSpeed = 
+                     MemoryReader.ReadFloat(hProcess, new IntPtr(carInfoBase + Offsets.CarInfo.WheelSpeed));
+                 rbrData.GroundSpeed = ComputeGroundSpeed(velocityX, velocityY, velocityZ, fwdX, fwdY, fwdZ);
+                 rbrData.WheelLock = ComputeWheelLockRatio(rbrData.GroundSpeed, wheelSpeed);
+                 rbrData.WheelSpin = ComputeWheelSpinRatio(rbrData.GroundSpeed, wheelSpeed);
+
+             }
+             catch (Exception ex)
+             {
+                 SimHub.Logging.Current.Warn($"[RBRDataExt] Failed to read memory: {ex.Message}");
+             }
+             finally
+             {
+                 MemoryReader.CloseHandle(hProcess);
+             }
+             // Update the latest valid telemetry data
+             LatestValidTelemetry = rbrData; 
+             return rbrData;
+         }
+
+     }*/
+
+        /// Class to hold telemetry data read from the game
+        internal class RBRTelemetryData
         {
-            //This data is already available in SimHub
-            public const int WheelSpeed = 0xC;
-            public const int TurboPressure = 0x18;
-            public const int WaterTemperatureCelsius = 0x14;
-            public const int EngineStatus = 0x2B8;
-            public const int BatteryStatus = 0x2B4;
+            public bool IsOnStage { get; set; } = false;
+            public bool IsEngineOn { get; set; } = false;
+
+            public bool OilPressureWarning { get; set; } = false;
+            public bool LowBatteryWarning { get; set; } = false;
+            public bool WaterTemperatureWarning { get; set; } = false;
+            public bool OilTemperatureWarning { get; set; } = false;
+
+            public float RadiatorCoolantTemperature { get; set; } = 0.0f;
+            public float OilPressure { get; set; } = 0.0f;
+            public float OilTemperature { get; set; } = 0.0f;
+            public float BatteryVoltage { get; set; } = 12.8f;
+            public float BatteryStatus { get; set; } = 12.0f;
+            public float GroundSpeed { get; set; } = 0.0f;
+            public float WheelLock { get; set; } = 0.0f;
+            public float WheelSpin { get; set; } = 0.0f;
+
+            // Damage Value, when Value is 5 means part is lost, 1 means part is Fine
+            public uint OilPumpDamage { get; set; } = 1;
+            public uint BatteryWearLevel { get; set; } = 1;
+            public uint WaterPumpDamage { get; set; } = 1;
+            public uint ElectricSystemDamage { get; set; } = 1;
+            public uint BrakeCircuitDamage { get; set; } = 1;
+            public uint IntercoolerDamage { get; set; } = 1;
+            public uint RadiatorDamage { get; set; } = 1;
+            public uint GearboxActuatorDamage { get; set; } = 1;
+            public uint StarterDamage { get; set; } = 1;
+            public uint HydraulicsDamage { get; set; } = 1;
+            public uint GearboxDamage { get; set; } = 1;
+            public uint OilCoolerDamage { get; set; } = 1;
         }
 
-        public static class CarMov
+        internal class Offsets
         {
-            // New offsets to calculate oil pressure like in RBRHUD 
-            public const int OilPressureRawBase = 0x139C;
-            public const int OilPressureRaw = 0x13AC;
+            public static class CarInfo
+            {
+                //This data is already available in SimHub
+                public const int WheelSpeed = 0xC;
+                public const int TurboPressure = 0x18;
+                public const int WaterTemperatureCelsius = 0x14;
+                public const int EngineStatus = 0x2B8;
+                public const int BatteryStatus = 0x2B4;
+            }
 
-            // NGP telemetry provides these values already but they can also be used in the Original RBR
-            public const int OilTempKelvin = 0x138C;
-            public const int RadiatorCoolantTemperature = 0x1170;
+            public static class CarMov
+            {
+                // New offsets to calculate oil pressure like in RBRHUD 
+                public const int OilPressureRawBase = 0x139C;
+                public const int OilPressureRaw = 0x13AC;
 
-            // Offset for the damage structure pointer
-            public const int DamageStructurePointer = 0x620;
+                // NGP telemetry provides these values already but they can also be used in the Original RBR
+                public const int OilTempKelvin = 0x138C;
+                public const int RadiatorCoolantTemperature = 0x1170;
 
-            // Velocity vector components
-            public const int VelocityX = 0x1C0;
-            public const int VelocityY = 0x1C4;
-            public const int VelocityZ = 0x1C8;
+                // Offset for the damage structure pointer
+                public const int DamageStructurePointer = 0x620;
 
-            // Forward direction vector components
-            public const int ForwardX = 0x11C;
-            public const int ForwardY = 0x120;
-            public const int ForwardZ = 0x124;
-        }
+                // Velocity vector components
+                public const int VelocityX = 0x1C0;
+                public const int VelocityY = 0x1C4;
+                public const int VelocityZ = 0x1C8;
 
-        //Incomplete offsets for damage structure (still need to be woked on)
-        //These offsets are used to read the damage structure from the game memory
+                // Forward direction vector components
+                public const int ForwardX = 0x11C;
+                public const int ForwardY = 0x120;
+                public const int ForwardZ = 0x124;
+            }
 
-        public static class Damage
-        {
-            // Battery wear level, 1.0f is the best condition gradually decrease to 0.0f when starting the car
-            public const int BatteryWearPercent = 0x8C;
-            // Oil pump status starts at 1.0f, negative float Value means not working
-            public const int OilPump = 0xF0;
-            public const int OilCoolerDamage = 0xF4;
-            // These Parts start all at Value 1, when Value is 0 means not working and lost
-            public const int WaterPump = 0xDC;
-            public const int ElectricSystem = 0x1E8;
-            public const int BrakeCircuit = 0x80;
-            public const int GearboxActuatorDamage = 0x78;
+            //Incomplete offsets for damage structure (still need to be woked on)
+            //These offsets are used to read the damage structure from the game memory
 
-            // 10 Parameters for Gearbox Damage all float values, 1.0f is the best condition,
-            //0x48 is the first parameter, 0x6C is the last (4bytes interval)
-            //I will write only the first offset, the rest can be calculated
-            //Need to create a method to read all 10 parameters and calculate the GearboxDamage
-            public const int GearboxDamage = 0x48;
+            public static class Damage
+            {
+                // Battery wear level, 1.0f is the best condition gradually decrease to 0.0f when starting the car
+                public const int BatteryWearPercent = 0x8C;
+                // Oil pump status starts at 1.0f, negative float Value means not working
+                public const int OilPump = 0xF0;
+                public const int OilCoolerDamage = 0xF4;
+                // These Parts start all at Value 1, when Value is 0 means not working and lost
+                public const int WaterPump = 0xDC;
+                public const int ElectricSystem = 0x1E8;
+                public const int BrakeCircuit = 0x80;
+                public const int GearboxActuatorDamage = 0x78;
 
-            public const int RadiatiorDamage = 0xE8;
-            public const int StarterDamage = 0x7C;
-            public const int HydraulicsDamage = 0x90;
-            public const int IntercoolerDamage = 0xF8;
+                // 10 Parameters for Gearbox Damage all float values, 1.0f is the best condition,
+                //0x48 is the first parameter, 0x6C is the last (4bytes interval)
+                //I will write only the first offset, the rest can be calculated
+                //Need to create a method to read all 10 parameters and calculate the GearboxDamage
+                public const int GearboxDamage = 0x48;
+
+                public const int RadiatiorDamage = 0xE8;
+                public const int StarterDamage = 0x7C;
+                public const int HydraulicsDamage = 0x90;
+                public const int IntercoolerDamage = 0xF8;
 
 
-        }
+            }
 
-        public static class Pointers
-        {
-            public const int CarInfo = 0x0165FC68;
-            public const int CarMov = 0x008EF660;
-            public const int GameMode = 0x007EAC48;
-            public const int GameModeOffset = 0x728;
+            public static class Pointers
+            {
+                public const int CarInfo = 0x0165FC68;
+                public const int CarMov = 0x008EF660;
+                public const int GameMode = 0x007EAC48;
+                public const int GameModeOffset = 0x728;
 
+            }
         }
     }
 }

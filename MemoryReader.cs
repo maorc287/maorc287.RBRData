@@ -6,6 +6,10 @@ namespace maorc287.RBRDataExtPlugin
 {
     public static class MemoryReader
     {
+        private static IntPtr _cachedHandle = IntPtr.Zero;
+        private static int _cachedProcessId = 0;
+        private static string _cachedProcessName = null;
+
         [Flags]
         public enum ProcessAccessFlags : uint
         {
@@ -85,6 +89,56 @@ namespace maorc287.RBRDataExtPlugin
             }
 
             return currentAddress;
+        }
+
+        internal static IntPtr GetOrOpenProcessHandle(string processName)
+        {
+            if (_cachedHandle != IntPtr.Zero)
+            {
+                try
+                {
+                    var proc = Process.GetProcessById(_cachedProcessId);
+                    if (!proc.HasExited) return _cachedHandle;
+                    // If the process has exited, we need to close the handle
+                    if (proc.HasExited)
+                    {
+                        MemoryReader.CloseCachedHandle(); // <- handle is invalid now
+                        return IntPtr.Zero;
+                    }
+                }
+                catch
+                {
+                    // Process probably exited, or ID is invalid
+                    MemoryReader.CloseCachedHandle();
+                    return IntPtr.Zero;
+                }
+                // Process exited, close handle
+                CloseCachedHandle();
+            }
+
+            var processes = Process.GetProcessesByName(processName);
+            if (processes.Length == 0) return IntPtr.Zero;
+
+            var process = processes[0];
+            _cachedHandle = OpenProcess(ProcessAccessFlags.VirtualMemoryRead, false, process.Id);
+            if (_cachedHandle != IntPtr.Zero)
+            {
+                _cachedProcessId = process.Id;
+                _cachedProcessName = process.ProcessName;
+            }
+
+            return _cachedHandle;
+        }
+
+        internal static void CloseCachedHandle()
+        {
+            if (_cachedHandle != IntPtr.Zero)
+            {
+                CloseHandle(_cachedHandle);
+                _cachedHandle = IntPtr.Zero;
+                _cachedProcessId = 0;
+                _cachedProcessName = null;
+            }
         }
 
         internal static float ReadFloat(IntPtr hProcess, IntPtr address) => ReadValue<float>(hProcess, address);

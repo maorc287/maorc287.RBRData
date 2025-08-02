@@ -427,7 +427,6 @@ namespace maorc287.RBRDataPluginExt
         public uint HydraulicsDamage { get; set; } = 1;
         public uint GearboxDamage { get; set; } = 1;
         public uint OilCoolerDamage { get; set; } = 1;
-
     }
 
     internal class Offsets

@@ -420,8 +420,6 @@ namespace maorc287.RBRDataPluginExt
         public float WheelSpin { get; set; } = 0.0f;
 
         // Damage Value, when Value is 5 means part is lost, 1 means part is Fine
-        // Only BatteryHealthLevel has intermediate values, 1 is the best condition, 5 is the worst
-
         public uint OilPumpDamage { get; set; } = 1;
         public uint BatteryWearLevel { get; set; } = 1;
         public uint WaterPumpDamage { get; set; } = 1;
@@ -478,7 +476,7 @@ namespace maorc287.RBRDataPluginExt
 
         public static class Damage
         {
-            // Battery wear level, 1.0f is the best condition gradually decrease to 0.0f when igniting the car
+            // Battery wear level, 1.0f is the best condition gradually decrease to 0.0f when starting the car
             public const int BatteryWearPercent = 0x8C;
             // Oil pump status starts at 1.0f, negative float Value means not working
             public const int OilPump = 0xF0;
@@ -492,6 +490,7 @@ namespace maorc287.RBRDataPluginExt
             // 10 Parameters for Gearbox Damage all float values, 1.0f is the best condition,
             //0x48 is the first parameter, 0x6C is the last (4bytes interval)
             //I will write only the first offset, the rest can be calculated
+            //Need to create a method to read all 10 parameters and calculate the GearboxDamage
             public const int GearboxDamage = 0x48;
 
             public const int RadiatiorDamage = 0xE8;

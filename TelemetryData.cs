@@ -418,8 +418,7 @@ namespace maorc287.RBRDataPluginExt
         public float GroundSpeed { get; set; } = 0.0f;
         public float WheelLock { get; set; } = 0.0f;
         public float WheelSpin { get; set; } = 0.0f;
-<<<<<<< HEAD
-=======
+
        // Damage Value, when Value is 5 means part is lost, 1 means part is Fine
         public uint OilPumpDamage { get; set; } = 1;
         public uint BatteryWearLevel { get; set; } = 1;

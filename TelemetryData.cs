@@ -288,10 +288,12 @@ namespace maorc287.RBRDataPluginExt
                 }
 
                 if (!pointerCache.isCarInfoPointerValid())
-                    pointerCache.CarInfoBasePtr = (IntPtr)MemoryReader.ReadUInt(hProcess, (IntPtr)Offsets.Pointers.CarInfo);
+                    pointerCache.CarInfoBasePtr = 
+                        (IntPtr)MemoryReader.ReadUInt(hProcess, (IntPtr)Offsets.Pointers.CarInfo);
                 
                 if (!pointerCache.isCarMovPointerValid())
-                    pointerCache.CarMovBasePtr = (IntPtr)MemoryReader.ReadUInt(hProcess, (IntPtr)Offsets.Pointers.CarMov);
+                    pointerCache.CarMovBasePtr = 
+                        (IntPtr)MemoryReader.ReadUInt(hProcess, (IntPtr)Offsets.Pointers.CarMov);
 
                 if (!pointerCache.isDamagePointerValid())
                 {

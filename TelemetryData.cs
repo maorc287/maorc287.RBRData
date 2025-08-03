@@ -15,22 +15,28 @@ namespace maorc287.RBRDataPluginExt
         // Base adjustment for oil pressure calculation 
         // BitConverter.ToSingle(BitConverter.GetBytes(0x3f8460fe), 0);
         private const float OilPressureBaseAdjustment = 1.03421f;
+        private const float OilPressureBaseLimit = 0.02f;
+
+        // Conversion constants
         private const float pascalToBar = 1e-5f;
+        private const float barToPsi = 14.5038f;
+        private const float barToKpa = 100f;
+        private const float kelvin_Celcius = 273.15f;
 
         // Cache for pointers to avoid repeated memory reads
-        private static readonly PointerCache pointerCache = new PointerCache();
+        internal static readonly PointerCache pointerCache = new PointerCache();
 
 
         /// Computes the oil pressure from raw values using RBRHUD logic.
         private static float ComputeOilPressure(float rawBase, float pressureRaw)
         {
-            float pressureBase = (rawBase > 0.02f) ? OilPressureBaseAdjustment :
-                (rawBase * OilPressureBaseAdjustment) / 0.02f;
+            float pressureBase = (rawBase > OilPressureBaseLimit) ? OilPressureBaseAdjustment :
+                (rawBase * OilPressureBaseAdjustment) / OilPressureBaseLimit;
             float pressureRawBar = pressureRaw * pascalToBar;
             return pressureBase + pressureRawBar;
         }
 
-        /// Formats the pressure intercoolerCondition based on the specified unit.
+        /// Formats the pressure value based on the specified unit.
         internal static float FormatPressure(float pressure, string unit)
         {
             if (string.IsNullOrEmpty(unit)) return pressure;
@@ -39,19 +45,19 @@ namespace maorc287.RBRDataPluginExt
             switch (unit)
             {
                 case "psi":
-                    return pressure * 14.5038f;
+                    return pressure * barToPsi;
                 case "kpa":
-                    return pressure * 100f;
+                    return pressure * barToKpa;
                 case "bar":
                 default:
                     return pressure; // default is Bar
             }
         }
 
-        /// Formats the temperature intercoolerCondition based on the specified unit.
+        /// Formats the temperature value based on the specified unit.
         internal static float FormatTemperature(float temperature, string unit)
         {
-            float tempC = temperature - 273.15f;
+            float tempC = temperature - kelvin_Celcius;
             if (tempC < 0f) tempC = 0f;
 
             if (string.IsNullOrEmpty(unit)) return tempC;
@@ -111,7 +117,7 @@ namespace maorc287.RBRDataPluginExt
             return Clampers(spinRatio);
         }
 
-        /// Clamps a intercoolerCondition between 0 and 1.
+        /// Clamps a value between 0 and 1.
         private static float Clampers(float val) => val < 0f ? 0f : (val > 1f ? 1f : val);
 
 
@@ -260,12 +266,6 @@ namespace maorc287.RBRDataPluginExt
         {
             var rbrData = new RBRTelemetryData();
 
-            IntPtr gameModeBasePtr = pointerCache.GameModeBasePtr;
-
-            IntPtr carInfoBasePtr = pointerCache.CarInfoBasePtr;
-            IntPtr carMovBasePtr = pointerCache.CarMovBasePtr;
-            IntPtr damageBasePtr = pointerCache.DamageBasePtr;
-
             IntPtr hProcess = MemoryReader.GetOrOpenProcessHandle(RBRProcessName);
             if (hProcess == IntPtr.Zero)
             {
@@ -276,8 +276,10 @@ namespace maorc287.RBRDataPluginExt
             try
             {
                 if (!pointerCache.IsGeameModeBaseValid())
-                    pointerCache.GameModeBasePtr = (IntPtr)MemoryReader.ReadUInt(hProcess, (IntPtr)Offsets.Pointers.GameMode);
+                    pointerCache.GameModeBasePtr =
+                        (IntPtr)MemoryReader.ReadUInt(hProcess, (IntPtr)Offsets.Pointers.GameMode);
 
+                IntPtr gameModeBasePtr = pointerCache.GameModeBasePtr;
 
                 IntPtr gameModePtr = gameModeBasePtr + Offsets.Pointers.GameModeOffset;
                 int gameMode = MemoryReader.ReadInt(hProcess, gameModePtr);
@@ -292,10 +294,14 @@ namespace maorc287.RBRDataPluginExt
                 if (!pointerCache.isCarInfoPointerValid())
                     pointerCache.CarInfoBasePtr = 
                         (IntPtr)MemoryReader.ReadUInt(hProcess, (IntPtr)Offsets.Pointers.CarInfo);
-                
+
+                IntPtr carInfoBasePtr = pointerCache.CarInfoBasePtr;
+
                 if (!pointerCache.isCarMovPointerValid())
                     pointerCache.CarMovBasePtr = 
                         (IntPtr)MemoryReader.ReadUInt(hProcess, (IntPtr)Offsets.Pointers.CarMov);
+
+                IntPtr carMovBasePtr = pointerCache.CarMovBasePtr;
 
                 if (!pointerCache.isDamagePointerValid())
                 {
@@ -304,28 +310,41 @@ namespace maorc287.RBRDataPluginExt
                     pointerCache.DamageBasePtr = (IntPtr)damagePointer;
                 }
 
+                IntPtr damageBasePtr = pointerCache.DamageBasePtr;
+
                 rbrData.BatteryWearLevel =
-                    BatteryHealthLevel(MemoryReader.ReadFloat(hProcess, damageBasePtr + Offsets.Damage.BatteryWearPercent));
+                    BatteryHealthLevel(MemoryReader.ReadFloat(hProcess, damageBasePtr 
+                    + Offsets.Damage.BatteryWearPercent));
                 rbrData.OilPumpDamage =
-                    OilPumpDamageLevel(MemoryReader.ReadFloat(hProcess, damageBasePtr + Offsets.Damage.OilPump));
+                    OilPumpDamageLevel(MemoryReader.ReadFloat(hProcess, damageBasePtr 
+                    + Offsets.Damage.OilPump));
                 rbrData.WaterPumpDamage =
-                    PartWorkingStatus(MemoryReader.ReadInt(hProcess, damageBasePtr + Offsets.Damage.WaterPump));
+                    PartWorkingStatus(MemoryReader.ReadInt(hProcess, damageBasePtr 
+                    + Offsets.Damage.WaterPump));
                 rbrData.ElectricSystemDamage =
-                    PartWorkingStatus(MemoryReader.ReadInt(hProcess, damageBasePtr + Offsets.Damage.ElectricSystem));
+                    PartWorkingStatus(MemoryReader.ReadInt(hProcess, damageBasePtr 
+                    + Offsets.Damage.ElectricSystem));
                 rbrData.BrakeCircuitDamage =
-                    PartWorkingStatus(MemoryReader.ReadInt(hProcess, damageBasePtr + Offsets.Damage.BrakeCircuit));
+                    PartWorkingStatus(MemoryReader.ReadInt(hProcess, damageBasePtr 
+                    + Offsets.Damage.BrakeCircuit));
                 rbrData.GearboxActuatorDamage =
-                    PartWorkingStatus(MemoryReader.ReadInt(hProcess, damageBasePtr + Offsets.Damage.GearboxActuatorDamage));
+                    PartWorkingStatus(MemoryReader.ReadInt(hProcess, damageBasePtr 
+                    + Offsets.Damage.GearboxActuatorDamage));
                 rbrData.RadiatorDamage =
-                    RadiatorDamageLevel(MemoryReader.ReadFloat(hProcess, damageBasePtr + Offsets.Damage.RadiatiorDamage));
+                    RadiatorDamageLevel(MemoryReader.ReadFloat(hProcess, damageBasePtr 
+                    + Offsets.Damage.RadiatiorDamage));
                 rbrData.IntercoolerDamage =
-                    IntercoolerDamageLevel(MemoryReader.ReadFloat(hProcess, damageBasePtr + Offsets.Damage.IntercoolerDamage));
+                    IntercoolerDamageLevel(MemoryReader.ReadFloat(hProcess, damageBasePtr 
+                    + Offsets.Damage.IntercoolerDamage));
                 rbrData.StarterDamage =
-                    PartWorkingStatus(MemoryReader.ReadInt(hProcess, damageBasePtr + Offsets.Damage.StarterDamage));
+                    PartWorkingStatus(MemoryReader.ReadInt(hProcess, damageBasePtr 
+                    + Offsets.Damage.StarterDamage));
                 rbrData.HydraulicsDamage =
-                    PartWorkingStatus(MemoryReader.ReadInt(hProcess, damageBasePtr + Offsets.Damage.HydraulicsDamage));
+                    PartWorkingStatus(MemoryReader.ReadInt(hProcess, damageBasePtr 
+                    + Offsets.Damage.HydraulicsDamage));
                 rbrData.OilCoolerDamage =
-                    InversePartWorkingStatus(MemoryReader.ReadInt(hProcess, damageBasePtr + Offsets.Damage.OilCoolerDamage));
+                    InversePartWorkingStatus(MemoryReader.ReadInt(hProcess, damageBasePtr 
+                    + Offsets.Damage.OilCoolerDamage));
 
                 rbrData.IsEngineOn =
                     MemoryReader.ReadFloat(hProcess, carInfoBasePtr + Offsets.CarInfo.EngineStatus) == 1.0f;
@@ -336,7 +355,7 @@ namespace maorc287.RBRDataPluginExt
                 rbrData.OilTemperature =
                     MemoryReader.ReadFloat(hProcess, carMovBasePtr + Offsets.CarMov.OilTempKelvin);
 
-                rbrData.OilTemperatureWarning = rbrData.OilTemperature > 140.0f + 273.15f;
+                rbrData.OilTemperatureWarning = rbrData.OilTemperature > 140.0f + kelvin_Celcius;
 
                 float oilPRawBase =
                     MemoryReader.ReadFloat(hProcess, carMovBasePtr + Offsets.CarMov.OilPressureRawBase);
@@ -345,7 +364,7 @@ namespace maorc287.RBRDataPluginExt
                 rbrData.OilPressure = ComputeOilPressure(oilPRawBase, oilPRaw);
 
                 rbrData.OilPressureWarning = !rbrData.IsEngineOn
-                    || rbrData.OilPressure < 0.5
+                    || rbrData.OilPressure < 0.2
                     || rbrData.OilPumpDamage >= 2;
 
                 float waterTemperature =
@@ -415,9 +434,7 @@ namespace maorc287.RBRDataPluginExt
             public uint HydraulicsDamage { get; set; } = 1;
             public uint GearboxDamage { get; set; } = 1;
             public uint OilCoolerDamage { get; set; } = 1;
-        }
-
-      
+        }      
     }
 }
 

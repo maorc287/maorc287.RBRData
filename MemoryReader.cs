@@ -1,4 +1,5 @@
-﻿using System;
+﻿using maorc287.RBRDataPluginExt;
+using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
@@ -136,6 +137,7 @@ namespace maorc287.RBRDataExtPlugin
                 _cachedHandle = IntPtr.Zero;
                 _cachedProcessId = 0;
                 _cachedProcessName = null;
+                TelemetryData.pointerCache.ClearAll(); // Clear cached pointers when handle is closed
             }
         }
 

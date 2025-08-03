@@ -16,6 +16,8 @@ namespace maorc287.RBRDataPluginExt
         // BitConverter.ToSingle(BitConverter.GetBytes(0x3f8460fe), 0);
         private const float OilPressureBaseAdjustment = 1.03421f;
         private const float pascalToBar = 1e-5f;
+
+        // Cache for pointers to avoid repeated memory reads
         private static readonly PointerCache pointerCache = new PointerCache();
 
 

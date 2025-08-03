@@ -287,6 +287,7 @@ namespace maorc287.RBRDataPluginExt
 
                 if (!rbrData.IsOnStage)
                 {
+                    pointerCache.ClearAll(); // Clear cached pointers if not on stage
                     LatestValidTelemetry.IsOnStage = false;
                     return LatestValidTelemetry;
                 }
@@ -364,8 +365,8 @@ namespace maorc287.RBRDataPluginExt
                 rbrData.OilPressure = ComputeOilPressure(oilPRawBase, oilPRaw);
 
                 rbrData.OilPressureWarning = !rbrData.IsEngineOn
-                    || rbrData.OilPressure < 0.2
-                    || rbrData.OilPumpDamage >= 2;
+                    | rbrData.OilPressure < 0.2
+                    | rbrData.OilPumpDamage >= 2;
 
                 float waterTemperature =
                     MemoryReader.ReadFloat(hProcess, carInfoBasePtr + Offsets.CarInfo.WaterTemperatureCelsius);

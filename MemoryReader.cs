@@ -98,18 +98,16 @@ namespace maorc287.RBRDataExtPlugin
                 try
                 {
                     var proc = Process.GetProcessById(_cachedProcessId);
-                    if (!proc.HasExited) return _cachedHandle;
-                    // If the process has exited, we need to close the handle
-                    if (proc.HasExited)
+                    if (!proc.HasExited)
                     {
-                        MemoryReader.CloseCachedHandle(); // <- handle is invalid now
-                        return IntPtr.Zero;
+                        return _cachedHandle;
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
                     // Process probably exited, or ID is invalid
-                    MemoryReader.CloseCachedHandle();
+                    SimHub.Logging.Current.Warn($"[RBRDataExt] Failed find RBR ProcessID: {ex.Message}");
+                    CloseCachedHandle();
                     return IntPtr.Zero;
                 }
                 // Process exited, close handle

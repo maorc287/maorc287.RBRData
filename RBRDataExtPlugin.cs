@@ -71,12 +71,12 @@ namespace maorc287.RBRDataExtPlugin
 
             PluginManager.SetPropertyValue("RBR.Data.EngineOn", GetType(), rbrData.IsEngineOn);
 
-            PluginManager.SetPropertyValue("RBR.Data.OilPressure", GetType(), 
+            PluginManager.SetPropertyValue("RBR.Data.OilPressure", GetType(),
                 TelemetryData.FormatPressure(rbrData.OilPressure, pressureUnit));
 
             PluginManager.SetPropertyValue("RBR.Data.RadiatorCoolantTemeperature", GetType(),
                 TelemetryData.FormatTemperature(rbrData.RadiatorCoolantTemperature, temperatureUnit));
-            PluginManager.SetPropertyValue("RBR.Data.OilTemperature", GetType(), 
+            PluginManager.SetPropertyValue("RBR.Data.OilTemperature", GetType(),
                 TelemetryData.FormatTemperature(rbrData.OilTemperature, temperatureUnit));
 
             PluginManager.SetPropertyValue("RBR.Data.BatteryVoltage", GetType(), rbrData.BatteryVoltage);
@@ -99,7 +99,7 @@ namespace maorc287.RBRDataExtPlugin
             PluginManager.SetPropertyValue("RBR.Damage.RadiatorDamage", GetType(), rbrData.RadiatorDamage);
             PluginManager.SetPropertyValue("RBR.Damage.IntercoolerDamage", GetType(), rbrData.IntercoolerDamage);
             PluginManager.SetPropertyValue("RBR.Damage.StarterDamage", GetType(), rbrData.StarterDamage);
-            PluginManager.SetPropertyValue("RBR.Damage.GearboxActuatorDamage", GetType(), rbrData.GearboxActuatorDamage);  
+            PluginManager.SetPropertyValue("RBR.Damage.GearboxActuatorDamage", GetType(), rbrData.GearboxActuatorDamage);
             PluginManager.SetPropertyValue("RBR.Damage.HydraulicsDamage", GetType(), rbrData.HydraulicsDamage);
         }
     }

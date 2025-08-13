@@ -4,7 +4,6 @@ using System;
 
 namespace maorc287.RBRDataPluginExt
 {
-
     internal static class TelemetryData
     {
         internal static RBRTelemetryData LatestValidTelemetry { get; private set; } = new RBRTelemetryData();
@@ -292,19 +291,19 @@ namespace maorc287.RBRDataPluginExt
                     return LatestValidTelemetry;
                 }
 
-                if (!pointerCache.isCarInfoPointerValid())
+                if (!pointerCache.IsCarInfoPointerValid())
                     pointerCache.CarInfoBasePtr = 
                         (IntPtr)MemoryReader.ReadUInt(hProcess, (IntPtr)Offsets.Pointers.CarInfo);
 
                 IntPtr carInfoBasePtr = pointerCache.CarInfoBasePtr;
 
-                if (!pointerCache.isCarMovPointerValid())
+                if (!pointerCache.IsCarMovPointerValid())
                     pointerCache.CarMovBasePtr = 
                         (IntPtr)MemoryReader.ReadUInt(hProcess, (IntPtr)Offsets.Pointers.CarMov);
 
                 IntPtr carMovBasePtr = pointerCache.CarMovBasePtr;
 
-                if (!pointerCache.isDamagePointerValid())
+                if (!pointerCache.IsDamagePointerValid())
                 {
                     IntPtr damageStructPtr = carMovBasePtr + Offsets.CarMov.DamageStructurePointer;
                     int damagePointer = MemoryReader.ReadInt(hProcess, damageStructPtr);
@@ -396,9 +395,9 @@ namespace maorc287.RBRDataPluginExt
             }
             finally
             {
+                LatestValidTelemetry = rbrData;
             }
 
-            LatestValidTelemetry = rbrData;
             return rbrData;
         }
 

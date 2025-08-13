@@ -19,17 +19,17 @@ namespace maorc287.RBRDataPluginExt
             DamageBasePtr = IntPtr.Zero;
         }
 
-        internal bool isCarInfoPointerValid()
+        internal bool IsCarInfoPointerValid()
         {
             return CarInfoBasePtr != IntPtr.Zero;
         }
 
-        internal bool isCarMovPointerValid()
+        internal bool IsCarMovPointerValid()
         {
             return CarMovBasePtr != IntPtr.Zero;
         }
 
-        internal bool isDamagePointerValid()
+        internal bool IsDamagePointerValid()
         {
             return DamageBasePtr != IntPtr.Zero;
         }
@@ -99,7 +99,6 @@ namespace maorc287.RBRDataPluginExt
             public const int GearboxActuatorDamage = 0x78;
             public const int StarterDamage = 0x7C;
             public const int HydraulicsDamage = 0x90;
-
 
             // 10 Parameters for Gearbox Damage all float values, 1.0f is the best condition,
             //0x48 is the first parameter, 0x6C is the last (4bytes interval)

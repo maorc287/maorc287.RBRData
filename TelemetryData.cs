@@ -17,9 +17,9 @@ namespace maorc287.RBRDataPluginExt
         private const float OilPressureBaseLimit = 0.02f;
 
         // Conversion constants
-        private const float pascalToBar = 1e-5f;
-        private const float barToPsi = 14.5038f;
-        private const float barToKpa = 100f;
+        private const float pascal_Bar = 1e-5f;
+        private const float bar_Psi = 14.5038f;
+        private const float bar_Kpa = 100f;
         private const float kelvin_Celcius = 273.15f;
 
         // Cache for pointers to avoid repeated memory reads
@@ -31,7 +31,7 @@ namespace maorc287.RBRDataPluginExt
         {
             float pressureBase = (rawBase > OilPressureBaseLimit) ? OilPressureBaseAdjustment :
                 (rawBase * OilPressureBaseAdjustment) / OilPressureBaseLimit;
-            float pressureRawBar = pressureRaw * pascalToBar;
+            float pressureRawBar = pressureRaw * pascal_Bar;
             return pressureBase + pressureRawBar;
         }
 
@@ -44,9 +44,9 @@ namespace maorc287.RBRDataPluginExt
             switch (unit)
             {
                 case "psi":
-                    return pressure * barToPsi;
+                    return pressure * bar_Psi;
                 case "kpa":
-                    return pressure * barToKpa;
+                    return pressure * bar_Kpa;
                 case "bar":
                 default:
                     return pressure; // default is Bar

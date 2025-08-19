@@ -80,7 +80,8 @@ namespace maorc287.RBRDataPluginExt
         {
             float wheelSpeed = Math.Abs(wheelRadius * wheelOmega * 3.6f);
             if (wheelSpeed < 1.0f)
-                wheelSpeed = 0.0f; // Avoid very small values
+                return 0.0f; // Avoid very small values
+
             return wheelSpeed;
         }
 
@@ -112,16 +113,16 @@ namespace maorc287.RBRDataPluginExt
         }
 
         /// Computes the wheel spin ratio based on ground speed and wheel speed.
-        private static float ComputeWheelSpinRatio(
+        private static float ComputeWheelSlipRatio(
             float groundSpeed,
             float wheelSpeed)
         {
             if (groundSpeed < 1.0f)
                 return 0.0f;
 
-            float spinRatio = (wheelSpeed - groundSpeed) / groundSpeed;
+            float slipRatio = (wheelSpeed - groundSpeed) / groundSpeed;
 
-            return Clampers(spinRatio);
+            return Clampers(slipRatio);
         }
 
         /// Clamps a value between 0 and 1.
@@ -395,7 +396,7 @@ namespace maorc287.RBRDataPluginExt
                 float wheelSpeed = MemoryReader.ReadFloat(hProcess, carInfoBasePtr + Offsets.CarInfo.WheelSpeed);
                 rbrData.GroundSpeed = ComputeGroundSpeed(velocityX, velocityY, velocityZ, fwdX, fwdY, fwdZ);
                 rbrData.WheelLock = ComputeWheelLockRatio(rbrData.GroundSpeed, wheelSpeed);
-                rbrData.WheelSpin = ComputeWheelSpinRatio(rbrData.GroundSpeed, wheelSpeed);
+                rbrData.WheelSlip = ComputeWheelSlipRatio(rbrData.GroundSpeed, wheelSpeed);
 
                 IntPtr FLWheelPointer = MemoryReader.ReadPointer(hProcess, carMovBasePtr + Offsets.CarMov.FLWheel);
                 IntPtr FRwheelPointer = MemoryReader.ReadPointer(hProcess, carMovBasePtr + Offsets.CarMov.FRWheel);
@@ -446,7 +447,7 @@ namespace maorc287.RBRDataPluginExt
             public float BatteryStatus { get; set; } = 12.0f;
             public float GroundSpeed { get; set; } = 0.0f;
             public float WheelLock { get; set; } = 0.0f;
-            public float WheelSpin { get; set; } = 0.0f;
+            public float WheelSlip { get; set; } = 0.0f;
             public float FrontLeftWheelSpeed { get; set; } = 0.0f;
             public float FrontRightWheelSpeed { get; set; } = 0.0f;
             public float RearLeftWheelSpeed { get; set; } = 0.0f;

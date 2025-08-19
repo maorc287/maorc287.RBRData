@@ -76,9 +76,9 @@ namespace maorc287.RBRDataPluginExt
         }
 
         /// Function to compute single whheel rotatinon speed in km/h.
-        private static float ComputeWheelSpeed(float wheelS1, float wheelS2)
+        private static float ComputeWheelSpeed(float wheelRadius, float wheelOmega)
         {
-            float wheelSpeed = Math.Abs(wheelS1 * wheelS2 * 3.6f);
+            float wheelSpeed = Math.Abs(wheelRadius * wheelOmega * 3.6f);
             if (wheelSpeed < 1.0f)
                 wheelSpeed = 0.0f; // Avoid very small values
             return wheelSpeed;

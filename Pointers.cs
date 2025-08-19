@@ -74,6 +74,14 @@ namespace maorc287.RBRDataPluginExt
             public const int ForwardX = 0x11C;
             public const int ForwardY = 0x120;
             public const int ForwardZ = 0x124;
+
+            public const int FLWheel = 0x470; // Front Left Wheel Radius 
+            public const int FRWheel = 0x474; // Front Right Wheel Radius
+            public const int RLWheel = 0x478; // Rear Left Wheel Radius
+            public const int RRWheel = 0x47C; // Rear Right Wheel Radius
+
+            public const int WheelRadiusOffset = 0xAA0; // Offset to wheel radius in the CarMov structure
+            public const int WheelRotationOffset = 0xA50; // Offset to wheel rotation in the CarMov structure 
         }
 
         //Incomplete offsets for damage structure (still need to be woked on)

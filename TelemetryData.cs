@@ -75,6 +75,14 @@ namespace maorc287.RBRDataPluginExt
             }
         }
 
+        /// Function to compute single whheel rotatinon speed in km/h.
+        private static float ComputeWheelSpeed(float wheelS1, float wheelS2)
+        {
+            float wheelSpeed = Math.Abs(wheelS1 * wheelS2 * 3.6f);
+            if (wheelSpeed < 1.0f)
+                wheelSpeed = 0.0f; // Avoid very small values
+            return wheelSpeed;
+        }
 
         /// Computes the ground speed based on velocity and forward direction vectors.
         private static float ComputeGroundSpeed(
@@ -388,6 +396,25 @@ namespace maorc287.RBRDataPluginExt
                 rbrData.GroundSpeed = ComputeGroundSpeed(velocityX, velocityY, velocityZ, fwdX, fwdY, fwdZ);
                 rbrData.WheelLock = ComputeWheelLockRatio(rbrData.GroundSpeed, wheelSpeed);
                 rbrData.WheelSpin = ComputeWheelSpinRatio(rbrData.GroundSpeed, wheelSpeed);
+
+                IntPtr FLWheelPointer = MemoryReader.ReadPointer(hProcess, carMovBasePtr + Offsets.CarMov.FLWheel);
+                IntPtr FRwheelPointer = MemoryReader.ReadPointer(hProcess, carMovBasePtr + Offsets.CarMov.FRWheel);
+                IntPtr RLWheelPointer = MemoryReader.ReadPointer(hProcess, carMovBasePtr + Offsets.CarMov.RLWheel);
+                IntPtr RRWheelPointer = MemoryReader.ReadPointer(hProcess, carMovBasePtr + Offsets.CarMov.RRWheel);
+
+                rbrData.FrontLeftWheelSpeed = ComputeWheelSpeed(
+                    MemoryReader.ReadFloat(hProcess, FLWheelPointer + Offsets.CarMov.WheelRadiusOffset),
+                    MemoryReader.ReadFloat(hProcess, FLWheelPointer + Offsets.CarMov.WheelRotationOffset));
+                rbrData.FrontRightWheelSpeed = ComputeWheelSpeed(
+                    MemoryReader.ReadFloat(hProcess, FRwheelPointer + Offsets.CarMov.WheelRadiusOffset),
+                    MemoryReader.ReadFloat(hProcess, FRwheelPointer + Offsets.CarMov.WheelRotationOffset));
+                rbrData.RearLeftWheelSpeed = ComputeWheelSpeed(
+                    MemoryReader.ReadFloat(hProcess, RLWheelPointer + Offsets.CarMov.WheelRadiusOffset),
+                    MemoryReader.ReadFloat(hProcess, RLWheelPointer + Offsets.CarMov.WheelRotationOffset));
+                rbrData.RearRightWheelSpeed = ComputeWheelSpeed(
+                    MemoryReader.ReadFloat(hProcess, RRWheelPointer + Offsets.CarMov.WheelRadiusOffset),
+                    MemoryReader.ReadFloat(hProcess, RRWheelPointer + Offsets.CarMov.WheelRotationOffset));
+
             }
             catch (Exception ex)
             {
@@ -420,6 +447,10 @@ namespace maorc287.RBRDataPluginExt
             public float GroundSpeed { get; set; } = 0.0f;
             public float WheelLock { get; set; } = 0.0f;
             public float WheelSpin { get; set; } = 0.0f;
+            public float FrontLeftWheelSpeed { get; set; } = 0.0f;
+            public float FrontRightWheelSpeed { get; set; } = 0.0f;
+            public float RearLeftWheelSpeed { get; set; } = 0.0f;
+            public float RearRightWheelSpeed { get; set; } = 0.0f;
 
             // Damage Value, when Value is 5 means part is lost, 1 means part is Fine
             public uint OilPumpDamage { get; set; } = 1;

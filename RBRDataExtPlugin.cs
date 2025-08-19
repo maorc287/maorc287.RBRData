@@ -51,6 +51,11 @@ namespace maorc287.RBRDataExtPlugin
             PluginManager.AddProperty("RBR.Damage.GearboxActuatorDamage", GetType(), 0, "");
             PluginManager.AddProperty("RBR.Damage.HydraulicsDamage", GetType(), 0, "");
 
+            PluginManager.AddProperty("RBR.Data.WheelSpeed.FL", GetType(), 0, "");
+            PluginManager.AddProperty("RBR.Data.WheelSpeed.FR", GetType(), 0, "");
+            PluginManager.AddProperty("RBR.Data.WheelSpeed.RL", GetType(), 0, "");
+            PluginManager.AddProperty("RBR.Data.WheelSpeed.RR", GetType(), 0, "");
+
 
         }
 
@@ -101,6 +106,11 @@ namespace maorc287.RBRDataExtPlugin
             PluginManager.SetPropertyValue("RBR.Damage.StarterDamage", GetType(), rbrData.StarterDamage);
             PluginManager.SetPropertyValue("RBR.Damage.GearboxActuatorDamage", GetType(), rbrData.GearboxActuatorDamage);
             PluginManager.SetPropertyValue("RBR.Damage.HydraulicsDamage", GetType(), rbrData.HydraulicsDamage);
+
+            PluginManager.SetPropertyValue("RBR.Data.WheelSpeed.FL", GetType(), rbrData.FrontLeftWheelSpeed);
+            PluginManager.SetPropertyValue("RBR.Data.WheelSpeed.FR", GetType(), rbrData.FrontRightWheelSpeed);
+            PluginManager.SetPropertyValue("RBR.Data.WheelSpeed.RL", GetType(), rbrData.RearLeftWheelSpeed);
+            PluginManager.SetPropertyValue("RBR.Data.WheelSpeed.RR", GetType(), rbrData.RearRightWheelSpeed);
         }
     }
 }

@@ -455,7 +455,7 @@ namespace maorc287.RBRDataPluginExt
             public float RearLeftWheelSpeed { get; set; } = 0.0f;
             public float RearRightWheelSpeed { get; set; } = 0.0f;
 
-            // Steering angles for front wheels. This values are probably wrong.
+            // Steering angles for front wheels. These values are probably wrong.
             public float FLWheelSteeringAngle { get; set; } = 0.0f;
             public float FRWheelSteeringAngle { get; set; } = 0.0f;
 

@@ -56,7 +56,6 @@ namespace maorc287.RBRDataExtPlugin
             PluginManager.AddProperty("RBR.Data.WheelSpeed.RL", GetType(), 0, "");
             PluginManager.AddProperty("RBR.Data.WheelSpeed.RR", GetType(), 0, "");
 
-
         }
 
         public void End(PluginManager pluginManager) { }
@@ -111,6 +110,7 @@ namespace maorc287.RBRDataExtPlugin
             PluginManager.SetPropertyValue("RBR.Data.WheelSpeed.FR", GetType(), rbrData.FrontRightWheelSpeed);
             PluginManager.SetPropertyValue("RBR.Data.WheelSpeed.RL", GetType(), rbrData.RearLeftWheelSpeed);
             PluginManager.SetPropertyValue("RBR.Data.WheelSpeed.RR", GetType(), rbrData.RearRightWheelSpeed);
+
         }
     }
 }

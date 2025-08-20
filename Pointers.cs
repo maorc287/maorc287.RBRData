@@ -82,6 +82,9 @@ namespace maorc287.RBRDataPluginExt
 
             public const int WheelRadiusOffset = 0xAA0; // Offset to wheel radius in the CarMov structure
             public const int WheelRotationOffset = 0xA50; // Offset to wheel rotation in the CarMov structure 
+
+            //Not sure about this, maybe it is related to steering angle in Radians (Offset for the Front Wheels Only)
+            public const int FrontWheelSteeringAngle = 0x9E4;
         }
 
         //Incomplete offsets for damage structure (still need to be woked on)

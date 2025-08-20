@@ -399,7 +399,7 @@ namespace maorc287.RBRDataPluginExt
                 rbrData.WheelSlip = ComputeWheelSlipRatio(rbrData.GroundSpeed, wheelSpeed);
 
                 IntPtr FLWheelPointer = MemoryReader.ReadPointer(hProcess, carMovBasePtr + Offsets.CarMov.FLWheel);
-                IntPtr FRwheelPointer = MemoryReader.ReadPointer(hProcess, carMovBasePtr + Offsets.CarMov.FRWheel);
+                IntPtr FRWheelPointer = MemoryReader.ReadPointer(hProcess, carMovBasePtr + Offsets.CarMov.FRWheel);
                 IntPtr RLWheelPointer = MemoryReader.ReadPointer(hProcess, carMovBasePtr + Offsets.CarMov.RLWheel);
                 IntPtr RRWheelPointer = MemoryReader.ReadPointer(hProcess, carMovBasePtr + Offsets.CarMov.RRWheel);
 
@@ -407,8 +407,8 @@ namespace maorc287.RBRDataPluginExt
                     MemoryReader.ReadFloat(hProcess, FLWheelPointer + Offsets.CarMov.WheelRadiusOffset),
                     MemoryReader.ReadFloat(hProcess, FLWheelPointer + Offsets.CarMov.WheelRotationOffset));
                 rbrData.FrontRightWheelSpeed = ComputeWheelSpeed(
-                    MemoryReader.ReadFloat(hProcess, FRwheelPointer + Offsets.CarMov.WheelRadiusOffset),
-                    MemoryReader.ReadFloat(hProcess, FRwheelPointer + Offsets.CarMov.WheelRotationOffset));
+                    MemoryReader.ReadFloat(hProcess, FRWheelPointer + Offsets.CarMov.WheelRadiusOffset),
+                    MemoryReader.ReadFloat(hProcess, FRWheelPointer + Offsets.CarMov.WheelRotationOffset));
                 rbrData.RearLeftWheelSpeed = ComputeWheelSpeed(
                     MemoryReader.ReadFloat(hProcess, RLWheelPointer + Offsets.CarMov.WheelRadiusOffset),
                     MemoryReader.ReadFloat(hProcess, RLWheelPointer + Offsets.CarMov.WheelRotationOffset));
@@ -449,6 +449,10 @@ namespace maorc287.RBRDataPluginExt
             public float FrontRightWheelSpeed { get; set; } = 0.0f;
             public float RearLeftWheelSpeed { get; set; } = 0.0f;
             public float RearRightWheelSpeed { get; set; } = 0.0f;
+
+            // Steering angles for front wheels. This values are probably wrong.
+            public float FLWheelSteeringAngle { get; set; } = 0.0f;
+            public float FRWheelSteeringAngle { get; set; } = 0.0f;
 
             // Damage Value, when Value is 5 means part is lost, 1 means part is Fine
             public uint OilPumpDamage { get; set; } = 1;

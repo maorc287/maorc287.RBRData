@@ -75,13 +75,14 @@ namespace maorc287.RBRDataPluginExt
             public const int ForwardY = 0x120;
             public const int ForwardZ = 0x124;
 
-            public const int FLWheel = 0x470; // Front Left Wheel Radius 
-            public const int FRWheel = 0x474; // Front Right Wheel Radius
-            public const int RLWheel = 0x478; // Rear Left Wheel Radius
-            public const int RRWheel = 0x47C; // Rear Right Wheel Radius
+            // Wheel pointers for the CarMov structure
+            public const int FLWheel = 0x470; // Front Left Wheel Pointer
+            public const int FRWheel = 0x474; // Front Right Wheel Pointer
+            public const int RLWheel = 0x478; // Rear Left Wheel Pointer
+            public const int RRWheel = 0x47C; // Rear Right Wheel Pointer
 
-            public const int WheelRadiusOffset = 0xAA0; // Offset to wheel radius in the CarMov structure
-            public const int WheelRotationOffset = 0xA50; // Offset to wheel rotation in the CarMov structure 
+            public const int WheelRadiusOffset = 0xAA0; // Offset to wheel radius in the CarMov Wheel structure
+            public const int WheelRotationOffset = 0xA50; // Offset to wheel rotation in the CarMov Wheel structure 
 
             //Not sure about this, maybe it is related to steering angle in Radians (Offset for the Front Wheels Only)
             public const int FrontWheelSteeringAngle = 0x9E4;

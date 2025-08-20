@@ -416,6 +416,11 @@ namespace maorc287.RBRDataPluginExt
                     MemoryReader.ReadFloat(hProcess, RRWheelPointer + Offsets.CarMov.WheelRadiusOffset),
                     MemoryReader.ReadFloat(hProcess, RRWheelPointer + Offsets.CarMov.WheelRotationOffset));
 
+                rbrData.FLWheelSteeringAngle = 
+                    MemoryReader.ReadFloat(hProcess, FLWheelPointer + Offsets.CarMov.FrontWheelSteeringAngle);
+                rbrData.FRWheelSteeringAngle = 
+                    MemoryReader.ReadFloat(hProcess, FRWheelPointer + Offsets.CarMov.FrontWheelSteeringAngle);
+
             }
             catch (Exception ex)
             {

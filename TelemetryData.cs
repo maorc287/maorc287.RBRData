@@ -421,11 +421,8 @@ namespace maorc287.RBRDataPluginExt
             {
                 SimHub.Logging.Current.Warn($"[RBRDataExt] Failed to read memory: {ex.Message}");
             }
-            finally
-            {
-                LatestValidTelemetry = rbrData;
-            }
 
+            LatestValidTelemetry = rbrData;
             return rbrData;
         }
 

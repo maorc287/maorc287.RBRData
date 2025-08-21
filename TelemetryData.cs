@@ -109,11 +109,11 @@ namespace maorc287.RBRDataPluginExt
 
             float lockRatio = (groundSpeed - wheelSpeed) / groundSpeed;
 
-            return Clampers(lockRatio);
+            return Clamp01(lockRatio);
         }
 
         /// Computes the wheel spin ratio based on ground speed and wheel speed.
-        private static float ComputeWheelSlipRatio(
+        private static float ComputeWheelSpinRatio(
             float groundSpeed,
             float wheelSpeed)
         {
@@ -122,11 +122,95 @@ namespace maorc287.RBRDataPluginExt
 
             float slipRatio = (wheelSpeed - groundSpeed) / groundSpeed;
 
-            return Clampers(slipRatio);
+            return Clamp01(slipRatio);
         }
 
+        private static float ComputeWheelSlipRatio(float groundSpeed, float wheelSpeed)
+        {
+            const float epsilon = 0.1f; // small threshold
+
+            if (Math.Abs(groundSpeed) < epsilon)
+            {
+                // Car is almost stationary; if wheel spinning, return +1
+                if (wheelSpeed > epsilon)
+                    return 1f;
+                else
+                    return 0f; // wheel not spinning
+            }
+
+            // Standard slip ratio calculation
+            float slipRatio = (wheelSpeed - groundSpeed) / Math.Abs(groundSpeed);
+
+            // Clamp to [-1, +1]
+            if (slipRatio < -1f) return -1f;
+            if (slipRatio > 1f) return 1f;
+
+            return slipRatio;
+        }
+
+        /// Computes wheel slip angle (radians) and optional normalized value.
+        /// Small values below epsilon are treated as zero.
+        private static float ComputeWheelSlipAngle(
+            float velX, float velZ,          // car velocity in ground plane (X–Z)
+            float fwdX, float fwdZ,          // wheel forward direction (before steering, ground plane)
+            float steeringAngleRad,          // steering input (radians)
+            float wheelSpeed,                // wheel speed (for normalization)
+            float speedEps = 0.5f,           // low-speed threshold to ignore tiny velocities
+            float maxSlipRad = 1.0f,         // maximum slip angle for normalization 
+            float deadzoneRad = 0.05f       // below this, treat slip as zero
+        )
+        {
+            // Rotate wheel forward vector by steering angle
+
+            double c = Math.Cos(steeringAngleRad);
+            double s = Math.Sin(steeringAngleRad);
+            float hx = (float)(fwdX * c - fwdZ * s);
+            float hz = (float)(fwdX * s + fwdZ * c);
+
+            // Normalize heading
+            double hl = Math.Sqrt(hx * hx + hz * hz);
+            if (hl < 1e-3) return 0f;
+            hx /= (float)hl; hz /= (float)hl;
+
+            // Velocity magnitude
+            double vm = Math.Sqrt(velX * velX + velZ * velZ);
+            if (vm < speedEps) return 0f; // too slow → ignore
+            if ((wheelSpeed/3.6) < speedEps) return 0f; // ignore if wheel speed is too low
+
+            // Normalize velocity
+            double vx = velX / vm;
+            double vz = velZ / vm;
+
+            // Flip if velocity points backwards
+            double dot = hx * vx + hz * vz;
+            if (dot < 0.0)
+            {
+                vx = -vx; vz = -vz; dot = -dot;
+            }
+
+            // Cross product in X–Z plane
+            double cross = hx * vz - hz * vx;
+
+            // Slip angle (signed, radians)
+            float slipRad = (float)Math.Atan2(cross, dot);
+
+            // Apply deadzone: small values treated as zero
+            if (Math.Abs(slipRad) < deadzoneRad)
+                slipRad = 0f;
+
+            // Optional: convert to degrees
+            float slipDeg = slipRad * (180f / (float)Math.PI);
+
+            // Optional: normalized 0–1 value (for dashboard gauges)
+            float slipPct = Math.Min(1f, Math.Abs(slipRad) / maxSlipRad);
+
+            // Return raw radians (use slipPct separately if needed)
+            return slipPct;
+        }
+
+
         /// Clamps a value between 0 and 1.
-        private static float Clampers(float val) => val < 0f ? 0f : (val > 1f ? 1f : val);
+        internal static float Clamp01(float val) => val < 0f ? 0f : (val > 1f ? 1f : val);
 
 
         /// <summary>
@@ -301,16 +385,30 @@ namespace maorc287.RBRDataPluginExt
                 }
 
                 if (!pointerCache.IsCarInfoPointerValid())
-                    pointerCache.CarInfoBasePtr = 
+                    pointerCache.CarInfoBasePtr =
                         (IntPtr)MemoryReader.ReadUInt(hProcess, (IntPtr)Offsets.Pointers.CarInfo);
 
                 IntPtr carInfoBasePtr = pointerCache.CarInfoBasePtr;
 
                 if (!pointerCache.IsCarMovPointerValid())
-                    pointerCache.CarMovBasePtr = 
-                        (IntPtr)MemoryReader.ReadUInt(hProcess, (IntPtr)Offsets.Pointers.CarMov);
+                {
+
+                    pointerCache.CarMovBasePtr =
+                        MemoryReader.ReadPointer(hProcess, (IntPtr)Offsets.Pointers.CarMov);
+                    pointerCache.FLWheelPtr = MemoryReader.ReadPointer(hProcess, pointerCache.CarMovBasePtr + Offsets.CarMov.FLWheel);
+                    pointerCache.FRWheelPtr = MemoryReader.ReadPointer(hProcess, pointerCache.CarMovBasePtr + Offsets.CarMov.FRWheel);
+                    pointerCache.RLWheelPtr = MemoryReader.ReadPointer(hProcess, pointerCache.CarMovBasePtr + Offsets.CarMov.RLWheel);
+                    pointerCache.RRWheelPtr = MemoryReader.ReadPointer(hProcess, pointerCache.CarMovBasePtr + Offsets.CarMov.RRWheel);
+
+                }
 
                 IntPtr carMovBasePtr = pointerCache.CarMovBasePtr;
+
+                IntPtr FLWheelPointer = pointerCache.FLWheelPtr;
+                IntPtr FRWheelPointer = pointerCache.FRWheelPtr;
+                IntPtr RLWheelPointer = pointerCache.RLWheelPtr;
+                IntPtr RRWheelPointer = pointerCache.RRWheelPtr;
+
 
                 if (!pointerCache.IsDamagePointerValid())
                 {
@@ -322,37 +420,37 @@ namespace maorc287.RBRDataPluginExt
                 IntPtr damageBasePtr = pointerCache.DamageBasePtr;
 
                 rbrData.BatteryWearLevel =
-                    BatteryHealthLevel(MemoryReader.ReadFloat(hProcess, damageBasePtr 
+                    BatteryHealthLevel(MemoryReader.ReadFloat(hProcess, damageBasePtr
                     + Offsets.Damage.BatteryWearPercent));
                 rbrData.OilPumpDamage =
-                    OilPumpDamageLevel(MemoryReader.ReadFloat(hProcess, damageBasePtr 
+                    OilPumpDamageLevel(MemoryReader.ReadFloat(hProcess, damageBasePtr
                     + Offsets.Damage.OilPump));
                 rbrData.WaterPumpDamage =
-                    PartWorkingStatus(MemoryReader.ReadInt(hProcess, damageBasePtr 
+                    PartWorkingStatus(MemoryReader.ReadInt(hProcess, damageBasePtr
                     + Offsets.Damage.WaterPump));
                 rbrData.ElectricSystemDamage =
-                    PartWorkingStatus(MemoryReader.ReadInt(hProcess, damageBasePtr 
+                    PartWorkingStatus(MemoryReader.ReadInt(hProcess, damageBasePtr
                     + Offsets.Damage.ElectricSystem));
                 rbrData.BrakeCircuitDamage =
-                    PartWorkingStatus(MemoryReader.ReadInt(hProcess, damageBasePtr 
+                    PartWorkingStatus(MemoryReader.ReadInt(hProcess, damageBasePtr
                     + Offsets.Damage.BrakeCircuit));
                 rbrData.GearboxActuatorDamage =
-                    PartWorkingStatus(MemoryReader.ReadInt(hProcess, damageBasePtr 
+                    PartWorkingStatus(MemoryReader.ReadInt(hProcess, damageBasePtr
                     + Offsets.Damage.GearboxActuatorDamage));
                 rbrData.RadiatorDamage =
-                    RadiatorDamageLevel(MemoryReader.ReadFloat(hProcess, damageBasePtr 
+                    RadiatorDamageLevel(MemoryReader.ReadFloat(hProcess, damageBasePtr
                     + Offsets.Damage.RadiatiorDamage));
                 rbrData.IntercoolerDamage =
-                    IntercoolerDamageLevel(MemoryReader.ReadFloat(hProcess, damageBasePtr 
+                    IntercoolerDamageLevel(MemoryReader.ReadFloat(hProcess, damageBasePtr
                     + Offsets.Damage.IntercoolerDamage));
                 rbrData.StarterDamage =
-                    PartWorkingStatus(MemoryReader.ReadInt(hProcess, damageBasePtr 
+                    PartWorkingStatus(MemoryReader.ReadInt(hProcess, damageBasePtr
                     + Offsets.Damage.StarterDamage));
                 rbrData.HydraulicsDamage =
-                    PartWorkingStatus(MemoryReader.ReadInt(hProcess, damageBasePtr 
+                    PartWorkingStatus(MemoryReader.ReadInt(hProcess, damageBasePtr
                     + Offsets.Damage.HydraulicsDamage));
                 rbrData.OilCoolerDamage =
-                    InversePartWorkingStatus(MemoryReader.ReadInt(hProcess, damageBasePtr 
+                    InversePartWorkingStatus(MemoryReader.ReadInt(hProcess, damageBasePtr
                     + Offsets.Damage.OilCoolerDamage));
 
                 rbrData.IsEngineOn =
@@ -396,12 +494,8 @@ namespace maorc287.RBRDataPluginExt
                 float wheelSpeed = MemoryReader.ReadFloat(hProcess, carInfoBasePtr + Offsets.CarInfo.WheelSpeed);
                 rbrData.GroundSpeed = ComputeGroundSpeed(velocityX, velocityY, velocityZ, fwdX, fwdY, fwdZ);
                 rbrData.WheelLock = ComputeWheelLockRatio(rbrData.GroundSpeed, wheelSpeed);
-                rbrData.WheelSlip = ComputeWheelSlipRatio(rbrData.GroundSpeed, wheelSpeed);
+                rbrData.WheelSlip = ComputeWheelSpinRatio(rbrData.GroundSpeed, wheelSpeed);
 
-                IntPtr FLWheelPointer = MemoryReader.ReadPointer(hProcess, carMovBasePtr + Offsets.CarMov.FLWheel);
-                IntPtr FRWheelPointer = MemoryReader.ReadPointer(hProcess, carMovBasePtr + Offsets.CarMov.FRWheel);
-                IntPtr RLWheelPointer = MemoryReader.ReadPointer(hProcess, carMovBasePtr + Offsets.CarMov.RLWheel);
-                IntPtr RRWheelPointer = MemoryReader.ReadPointer(hProcess, carMovBasePtr + Offsets.CarMov.RRWheel);
 
                 rbrData.FrontLeftWheelSpeed = ComputeWheelSpeed(
                     MemoryReader.ReadFloat(hProcess, FLWheelPointer + Offsets.CarMov.WheelRadiusOffset),
@@ -416,10 +510,31 @@ namespace maorc287.RBRDataPluginExt
                     MemoryReader.ReadFloat(hProcess, RRWheelPointer + Offsets.CarMov.WheelRadiusOffset),
                     MemoryReader.ReadFloat(hProcess, RRWheelPointer + Offsets.CarMov.WheelRotationOffset));
 
-                rbrData.FLWheelSteeringAngle = 
+                rbrData.FLWheelSteeringAngle =
                     MemoryReader.ReadFloat(hProcess, FLWheelPointer + Offsets.CarMov.FrontWheelSteeringAngle);
-                rbrData.FRWheelSteeringAngle = 
+                rbrData.FRWheelSteeringAngle =
                     MemoryReader.ReadFloat(hProcess, FRWheelPointer + Offsets.CarMov.FrontWheelSteeringAngle);
+
+                rbrData.FLWheelSlipAngle = ComputeWheelSlipAngle(velocityX, velocityY,
+                    fwdX, fwdY, rbrData.FLWheelSteeringAngle, rbrData.FrontLeftWheelSpeed);
+                rbrData.FRWheelSlipAngle = ComputeWheelSlipAngle(velocityX, velocityY,
+                    fwdX, fwdY, rbrData.FRWheelSteeringAngle, rbrData.FrontRightWheelSpeed);
+                rbrData.RLWheelSlipAngle = ComputeWheelSlipAngle(velocityX, velocityY,
+                    fwdX, fwdY, 0.0f, rbrData.RearLeftWheelSpeed); // Rear wheels no steering angle
+                rbrData.RRWheelSlipAngle = ComputeWheelSlipAngle(velocityX, velocityY,
+                    fwdX, fwdY, 0.0f, rbrData.RearRightWheelSpeed); // Rear wheels no steering angle
+
+                rbrData.FLWheelSlipRatio = ComputeWheelSlipRatio(rbrData.GroundSpeed, rbrData.FrontLeftWheelSpeed);
+                rbrData.FRWheelSlipRatio = ComputeWheelSlipRatio(rbrData.GroundSpeed, rbrData.FrontRightWheelSpeed);
+                rbrData.RLWheelSlipRatio = ComputeWheelSlipRatio(rbrData.GroundSpeed, rbrData.RearLeftWheelSpeed);
+                rbrData.RRWheelSlipRatio = ComputeWheelSlipRatio(rbrData.GroundSpeed, rbrData.RearRightWheelSpeed);
+
+                // Read GaugerPlugin.dll memory for lock slip value
+                if (!MemoryReader.TryReadFromDll("GaugerPlugin.dll", 0x7ADFC, out float GaugerPluginLockSlip))
+                {
+                    GaugerPluginLockSlip = 0.0f; // default
+                }
+                rbrData.GaugerLockSlip = GaugerPluginLockSlip;
 
             }
             catch (Exception ex)
@@ -450,6 +565,7 @@ namespace maorc287.RBRDataPluginExt
             public float GroundSpeed { get; set; } = 0.0f;
             public float WheelLock { get; set; } = 0.0f;
             public float WheelSlip { get; set; } = 0.0f;
+            public float GaugerLockSlip { get; set; } = 0.0f;
             public float FrontLeftWheelSpeed { get; set; } = 0.0f;
             public float FrontRightWheelSpeed { get; set; } = 0.0f;
             public float RearLeftWheelSpeed { get; set; } = 0.0f;
@@ -458,6 +574,15 @@ namespace maorc287.RBRDataPluginExt
             // Steering angles for front wheels. These values are probably wrong.
             public float FLWheelSteeringAngle { get; set; } = 0.0f;
             public float FRWheelSteeringAngle { get; set; } = 0.0f;
+
+            public float FLWheelSlipAngle { get; set; } = 0.0f;
+            public float FRWheelSlipAngle { get; set; } = 0.0f;
+            public float RLWheelSlipAngle { get; set; } = 0.0f;
+            public float RRWheelSlipAngle { get; set; } = 0.0f;
+            public float FLWheelSlipRatio { get; set; } = 0.0f;
+            public float FRWheelSlipRatio { get; set; } = 0.0f;
+            public float RLWheelSlipRatio { get; set; } = 0.0f;
+            public float RRWheelSlipRatio { get; set; } = 0.0f;
 
             // Damage Value, when Value is 5 means part is lost, 1 means part is Fine
             public uint OilPumpDamage { get; set; } = 1;
@@ -472,7 +597,7 @@ namespace maorc287.RBRDataPluginExt
             public uint HydraulicsDamage { get; set; } = 1;
             public uint GearboxDamage { get; set; } = 1;
             public uint OilCoolerDamage { get; set; } = 1;
-        }      
+        }
     }
 }
 

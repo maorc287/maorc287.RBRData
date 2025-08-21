@@ -1,6 +1,8 @@
 ﻿using maorc287.RBRDataPluginExt;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace maorc287.RBRDataExtPlugin
@@ -10,6 +12,8 @@ namespace maorc287.RBRDataExtPlugin
         private static IntPtr _cachedHandle = IntPtr.Zero;
         private static int _cachedProcessId = 0;
         private static string _cachedProcessName = null;
+        private static readonly Dictionary<string, IntPtr> _cachedDllBases = new Dictionary<string, IntPtr>();
+
 
         [Flags]
         public enum ProcessAccessFlags : uint
@@ -137,9 +141,65 @@ namespace maorc287.RBRDataExtPlugin
                 _cachedHandle = IntPtr.Zero;
                 _cachedProcessId = 0;
                 _cachedProcessName = null;
+                _cachedDllBases.Clear(); // Clear DLL cache
                 TelemetryData.pointerCache.ClearAll(); // Clear cached pointers when handle is closed
             }
         }
+
+        internal static IntPtr TryGetOrCacheDllBaseAddress(string dllName)
+        {
+            if (_cachedProcessId == 0 || _cachedHandle == IntPtr.Zero)
+                return IntPtr.Zero;
+
+            if (_cachedDllBases.TryGetValue(dllName, out var cachedBase) && cachedBase != IntPtr.Zero)
+                return cachedBase;
+
+            try
+            {
+                var process = Process.GetProcessById(_cachedProcessId);
+                if (process.HasExited) return IntPtr.Zero;
+
+                var module = process.Modules.Cast<ProcessModule>()
+                    .FirstOrDefault(m => m.ModuleName.Equals(dllName, StringComparison.OrdinalIgnoreCase));
+
+                if (module == null) return IntPtr.Zero;
+
+                _cachedDllBases[dllName] = module.BaseAddress;
+                return module.BaseAddress;
+            }
+            catch
+            {
+                return IntPtr.Zero;
+            }
+        }
+
+        internal static bool TryReadFromDll<T>(string dllName, uint offset, out T value) where T : struct
+        {
+            value = default;
+
+            if (_cachedHandle == IntPtr.Zero || _cachedProcessId == 0)
+            {
+                return false; // no process handle
+            }
+
+            IntPtr dllBase = TryGetOrCacheDllBaseAddress(dllName);
+            if (dllBase == IntPtr.Zero)
+            {
+                return false; // DLL not found
+            }
+
+            try
+            {
+                IntPtr finalAddress = IntPtr.Add(dllBase, (int)offset);
+                value = ReadValue<T>(_cachedHandle, finalAddress);
+                return true;
+            }
+            catch
+            {
+                return false; // read failed (invalid offset, etc.)
+            }
+        }
+
 
         internal static float ReadFloat(IntPtr hProcess, IntPtr address) => ReadValue<float>(hProcess, address);
         internal static int ReadInt(IntPtr hProcess, IntPtr address) => ReadValue<int>(hProcess, address);

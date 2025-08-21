@@ -10,6 +10,10 @@ namespace maorc287.RBRDataPluginExt
         public IntPtr CarInfoBasePtr { get; set; } = IntPtr.Zero;
         public IntPtr CarMovBasePtr { get; set; } = IntPtr.Zero;
         public IntPtr DamageBasePtr { get; set; } = IntPtr.Zero;
+        public IntPtr FLWheelPtr { get; set; } = IntPtr.Zero;
+        public IntPtr FRWheelPtr { get; set; } = IntPtr.Zero;
+        public IntPtr RLWheelPtr { get; set; } = IntPtr.Zero;
+        public IntPtr RRWheelPtr { get; set; } = IntPtr.Zero;
 
         internal void ClearAll()
         {
@@ -17,6 +21,7 @@ namespace maorc287.RBRDataPluginExt
             CarMovBasePtr = IntPtr.Zero;
             GameModeBasePtr = IntPtr.Zero;
             DamageBasePtr = IntPtr.Zero;
+
         }
 
         internal bool IsCarInfoPointerValid()
@@ -32,6 +37,11 @@ namespace maorc287.RBRDataPluginExt
         internal bool IsDamagePointerValid()
         {
             return DamageBasePtr != IntPtr.Zero;
+        }
+
+        internal bool IsWheelPointerValid(int wheelOffset)
+        {
+            return CarMovBasePtr != IntPtr.Zero && CarMovBasePtr + wheelOffset != IntPtr.Zero;
         }
 
         internal bool IsGeameModeBaseValid()

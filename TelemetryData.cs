@@ -151,8 +151,8 @@ namespace maorc287.RBRDataPluginExt
         /// Computes wheel slip angle (radians) and optional normalized value.
         /// Small values below epsilon are treated as zero.
         private static float ComputeWheelSlipAngle(
-            float velX, float velZ,          // car velocity in ground plane (X–Z)
-            float fwdX, float fwdZ,          // wheel forward direction (before steering, ground plane)
+            float velX, float velY,          // car velocity in ground plane (X–Z)
+            float fwdX, float fwdY,          // wheel forward direction (before steering, ground plane)
             float steeringAngleRad = 0.0f,          // steering input (radians)
             float speedEps = 0.5f,           // low-speed threshold to ignore tiny velocities
             float maxSlipRad = 1.0f,         // maximum slip angle for normalization 
@@ -163,31 +163,31 @@ namespace maorc287.RBRDataPluginExt
 
             double c = Math.Cos(steeringAngleRad);
             double s = Math.Sin(steeringAngleRad);
-            float hx = (float)(fwdX * c - fwdZ * s);
-            float hz = (float)(fwdX * s + fwdZ * c);
+            float hx = (float)(fwdX * c - fwdY * s);
+            float hy = (float)(fwdX * s + fwdY * c);
 
             // Normalize heading
-            double hl = Math.Sqrt(hx * hx + hz * hz);
+            double hl = Math.Sqrt(hx * hx + hy * hy);
             if (hl < 1e-3) return 0f;
-            hx /= (float)hl; hz /= (float)hl;
+            hx /= (float)hl; hy /= (float)hl;
 
             // Velocity magnitude
-            double vm = Math.Sqrt(velX * velX + velZ * velZ);
+            double vm = Math.Sqrt(velX * velX + velY * velY);
             if (vm < speedEps) return 0f; // too slow → ignore
 
             // Normalize velocity
             double vx = velX / vm;
-            double vz = velZ / vm;
+            double vy = velY / vm;
 
             // Flip if velocity points backwards
-            double dot = hx * vx + hz * vz;
+            double dot = hx * vx + hy * vy;
             if (dot < 0.0)
             {
-                vx = -vx; vz = -vz; dot = -dot;
+                vx = -vx; vy = -vy; dot = -dot;
             }
 
             // Cross product in X–Z plane
-            double cross = hx * vz - hz * vx;
+            double cross = hx * vy - hy * vx;
 
             // Slip angle (signed, radians)
             float slipRad = (float)Math.Atan2(cross, dot);

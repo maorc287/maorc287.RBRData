@@ -127,7 +127,7 @@ namespace maorc287.RBRDataPluginExt
 
         private static float ComputeWheelSlipRatio(float groundSpeed, float wheelSpeed)
         {
-            const float epsilon = 0.1f; // small threshold
+            const float epsilon = 0.5f; // small threshold
 
             if (Math.Abs(groundSpeed) < epsilon)
             {
@@ -169,7 +169,8 @@ namespace maorc287.RBRDataPluginExt
             // Normalize heading
             double hl = Math.Sqrt(hx * hx + hy * hy);
             if (hl < 1e-3) return 0f;
-            hx /= (float)hl; hy /= (float)hl;
+            hx /= (float)hl; 
+            hy /= (float)hl;
 
             // Velocity magnitude
             double vm = Math.Sqrt(velX * velX + velY * velY);

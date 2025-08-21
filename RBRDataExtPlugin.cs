@@ -39,17 +39,17 @@ namespace maorc287.RBRDataExtPlugin
             PluginManager.AddProperty("RBR.Info.WaterTemperatureWarning", GetType(), 0, "");
             PluginManager.AddProperty("RBR.Info.OilTemperatureWarning", GetType(), 0, "");
 
-            PluginManager.AddProperty("RBR.Damage.BatteryDamage", GetType(), 0, "");
-            PluginManager.AddProperty("RBR.Damage.OilPumpDamage", GetType(), 0, "");
-            PluginManager.AddProperty("RBR.Damage.WaterPumpDamage", GetType(), 0, "");
-            PluginManager.AddProperty("RBR.Damage.ElectricSystemDamage", GetType(), 0, "");
-            PluginManager.AddProperty("RBR.Damage.BrakeCircuitDamage", GetType(), 0, "");
-            PluginManager.AddProperty("RBR.Damage.OilCoolerDamage", GetType(), 0, "");
-            PluginManager.AddProperty("RBR.Damage.RadiatorDamage", GetType(), 0, "");
-            PluginManager.AddProperty("RBR.Damage.IntercoolerDamage", GetType(), 0, "");
-            PluginManager.AddProperty("RBR.Damage.StarterDamage", GetType(), 0, "");
-            PluginManager.AddProperty("RBR.Damage.GearboxActuatorDamage", GetType(), 0, "");
-            PluginManager.AddProperty("RBR.Damage.HydraulicsDamage", GetType(), 0, "");
+            PluginManager.AddProperty("RBR.Damage.Battery", GetType(), 0, "");
+            PluginManager.AddProperty("RBR.Damage.OilPump", GetType(), 0, "");
+            PluginManager.AddProperty("RBR.Damage.WaterPump", GetType(), 0, "");
+            PluginManager.AddProperty("RBR.Damage.ElectricSystem", GetType(), 0, "");
+            PluginManager.AddProperty("RBR.Damage.BrakeCircuit", GetType(), 0, "");
+            PluginManager.AddProperty("RBR.Damage.OilCooler", GetType(), 0, "");
+            PluginManager.AddProperty("RBR.Damage.Radiator", GetType(), 0, "");
+            PluginManager.AddProperty("RBR.Damage.Intercooler", GetType(), 0, "");
+            PluginManager.AddProperty("RBR.Damage.Starter", GetType(), 0, "");
+            PluginManager.AddProperty("RBR.Damage.GearboxActuator", GetType(), 0, "");
+            PluginManager.AddProperty("RBR.Damage.Hydraulics", GetType(), 0, "");
 
             PluginManager.AddProperty("RBR.Wheel.Speed.FL", GetType(), 0, "");
             PluginManager.AddProperty("RBR.Wheel.Speed.FR", GetType(), 0, "");
@@ -109,17 +109,17 @@ namespace maorc287.RBRDataExtPlugin
             PluginManager.SetPropertyValue("RBR.Info.WaterTemperatureWarning", GetType(), rbrData.WaterTemperatureWarning);
             PluginManager.SetPropertyValue("RBR.Info.OilTemperatureWarning", GetType(), rbrData.OilTemperatureWarning);
 
-            PluginManager.SetPropertyValue("RBR.Damage.BatteryDamage", GetType(), rbrData.BatteryWearLevel);
-            PluginManager.SetPropertyValue("RBR.Damage.OilPumpDamage", GetType(), rbrData.OilPumpDamage);
-            PluginManager.SetPropertyValue("RBR.Damage.WaterPumpDamage", GetType(), rbrData.WaterPumpDamage);
-            PluginManager.SetPropertyValue("RBR.Damage.ElectricSystemDamage", GetType(), rbrData.ElectricSystemDamage);
-            PluginManager.SetPropertyValue("RBR.Damage.BrakeCircuitDamage", GetType(), rbrData.BrakeCircuitDamage);
-            PluginManager.SetPropertyValue("RBR.Damage.OilCoolerDamage", GetType(), rbrData.OilCoolerDamage);
-            PluginManager.SetPropertyValue("RBR.Damage.RadiatorDamage", GetType(), rbrData.RadiatorDamage);
-            PluginManager.SetPropertyValue("RBR.Damage.IntercoolerDamage", GetType(), rbrData.IntercoolerDamage);
-            PluginManager.SetPropertyValue("RBR.Damage.StarterDamage", GetType(), rbrData.StarterDamage);
-            PluginManager.SetPropertyValue("RBR.Damage.GearboxActuatorDamage", GetType(), rbrData.GearboxActuatorDamage);
-            PluginManager.SetPropertyValue("RBR.Damage.HydraulicsDamage", GetType(), rbrData.HydraulicsDamage);
+            PluginManager.SetPropertyValue("RBR.Damage.Battery", GetType(), rbrData.BatteryWearLevel);
+            PluginManager.SetPropertyValue("RBR.Damage.OilPump", GetType(), rbrData.OilPumpDamage);
+            PluginManager.SetPropertyValue("RBR.Damage.WaterPump", GetType(), rbrData.WaterPumpDamage);
+            PluginManager.SetPropertyValue("RBR.Damage.ElectricSystem", GetType(), rbrData.ElectricSystemDamage);
+            PluginManager.SetPropertyValue("RBR.Damage.BrakeCircuit", GetType(), rbrData.BrakeCircuitDamage);
+            PluginManager.SetPropertyValue("RBR.Damage.OilCooler", GetType(), rbrData.OilCoolerDamage);
+            PluginManager.SetPropertyValue("RBR.Damage.Radiator", GetType(), rbrData.RadiatorDamage);
+            PluginManager.SetPropertyValue("RBR.Damage.Intercooler", GetType(), rbrData.IntercoolerDamage);
+            PluginManager.SetPropertyValue("RBR.Damage.Starter", GetType(), rbrData.StarterDamage);
+            PluginManager.SetPropertyValue("RBR.Damage.GearboxActuator", GetType(), rbrData.GearboxActuatorDamage);
+            PluginManager.SetPropertyValue("RBR.Damage.Hydraulics", GetType(), rbrData.HydraulicsDamage);
 
             PluginManager.SetPropertyValue("RBR.Wheel.Speed.FL", GetType(), rbrData.FLWheelSpeed);
             PluginManager.SetPropertyValue("RBR.Wheel.Speed.FR", GetType(), rbrData.FRWheelSpeed);

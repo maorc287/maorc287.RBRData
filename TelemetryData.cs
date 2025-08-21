@@ -203,7 +203,6 @@ namespace maorc287.RBRDataPluginExt
             // Optional: normalized 0–1 value (for dashboard gauges)
             float slipPct = Math.Min(1f, Math.Abs(slipRad) / maxSlipRad);
 
-            // Return raw radians (use slipPct separately if needed)
             return slipPct;
         }
 

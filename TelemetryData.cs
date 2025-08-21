@@ -153,8 +153,7 @@ namespace maorc287.RBRDataPluginExt
         private static float ComputeWheelSlipAngle(
             float velX, float velZ,          // car velocity in ground plane (X–Z)
             float fwdX, float fwdZ,          // wheel forward direction (before steering, ground plane)
-            float steeringAngleRad,          // steering input (radians)
-            float wheelSpeed,                // wheel speed (for normalization)
+            float steeringAngleRad = 0.0f,          // steering input (radians)
             float speedEps = 0.5f,           // low-speed threshold to ignore tiny velocities
             float maxSlipRad = 1.0f,         // maximum slip angle for normalization 
             float deadzoneRad = 0.05f       // below this, treat slip as zero
@@ -175,7 +174,6 @@ namespace maorc287.RBRDataPluginExt
             // Velocity magnitude
             double vm = Math.Sqrt(velX * velX + velZ * velZ);
             if (vm < speedEps) return 0f; // too slow → ignore
-            if ((wheelSpeed/3.6) < speedEps) return 0f; // ignore if wheel speed is too low
 
             // Normalize velocity
             double vx = velX / vm;
@@ -497,16 +495,16 @@ namespace maorc287.RBRDataPluginExt
                 rbrData.WheelSlip = ComputeWheelSpinRatio(rbrData.GroundSpeed, wheelSpeed);
 
 
-                rbrData.FrontLeftWheelSpeed = ComputeWheelSpeed(
+                rbrData.FLWheelSpeed = ComputeWheelSpeed(
                     MemoryReader.ReadFloat(hProcess, FLWheelPointer + Offsets.CarMov.WheelRadiusOffset),
                     MemoryReader.ReadFloat(hProcess, FLWheelPointer + Offsets.CarMov.WheelRotationOffset));
-                rbrData.FrontRightWheelSpeed = ComputeWheelSpeed(
+                rbrData.FRWheelSpeed = ComputeWheelSpeed(
                     MemoryReader.ReadFloat(hProcess, FRWheelPointer + Offsets.CarMov.WheelRadiusOffset),
                     MemoryReader.ReadFloat(hProcess, FRWheelPointer + Offsets.CarMov.WheelRotationOffset));
-                rbrData.RearLeftWheelSpeed = ComputeWheelSpeed(
+                rbrData.RLWheelSpeed = ComputeWheelSpeed(
                     MemoryReader.ReadFloat(hProcess, RLWheelPointer + Offsets.CarMov.WheelRadiusOffset),
                     MemoryReader.ReadFloat(hProcess, RLWheelPointer + Offsets.CarMov.WheelRotationOffset));
-                rbrData.RearRightWheelSpeed = ComputeWheelSpeed(
+                rbrData.RRWheelSpeed = ComputeWheelSpeed(
                     MemoryReader.ReadFloat(hProcess, RRWheelPointer + Offsets.CarMov.WheelRadiusOffset),
                     MemoryReader.ReadFloat(hProcess, RRWheelPointer + Offsets.CarMov.WheelRotationOffset));
 
@@ -516,18 +514,18 @@ namespace maorc287.RBRDataPluginExt
                     MemoryReader.ReadFloat(hProcess, FRWheelPointer + Offsets.CarMov.FrontWheelSteeringAngle);
 
                 rbrData.FLWheelSlipAngle = ComputeWheelSlipAngle(velocityX, velocityY,
-                    fwdX, fwdY, rbrData.FLWheelSteeringAngle, rbrData.FrontLeftWheelSpeed);
+                    fwdX, fwdY, rbrData.FLWheelSteeringAngle);
                 rbrData.FRWheelSlipAngle = ComputeWheelSlipAngle(velocityX, velocityY,
-                    fwdX, fwdY, rbrData.FRWheelSteeringAngle, rbrData.FrontRightWheelSpeed);
+                    fwdX, fwdY, rbrData.FRWheelSteeringAngle);
                 rbrData.RLWheelSlipAngle = ComputeWheelSlipAngle(velocityX, velocityY,
-                    fwdX, fwdY, 0.0f, rbrData.RearLeftWheelSpeed); // Rear wheels no steering angle
+                    fwdX, fwdY); // Rear wheels no steering angle
                 rbrData.RRWheelSlipAngle = ComputeWheelSlipAngle(velocityX, velocityY,
-                    fwdX, fwdY, 0.0f, rbrData.RearRightWheelSpeed); // Rear wheels no steering angle
+                    fwdX, fwdY); // Rear wheels no steering angle
 
-                rbrData.FLWheelSlipRatio = ComputeWheelSlipRatio(rbrData.GroundSpeed, rbrData.FrontLeftWheelSpeed);
-                rbrData.FRWheelSlipRatio = ComputeWheelSlipRatio(rbrData.GroundSpeed, rbrData.FrontRightWheelSpeed);
-                rbrData.RLWheelSlipRatio = ComputeWheelSlipRatio(rbrData.GroundSpeed, rbrData.RearLeftWheelSpeed);
-                rbrData.RRWheelSlipRatio = ComputeWheelSlipRatio(rbrData.GroundSpeed, rbrData.RearRightWheelSpeed);
+                rbrData.FLWheelSlipRatio = ComputeWheelSlipRatio(rbrData.GroundSpeed, rbrData.FLWheelSpeed);
+                rbrData.FRWheelSlipRatio = ComputeWheelSlipRatio(rbrData.GroundSpeed, rbrData.FRWheelSpeed);
+                rbrData.RLWheelSlipRatio = ComputeWheelSlipRatio(rbrData.GroundSpeed, rbrData.RLWheelSpeed);
+                rbrData.RRWheelSlipRatio = ComputeWheelSlipRatio(rbrData.GroundSpeed, rbrData.RRWheelSpeed);
 
                 // Read GaugerPlugin.dll memory for lock slip value
                 if (!MemoryReader.TryReadFromDll("GaugerPlugin.dll", 0x7ADFC, out float GaugerPluginLockSlip))
@@ -566,10 +564,10 @@ namespace maorc287.RBRDataPluginExt
             public float WheelLock { get; set; } = 0.0f;
             public float WheelSlip { get; set; } = 0.0f;
             public float GaugerLockSlip { get; set; } = 0.0f;
-            public float FrontLeftWheelSpeed { get; set; } = 0.0f;
-            public float FrontRightWheelSpeed { get; set; } = 0.0f;
-            public float RearLeftWheelSpeed { get; set; } = 0.0f;
-            public float RearRightWheelSpeed { get; set; } = 0.0f;
+            public float FLWheelSpeed { get; set; } = 0.0f;
+            public float FRWheelSpeed { get; set; } = 0.0f;
+            public float RLWheelSpeed { get; set; } = 0.0f;
+            public float RRWheelSpeed { get; set; } = 0.0f;
 
             // Steering angles for front wheels. These values are probably wrong.
             public float FLWheelSteeringAngle { get; set; } = 0.0f;

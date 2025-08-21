@@ -51,25 +51,25 @@ namespace maorc287.RBRDataExtPlugin
             PluginManager.AddProperty("RBR.Damage.GearboxActuatorDamage", GetType(), 0, "");
             PluginManager.AddProperty("RBR.Damage.HydraulicsDamage", GetType(), 0, "");
 
-            PluginManager.AddProperty("RBR.Wheel.WheelSpeed.FL", GetType(), 0, "");
-            PluginManager.AddProperty("RBR.Wheel.WheelSpeed.FR", GetType(), 0, "");
-            PluginManager.AddProperty("RBR.Wheel.WheelSpeed.RL", GetType(), 0, "");
-            PluginManager.AddProperty("RBR.Wheel.WheelSpeed.RR", GetType(), 0, "");
+            PluginManager.AddProperty("RBR.Wheel.Speed.FL", GetType(), 0, "");
+            PluginManager.AddProperty("RBR.Wheel.Speed.FR", GetType(), 0, "");
+            PluginManager.AddProperty("RBR.Wheel.Speed.RL", GetType(), 0, "");
+            PluginManager.AddProperty("RBR.Wheel.Speed.RR", GetType(), 0, "");
 
             PluginManager.AddProperty("RBR.Wheel.SteeringAngle.FL", GetType(), 0, "");
             PluginManager.AddProperty("RBR.Wheel.SteeringAngle.FR", GetType(), 0, "");
 
-            PluginManager.AddProperty("RBR.Wheel.WheelSlipAngle.FL", GetType(), 0, "");
-            PluginManager.AddProperty("RBR.Wheel.WheelSlipAngle.FR", GetType(), 0, "");
-            PluginManager.AddProperty("RBR.Wheel.WheelSlipAngle.RL", GetType(), 0, "");
-            PluginManager.AddProperty("RBR.Wheel.WheelSlipAngle.RR", GetType(), 0, "");
+            PluginManager.AddProperty("RBR.Wheel.SlipAngle.FL", GetType(), 0, "");
+            PluginManager.AddProperty("RBR.Wheel.SlipAngle.FR", GetType(), 0, "");
+            PluginManager.AddProperty("RBR.Wheel.SlipAngle.RL", GetType(), 0, "");
+            PluginManager.AddProperty("RBR.Wheel.SlipAngle.RR", GetType(), 0, "");
 
-            PluginManager.AddProperty("RBR.Wheel.WheelSlipRatio.FL", GetType(), 0, "");
-            PluginManager.AddProperty("RBR.Wheel.WheelSlipRatio.FR", GetType(), 0, "");
-            PluginManager.AddProperty("RBR.Wheel.WheelSlipRatio.RL", GetType(), 0, "");
-            PluginManager.AddProperty("RBR.Wheel.WheelSlipRatio.RR", GetType(), 0, "");
+            PluginManager.AddProperty("RBR.Wheel.SlipRatio.FL", GetType(), 0, "");
+            PluginManager.AddProperty("RBR.Wheel.SlipRatio.FR", GetType(), 0, "");
+            PluginManager.AddProperty("RBR.Wheel.SlipRatio.RL", GetType(), 0, "");
+            PluginManager.AddProperty("RBR.Wheel.SlipRatio.RR", GetType(), 0, "");
 
-            PluginManager.AddProperty("RBR.Data.GaugerPlugin.LockSlip", GetType(), 0, "");
+            PluginManager.AddProperty("RBR.GaugerPlugin.LockSlip", GetType(), 0, "");
 
         }
 
@@ -121,25 +121,25 @@ namespace maorc287.RBRDataExtPlugin
             PluginManager.SetPropertyValue("RBR.Damage.GearboxActuatorDamage", GetType(), rbrData.GearboxActuatorDamage);
             PluginManager.SetPropertyValue("RBR.Damage.HydraulicsDamage", GetType(), rbrData.HydraulicsDamage);
 
-            PluginManager.SetPropertyValue("RBR.Wheel.WheelSpeed.FL", GetType(), rbrData.FrontLeftWheelSpeed);
-            PluginManager.SetPropertyValue("RBR.Wheel.WheelSpeed.FR", GetType(), rbrData.FrontRightWheelSpeed);
-            PluginManager.SetPropertyValue("RBR.Wheel.WheelSpeed.RL", GetType(), rbrData.RearLeftWheelSpeed);
-            PluginManager.SetPropertyValue("RBR.Wheel.WheelSpeed.RR", GetType(), rbrData.RearRightWheelSpeed);
+            PluginManager.SetPropertyValue("RBR.Wheel.Speed.FL", GetType(), rbrData.FLWheelSpeed);
+            PluginManager.SetPropertyValue("RBR.Wheel.Speed.FR", GetType(), rbrData.FRWheelSpeed);
+            PluginManager.SetPropertyValue("RBR.Wheel.Speed.RL", GetType(), rbrData.RLWheelSpeed);
+            PluginManager.SetPropertyValue("RBR.Wheel.Speed.RR", GetType(), rbrData.RRWheelSpeed);
 
             PluginManager.SetPropertyValue("RBR.Wheel.SteeringAngle.FL", GetType(), rbrData.FLWheelSteeringAngle);
             PluginManager.SetPropertyValue("RBR.Wheel.SteeringAngle.FR", GetType(), rbrData.FRWheelSteeringAngle);
 
-            PluginManager.SetPropertyValue("RBR.Wheel.WheelSlipAngle.FL", GetType(), rbrData.FLWheelSlipAngle);
-            PluginManager.SetPropertyValue("RBR.Wheel.WheelSlipAngle.FR", GetType(), rbrData.FRWheelSlipAngle);
-            PluginManager.SetPropertyValue("RBR.Wheel.WheelSlipAngle.RL", GetType(), rbrData.RLWheelSlipAngle);
-            PluginManager.SetPropertyValue("RBR.Wheel.WheelSlipAngle.RR", GetType(), rbrData.RRWheelSlipAngle);
+            PluginManager.SetPropertyValue("RBR.Wheel.SlipAngle.FL", GetType(), rbrData.FLWheelSlipAngle);
+            PluginManager.SetPropertyValue("RBR.Wheel.SlipAngle.FR", GetType(), rbrData.FRWheelSlipAngle);
+            PluginManager.SetPropertyValue("RBR.Wheel.SlipAngle.RL", GetType(), rbrData.RLWheelSlipAngle);
+            PluginManager.SetPropertyValue("RBR.Wheel.SlipAngle.RR", GetType(), rbrData.RRWheelSlipAngle);
 
-            PluginManager.SetPropertyValue("RBR.Wheel.WheelSlipRatio.FL", GetType(), rbrData.FLWheelSlipRatio);
-            PluginManager.SetPropertyValue("RBR.Wheel.WheelSlipRatio.FR", GetType(), rbrData.FRWheelSlipRatio);
-            PluginManager.SetPropertyValue("RBR.Wheel.WheelSlipRatio.RL", GetType(), rbrData.RLWheelSlipRatio);
-            PluginManager.SetPropertyValue("RBR.Wheel.WheelSlipRatio.RR", GetType(), rbrData.RRWheelSlipRatio);
+            PluginManager.SetPropertyValue("RBR.Wheel.SlipRatio.FL", GetType(), rbrData.FLWheelSlipRatio);
+            PluginManager.SetPropertyValue("RBR.Wheel.SlipRatio.FR", GetType(), rbrData.FRWheelSlipRatio);
+            PluginManager.SetPropertyValue("RBR.Wheel.SlipRatio.RL", GetType(), rbrData.RLWheelSlipRatio);
+            PluginManager.SetPropertyValue("RBR.Wheel.SlipRatio.RR", GetType(), rbrData.RRWheelSlipRatio);
 
-            PluginManager.SetPropertyValue("RBR.Data.GaugerPlugin.LockSlip", GetType(), rbrData.GaugerLockSlip);
+            PluginManager.SetPropertyValue("RBR.GaugerPlugin.LockSlip", GetType(), rbrData.GaugerLockSlip);
 
         }
     }

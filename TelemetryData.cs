@@ -148,64 +148,132 @@ namespace maorc287.RBRDataPluginExt
             return slipRatio;
         }
 
-        /// Computes wheel slip angle (radians) and optional normalized value.
-        /// Small values below epsilon are treated as zero.
-        private static float ComputeWheelSlipAngle(
-            float velX, float velY,          // car velocity in ground plane (X–Z)
-            float fwdX, float fwdY,          // wheel forward direction (before steering, ground plane)
-            float steeringAngleRad = 0.0f,          // steering input (radians)
-            float speedEps = 0.5f,           // low-speed threshold to ignore tiny velocities
-            float maxSlipRad = 1.0f,         // maximum slip angle for normalization 
-            float deadzoneRad = 0.05f       // below this, treat slip as zero
-        )
+        private static bool initialized = false;
+        private static float prevVelX = 0f;
+        private static float prevVelY = 0f;
+
+        private static float ComputeLateralAcceleration(
+    float accX, float accY,   // current acceleration in m/s
+    float fwdX, float fwdY    // normalized forward vector
+)
         {
-            // Rotate wheel forward vector by steering angle
-
-            double c = Math.Cos(steeringAngleRad);
-            double s = Math.Sin(steeringAngleRad);
-            float hx = (float)(fwdX * c - fwdY * s);
-            float hy = (float)(fwdX * s + fwdY * c);
-
-            // Normalize heading
-            double hl = Math.Sqrt(hx * hx + hy * hy);
-            if (hl < 1e-3) return 0f;
-            hx /= (float)hl; 
-            hy /= (float)hl;
-
-            // Velocity magnitude
-            double vm = Math.Sqrt(velX * velX + velY * velY);
-            if (vm < speedEps) return 0f; // too slow → ignore
-
-            // Normalize velocity
-            double vx = velX / vm;
-            double vy = velY / vm;
-
-            // Flip if velocity points backwards
-            double dot = hx * vx + hy * vy;
-            if (dot < 0.0)
+            // 1. Normalize car forward vector
+            float fwdLen = (float)Math.Sqrt(fwdX * fwdX + fwdY * fwdY);
+            if (fwdLen < 1e-6f)
             {
-                vx = -vx; vy = -vy; dot = -dot;
+                return 0;
             }
+            float fx = fwdX / fwdLen;
+            float fy = fwdY / fwdLen;
 
-            // Cross product in X–Z plane
-            double cross = hx * vy - hy * vx;
+            float rightX = -fy;
+            float rightY = fx;
 
-            // Slip angle (signed, radians)
-            float slipRad = (float)Math.Atan2(cross, dot);
-
-            // Apply deadzone: small values treated as zero
-            if (Math.Abs(slipRad) < deadzoneRad)
-                slipRad = 0f;
-
-            // Optional: convert to degrees
-            float slipDeg = slipRad * (180f / (float)Math.PI);
-
-            // Optional: normalized 0–1 value (for dashboard gauges)
-            float slipPct = Math.Min(1f, Math.Abs(slipRad) / maxSlipRad);
-
-            return slipPct;
+            float aLat = accX * rightX + accY * rightY;
+            return aLat;
         }
 
+        private static float ComputeLateralAccelerationB(
+            float velX, float velY,   // current velocity in m/s
+            float fwdX, float fwdY,   // normalized forward vector
+            float dt
+        )
+        {
+
+            if (!initialized)
+            {
+                prevVelX = velX;
+                prevVelY = velY;
+                initialized = true;
+                return 0f; // can't compute acceleration yet
+            }
+
+            // 1. Normalize car forward vector
+            float fwdLen = (float)Math.Sqrt(fwdX * fwdX + fwdY * fwdY);
+            if (fwdLen < 1e-6f)
+            {
+                return 0;
+            }
+            float fx = fwdX / fwdLen;
+            float fy = fwdY / fwdLen;
+
+            if (dt < 1e-6f) return 0f;
+
+            float accX = (velX - prevVelX) / dt;
+            float accY = (velY - prevVelY) / dt;
+
+            prevVelX = velX;
+            prevVelY = velY;
+
+            float rightX = -fy;
+            float rightY = fx;
+
+            float aLat = accX * rightX + accY * rightY;
+            return aLat;
+        }
+
+        // Helper to transform world velocity to car local frame (forward/right)
+        private static void WorldToLocal(float velX, 
+            float velY, float fwdX, float fwdY, 
+            out float vX_local, out float vY_local)
+        {
+            float fwdLength = (float)Math.Sqrt(fwdX * fwdX + fwdY * fwdY);
+            if (fwdLength < 1e-6f) { vX_local = 0; vY_local = 0; return; }
+
+            float fx = fwdX / fwdLength;
+            float fy = fwdY / fwdLength;
+
+            // right vector perpendicular to forward
+            float rx = fy;
+            float ry = -fx;
+
+            vX_local = velX * fx + velY * fy; // forward velocity
+            vY_local = velX * rx + velY * ry; // lateral velocity
+        }
+        
+        private static float NormalizeAngle(float a)
+        {
+            float twoPi = (float)(2.0 * Math.PI);
+            while (a <= -Math.PI) a += twoPi;
+            while (a > Math.PI) a -= twoPi;
+            return a;
+        }
+
+        // param3[0] = longitudinal slip
+        // param3[1] = lateral slip
+        public static float GetSlipAngleRad(float longitudinalSpeed, float lateralSpeed)
+        {
+            const float epslongitudinalSpeed = 0.05f;
+            if (Math.Abs(longitudinalSpeed) < epslongitudinalSpeed)
+                return 0f;
+
+            // atan2 gives the slip angle in radians
+            return (float)Math.Atan2(lateralSpeed, longitudinalSpeed);
+        }
+
+
+        private static float prevFwdX = 0f;
+        private static float prevFwdY = 1f; // assuming initial forward along Y
+        private static float prevTimestamp = 0f; // in seconds
+
+        private static float ComputeYawRate(float fwdX, float fwdY, float currentTimestamp)
+        {
+            float deltaTime = currentTimestamp - prevTimestamp;
+            if (deltaTime <= 0f) return 0f;
+
+            float yaw = (float)Math.Atan2(fwdX, fwdY);
+            float prevYaw = (float)Math.Atan2(prevFwdX, prevFwdY);
+
+            float deltaYaw = yaw - prevYaw;
+            if (deltaYaw > Math.PI) deltaYaw -= (float)(2 * Math.PI);
+            if (deltaYaw < -Math.PI) deltaYaw += (float)(2 * Math.PI);
+
+            prevFwdX = fwdX;
+            prevFwdY = fwdY;
+            prevTimestamp = currentTimestamp;
+
+            return deltaYaw / deltaTime; // rad/s
+        }
 
         /// Clamps a value between 0 and 1.
         internal static float Clamp01(float val) => val < 0f ? 0f : (val > 1f ? 1f : val);
@@ -482,15 +550,18 @@ namespace maorc287.RBRDataPluginExt
                     : (rbrData.BatteryStatus * 0.2f) + 10.4f;
                 rbrData.LowBatteryWarning = rbrData.BatteryStatus < 10.0f;
 
-                float velocityX = MemoryReader.ReadFloat(hProcess, carMovBasePtr + Offsets.CarMov.VelocityX);
-                float velocityY = MemoryReader.ReadFloat(hProcess, carMovBasePtr + Offsets.CarMov.VelocityY);
-                float velocityZ = MemoryReader.ReadFloat(hProcess, carMovBasePtr + Offsets.CarMov.VelocityZ);
+                float velX = MemoryReader.ReadFloat(hProcess, carMovBasePtr + Offsets.CarMov.VelocityX);
+                float velY = MemoryReader.ReadFloat(hProcess, carMovBasePtr + Offsets.CarMov.VelocityY);
+                float velZ = MemoryReader.ReadFloat(hProcess, carMovBasePtr + Offsets.CarMov.VelocityZ);
                 float fwdX = MemoryReader.ReadFloat(hProcess, carMovBasePtr + Offsets.CarMov.ForwardX);
                 float fwdY = MemoryReader.ReadFloat(hProcess, carMovBasePtr + Offsets.CarMov.ForwardY);
                 float fwdZ = MemoryReader.ReadFloat(hProcess, carMovBasePtr + Offsets.CarMov.ForwardZ);
+                float accX = MemoryReader.ReadFloat(hProcess, carMovBasePtr + Offsets.CarMov.AccelerationX);
+                float accY = MemoryReader.ReadFloat(hProcess, carMovBasePtr + Offsets.CarMov.AccelerationY);
+                float accZ = MemoryReader.ReadFloat(hProcess, carMovBasePtr + Offsets.CarMov.AccelerationZ);
 
                 float wheelSpeed = MemoryReader.ReadFloat(hProcess, carInfoBasePtr + Offsets.CarInfo.WheelSpeed);
-                rbrData.GroundSpeed = ComputeGroundSpeed(velocityX, velocityY, velocityZ, fwdX, fwdY, fwdZ);
+                rbrData.GroundSpeed = ComputeGroundSpeed(velX, velY, velZ, fwdX, fwdY, fwdZ);
                 rbrData.WheelLock = ComputeWheelLockRatio(rbrData.GroundSpeed, wheelSpeed);
                 rbrData.WheelSlip = ComputeWheelSpinRatio(rbrData.GroundSpeed, wheelSpeed);
 
@@ -513,19 +584,41 @@ namespace maorc287.RBRDataPluginExt
                 rbrData.FRWheelSteeringAngle =
                     MemoryReader.ReadFloat(hProcess, FRWheelPointer + Offsets.CarMov.FrontWheelSteeringAngle);
 
-                rbrData.FLWheelSlipAngle = ComputeWheelSlipAngle(velocityX, velocityY,
-                    fwdX, fwdY, rbrData.FLWheelSteeringAngle);
-                rbrData.FRWheelSlipAngle = ComputeWheelSlipAngle(velocityX, velocityY,
-                    fwdX, fwdY, rbrData.FRWheelSteeringAngle);
-                rbrData.RLWheelSlipAngle = ComputeWheelSlipAngle(velocityX, velocityY,
-                    fwdX, fwdY); // Rear wheels no steering angle
-                rbrData.RRWheelSlipAngle = ComputeWheelSlipAngle(velocityX, velocityY,
-                    fwdX, fwdY); // Rear wheels no steering angle
+                float currentTimestamp = MemoryReader.ReadFloat(hProcess, carInfoBasePtr + Offsets.CarInfo.Timer);
+                
+                if (currentTimestamp < 0.016f || currentTimestamp < prevTimestamp)
+                {
+                    // Reset previous values if currentTimestamp is invalid or goes backwards
+                    prevFwdX = fwdX;
+                    prevFwdY = fwdY;
+                    prevTimestamp = currentTimestamp;
+                }
+
+                float yawRate = ComputeYawRate(fwdX, fwdY, currentTimestamp + 0.001f);
+                float dt = currentTimestamp + 0.001f - prevTimestamp;
+
+
+                float lateralFL = MemoryReader.ReadFloat(hProcess, FLWheelPointer + Offsets.CarMov.LateralSpeedOffset);
+                float longitudinalFL = MemoryReader.ReadFloat(hProcess, FLWheelPointer + Offsets.CarMov.LongitudinalSpeedOffset);
+                float lateralFR = MemoryReader.ReadFloat(hProcess, FRWheelPointer + Offsets.CarMov.LateralSpeedOffset);
+                float longitudinalFR = MemoryReader.ReadFloat(hProcess, FRWheelPointer + Offsets.CarMov.LongitudinalSpeedOffset);
+                float lateralRL = MemoryReader.ReadFloat(hProcess, RLWheelPointer + Offsets.CarMov.LateralSpeedOffset);
+                float longitudinalRL = MemoryReader.ReadFloat(hProcess, RLWheelPointer + Offsets.CarMov.LongitudinalSpeedOffset);
+                float lateralRR = MemoryReader.ReadFloat(hProcess, RRWheelPointer + Offsets.CarMov.LateralSpeedOffset);
+
+
+                rbrData.FLWheelSlipAngle = GetSlipAngleRad(longitudinalFL, lateralFL) - rbrData.FLWheelSteeringAngle;
+                rbrData.FRWheelSlipAngle = GetSlipAngleRad(longitudinalRL, lateralFR) - rbrData.FRWheelSteeringAngle;
+
+                rbrData.RLWheelSlipAngle = GetSlipAngleRad(longitudinalRL, lateralRL);
+                rbrData.RRWheelSlipAngle = GetSlipAngleRad(longitudinalRL, lateralRR);
 
                 rbrData.FLWheelSlipRatio = ComputeWheelSlipRatio(rbrData.GroundSpeed, rbrData.FLWheelSpeed);
                 rbrData.FRWheelSlipRatio = ComputeWheelSlipRatio(rbrData.GroundSpeed, rbrData.FRWheelSpeed);
                 rbrData.RLWheelSlipRatio = ComputeWheelSlipRatio(rbrData.GroundSpeed, rbrData.RLWheelSpeed);
                 rbrData.RRWheelSlipRatio = ComputeWheelSlipRatio(rbrData.GroundSpeed, rbrData.RRWheelSpeed);
+
+                rbrData.FLWheelMaxSlipAngle = ComputeLateralAcceleration(accX, accY, fwdX, fwdY);
 
                 // Read GaugerPlugin.dll memory for lock slip value
                 if (!MemoryReader.TryReadFromDll("GaugerPlugin.dll", 0x7ADFC, out float GaugerPluginLockSlip))
@@ -581,6 +674,11 @@ namespace maorc287.RBRDataPluginExt
             public float FRWheelSlipRatio { get; set; } = 0.0f;
             public float RLWheelSlipRatio { get; set; } = 0.0f;
             public float RRWheelSlipRatio { get; set; } = 0.0f;
+
+            public float FLWheelMaxSlipAngle { get; set; } = 0.0f;
+            public float FRWheelMaxSlipAngle { get; set; } = 0.0f;
+            public float RLWheelMaxSlipAngle { get; set; } = 0.0f;
+            public float RRWheelMaxSlipAngle { get; set; } = 0.0f;
 
             // Damage Value, when Value is 5 means part is lost, 1 means part is Fine
             public uint OilPumpDamage { get; set; } = 1;

@@ -60,6 +60,7 @@ namespace maorc287.RBRDataPluginExt
             public const int WaterTemperatureCelsius = 0x14;
             public const int EngineStatus = 0x2B8;
             public const int BatteryStatus = 0x2B4;
+            public const int Timer = 0x140; // Timer in seconds
         }
 
         public static class CarMov
@@ -85,6 +86,10 @@ namespace maorc287.RBRDataPluginExt
             public const int ForwardY = 0x120;
             public const int ForwardZ = 0x124;
 
+            public const int AccelerationX = 0x250; // Acceleration in X direction?
+            public const int AccelerationY = 0x254; // Acceleration in Y direction?
+            public const int AccelerationZ = 0x258; // Acceleration in Z direction?
+
             // Wheel pointers for the CarMov structure
             public const int FLWheel = 0x470; // Front Left Wheel Pointer
             public const int FRWheel = 0x474; // Front Right Wheel Pointer
@@ -92,7 +97,11 @@ namespace maorc287.RBRDataPluginExt
             public const int RRWheel = 0x47C; // Rear Right Wheel Pointer
 
             public const int WheelRadiusOffset = 0xAA0; // Offset to wheel radius in the CarMov Wheel structure
-            public const int WheelRotationOffset = 0xA50; // Offset to wheel rotation in the CarMov Wheel structure 
+            public const int WheelRotationOffset = 0xA50; // Offset to wheel rotation in the CarMov Wheel structure
+            public const int LongitudinalSlipOffset = 0x12B8; // Offset to longitudinal slip in the CarMov Wheel structure
+            public const int LateralSlipOffset = 0x12BC; // Offset to lateral slip in the CarMov Wheel structure
+            public const int LongitudinalSpeedOffset = 0x1278; // Offset to longitudinal speed in the CarMov Wheel structure
+            public const int LateralSpeedOffset = 0x1268; // Offset to lateral speed in the CarMov Wheel structure
 
             //Not sure about this, maybe it is related to steering angle in Radians (Offset for the Front Wheels Only)
             public const int FrontWheelSteeringAngle = 0x9E4;
@@ -135,6 +144,8 @@ namespace maorc287.RBRDataPluginExt
             public const int CarMov = 0x008EF660;
             public const int GameMode = 0x007EAC48;
             public const int GameModeOffset = 0x728;
+            public const int TiresBase = 0x007C8318;
+            public const int TiresOffset = 0x7F0;
         }
     }
 }

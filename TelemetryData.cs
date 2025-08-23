@@ -148,70 +148,7 @@ namespace maorc287.RBRDataPluginExt
             return slipRatio;
         }
 
-        private static bool initialized = false;
-        private static float prevVelX = 0f;
-        private static float prevVelY = 0f;
-
-        private static float ComputeLateralAcceleration(
-    float accX, float accY,   // current acceleration in m/s
-    float fwdX, float fwdY    // normalized forward vector
-)
-        {
-            // 1. Normalize car forward vector
-            float fwdLen = (float)Math.Sqrt(fwdX * fwdX + fwdY * fwdY);
-            if (fwdLen < 1e-6f)
-            {
-                return 0;
-            }
-            float fx = fwdX / fwdLen;
-            float fy = fwdY / fwdLen;
-
-            float rightX = -fy;
-            float rightY = fx;
-
-            float aLat = accX * rightX + accY * rightY;
-            return aLat;
-        }
-
-        private static float ComputeLateralAccelerationB(
-            float velX, float velY,   // current velocity in m/s
-            float fwdX, float fwdY,   // normalized forward vector
-            float dt
-        )
-        {
-
-            if (!initialized)
-            {
-                prevVelX = velX;
-                prevVelY = velY;
-                initialized = true;
-                return 0f; // can't compute acceleration yet
-            }
-
-            // 1. Normalize car forward vector
-            float fwdLen = (float)Math.Sqrt(fwdX * fwdX + fwdY * fwdY);
-            if (fwdLen < 1e-6f)
-            {
-                return 0;
-            }
-            float fx = fwdX / fwdLen;
-            float fy = fwdY / fwdLen;
-
-            if (dt < 1e-6f) return 0f;
-
-            float accX = (velX - prevVelX) / dt;
-            float accY = (velY - prevVelY) / dt;
-
-            prevVelX = velX;
-            prevVelY = velY;
-
-            float rightX = -fy;
-            float rightY = fx;
-
-            float aLat = accX * rightX + accY * rightY;
-            return aLat;
-        }
-
+ 
         // Helper to transform world velocity to car local frame (forward/right)
         private static void WorldToLocal(float velX, 
             float velY, float fwdX, float fwdY, 
@@ -239,8 +176,6 @@ namespace maorc287.RBRDataPluginExt
             return a;
         }
 
-        // param3[0] = longitudinal slip
-        // param3[1] = lateral slip
         public static float GetSlipAngleRad(float longitudinalSpeed, float lateralSpeed)
         {
             const float epslongitudinalSpeed = 0.05f;
@@ -251,29 +186,17 @@ namespace maorc287.RBRDataPluginExt
             return (float)Math.Atan2(lateralSpeed, longitudinalSpeed);
         }
 
-
-        private static float prevFwdX = 0f;
-        private static float prevFwdY = 1f; // assuming initial forward along Y
-        private static float prevTimestamp = 0f; // in seconds
-
-        private static float ComputeYawRate(float fwdX, float fwdY, float currentTimestamp)
+        public static float GetSlipLimit(float load, float[] table)
         {
-            float deltaTime = currentTimestamp - prevTimestamp;
-            if (deltaTime <= 0f) return 0f;
+            // Clamp load index between 0 and table.Length - 1
+            int idx = (int)Math.Floor(load);
+            int nextIdx = Math.Min(idx + 1, table.Length - 1);
 
-            float yaw = (float)Math.Atan2(fwdX, fwdY);
-            float prevYaw = (float)Math.Atan2(prevFwdX, prevFwdY);
-
-            float deltaYaw = yaw - prevYaw;
-            if (deltaYaw > Math.PI) deltaYaw -= (float)(2 * Math.PI);
-            if (deltaYaw < -Math.PI) deltaYaw += (float)(2 * Math.PI);
-
-            prevFwdX = fwdX;
-            prevFwdY = fwdY;
-            prevTimestamp = currentTimestamp;
-
-            return deltaYaw / deltaTime; // rad/s
+            float frac = load - idx;
+            return table[idx] * (1 - frac) + table[nextIdx] * frac;
         }
+
+        private static float prevTimestamp = 0f; // in seconds
 
         /// Clamps a value between 0 and 1.
         internal static float Clamp01(float val) => val < 0f ? 0f : (val > 1f ? 1f : val);
@@ -594,9 +517,7 @@ namespace maorc287.RBRDataPluginExt
                     prevTimestamp = currentTimestamp;
                 }
 
-                float yawRate = ComputeYawRate(fwdX, fwdY, currentTimestamp + 0.001f);
                 float dt = currentTimestamp + 0.001f - prevTimestamp;
-
 
                 float lateralFL = MemoryReader.ReadFloat(hProcess, FLWheelPointer + Offsets.CarMov.LateralSpeedOffset);
                 float longitudinalFL = MemoryReader.ReadFloat(hProcess, FLWheelPointer + Offsets.CarMov.LongitudinalSpeedOffset);
@@ -617,8 +538,6 @@ namespace maorc287.RBRDataPluginExt
                 rbrData.FRWheelSlipRatio = ComputeWheelSlipRatio(rbrData.GroundSpeed, rbrData.FRWheelSpeed);
                 rbrData.RLWheelSlipRatio = ComputeWheelSlipRatio(rbrData.GroundSpeed, rbrData.RLWheelSpeed);
                 rbrData.RRWheelSlipRatio = ComputeWheelSlipRatio(rbrData.GroundSpeed, rbrData.RRWheelSpeed);
-
-                rbrData.FLWheelMaxSlipAngle = ComputeLateralAcceleration(accX, accY, fwdX, fwdY);
 
                 // Read GaugerPlugin.dll memory for lock slip value
                 if (!MemoryReader.TryReadFromDll("GaugerPlugin.dll", 0x7ADFC, out float GaugerPluginLockSlip))

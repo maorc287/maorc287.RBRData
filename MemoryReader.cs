@@ -1,4 +1,4 @@
-﻿using maorc287.RBRDataPluginExt;
+﻿using maorc287.RBRDataExtPlugin;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -142,7 +142,7 @@ namespace maorc287.RBRDataExtPlugin
                 _cachedProcessId = 0;
                 _cachedProcessName = null;
                 _cachedDllBases.Clear(); // Clear DLL cache
-                TelemetryData.pointerCache.ClearAll(); // Clear cached pointers when handle is closed
+                TelemetryData.pointerCache.ClearAllCache(); // Clear cached pointers when handle is closed
             }
         }
 
@@ -198,6 +198,21 @@ namespace maorc287.RBRDataExtPlugin
             {
                 return false; // read failed (invalid offset, etc.)
             }
+        }
+
+        internal static float[] ReadFloatArray(IntPtr hProcess, IntPtr address, int count)
+        {
+            int size = sizeof(float) * count;
+            byte[] buffer = new byte[size];
+
+            if (!ReadProcessMemory(hProcess, address, buffer, (uint)size, out _))
+                return new float[count]; // Read failed
+
+            float[] result = new float[count];
+            for (int i = 0; i < count; i++)
+                result[i] = BitConverter.ToSingle(buffer, i * sizeof(float));
+
+            return result;
         }
 
 

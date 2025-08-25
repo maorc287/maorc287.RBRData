@@ -1,6 +1,7 @@
 ﻿using System;
+using System.Diagnostics.Contracts;
 
-namespace maorc287.RBRDataPluginExt
+namespace maorc287.RBRDataExtPlugin
 {
     internal class PointerCache
     {
@@ -15,13 +16,20 @@ namespace maorc287.RBRDataPluginExt
         public IntPtr RLWheelPtr { get; set; } = IntPtr.Zero;
         public IntPtr RRWheelPtr { get; set; } = IntPtr.Zero;
 
-        internal void ClearAll()
+        public IntPtr TiresPhysicsBasePtr { get; set; } = IntPtr.Zero;
+
+        internal void ClearAllCache()
         {
             CarInfoBasePtr = IntPtr.Zero;
             CarMovBasePtr = IntPtr.Zero;
             GameModeBasePtr = IntPtr.Zero;
             DamageBasePtr = IntPtr.Zero;
+            TiresPhysicsBasePtr = IntPtr.Zero;
+        }
 
+        internal bool IsTiresPhysicsPointerValid()
+        {
+            return TiresPhysicsBasePtr != IntPtr.Zero;
         }
 
         internal bool IsCarInfoPointerValid()
@@ -86,9 +94,9 @@ namespace maorc287.RBRDataPluginExt
             public const int ForwardY = 0x120;
             public const int ForwardZ = 0x124;
 
-            public const int AccelerationX = 0x250; // Acceleration in X direction?
-            public const int AccelerationY = 0x254; // Acceleration in Y direction?
-            public const int AccelerationZ = 0x258; // Acceleration in Z direction?
+            public const int AccelerationX = 0x250; // ?Acceleration in X direction?
+            public const int AccelerationY = 0x254; // ?Acceleration in Y direction?
+            public const int AccelerationZ = 0x258; // ?Acceleration in Z direction?
 
             // Wheel pointers for the CarMov structure
             public const int FLWheel = 0x470; // Front Left Wheel Pointer
@@ -96,12 +104,21 @@ namespace maorc287.RBRDataPluginExt
             public const int RLWheel = 0x478; // Rear Left Wheel Pointer
             public const int RRWheel = 0x47C; // Rear Right Wheel Pointer
 
-            public const int WheelRadiusOffset = 0xAA0; // Offset to wheel radius in the CarMov Wheel structure
-            public const int WheelRotationOffset = 0xA50; // Offset to wheel rotation in the CarMov Wheel structure
-            public const int LongitudinalSlipOffset = 0x12B8; // Offset to longitudinal slip in the CarMov Wheel structure
-            public const int LateralSlipOffset = 0x12BC; // Offset to lateral slip in the CarMov Wheel structure
-            public const int LongitudinalSpeedOffset = 0x1278; // Offset to longitudinal speed in the CarMov Wheel structure
-            public const int LateralSpeedOffset = 0x1268; // Offset to lateral speed in the CarMov Wheel structure
+        }
+
+        public static class Wheel
+        {
+            //Wheel structure offsets (same for all wheels)
+            public const int WheelRadiusOffset = 0xAA0;
+            public const int WheelRotationOffset = 0xA50;
+
+            public const int LongitudinalSlipOffset = 0x12B8; // ?? Offset to longitudinal slip 
+            public const int LateralSlipOffset = 0x12BC; // ?? Offset to lateral slip
+
+            public const int LongitudinalSpeedOffset = 0x1278; // Offset to longitudinal speed
+            public const int LateralSpeedOffset = 0x1268; // Offset to lateral speed
+
+            public const int Load = 0x1290; // Offset to wheel load maybe? Don't know what unit
 
             //Not sure about this, maybe it is related to steering angle in Radians (Offset for the Front Wheels Only)
             public const int FrontWheelSteeringAngle = 0x9E4;
@@ -138,14 +155,25 @@ namespace maorc287.RBRDataPluginExt
             public const int GearboxDamage = 0x48;
         }
 
+        public static class TiresPhysics
+        {
+            // Array of 8 float values from the Tires structure from File tyres.lsp
+            public const int SlpPkCrn = 0x7F0;  // Slip Peak Cornering value in the Tires structure from File tyres.lsp
+            public const int SlpPkTrct = 0x810;  // Slip Peak Traction value in the Tires structure from File tyres.lsp
+            public const int CrnStf = 0x780;  // Cornering Stiffness value in the Tires structure from File tyres.lsp
+            public const int TrctStf = 0x890;  // Traction Stiffness value in the Tires structure from File tyres.lsp
+
+
+        }
+
         public static class Pointers
         {
             public const int CarInfo = 0x0165FC68;
             public const int CarMov = 0x008EF660;
             public const int GameMode = 0x007EAC48;
             public const int GameModeOffset = 0x728;
-            public const int TiresBase = 0x007C8318;
-            public const int TiresOffset = 0x7F0;
+            public const int TiresPhysics = 0x007C8318; // Pointer to the tires.lsp file structure in memory
+
         }
     }
 }

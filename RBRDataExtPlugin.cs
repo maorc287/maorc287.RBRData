@@ -1,6 +1,7 @@
-﻿using maorc287.RBRDataPluginExt;
-using SimHub.Plugins;
+﻿using SimHub.Plugins;
 using System.Windows.Media;
+using static maorc287.RBRDataExtPlugin.TelemetryData;
+using static maorc287.RBRDataExtPlugin.TelemetryCalc;
 
 namespace maorc287.RBRDataExtPlugin
 {
@@ -85,7 +86,7 @@ namespace maorc287.RBRDataExtPlugin
 
         public void DataUpdate(PluginManager pluginManager, ref GameReaderCommon.GameData data)
         {
-            var rbrData = TelemetryData.ReadTelemetryData();
+            var rbrData = ReadTelemetryData();
 
             string pressureUnit = (string)PluginManager.GetPropertyValue("DataCorePlugin.GameData.OilPressureUnit");
             string temperatureUnit = (string)PluginManager.GetPropertyValue("DataCorePlugin.GameData.TemperatureUnit");
@@ -96,12 +97,12 @@ namespace maorc287.RBRDataExtPlugin
             PluginManager.SetPropertyValue("RBR.Data.EngineOn", GetType(), rbrData.IsEngineOn);
 
             PluginManager.SetPropertyValue("RBR.Data.OilPressure", GetType(),
-                TelemetryData.FormatPressure(rbrData.OilPressure, pressureUnit));
+                FormatPressure(rbrData.OilPressure, pressureUnit));
 
             PluginManager.SetPropertyValue("RBR.Data.RadiatorCoolantTemeperature", GetType(),
-                TelemetryData.FormatTemperature(rbrData.RadiatorCoolantTemperature, temperatureUnit));
+                FormatTemperature(rbrData.RadiatorCoolantTemperature, temperatureUnit));
             PluginManager.SetPropertyValue("RBR.Data.OilTemperature", GetType(),
-                TelemetryData.FormatTemperature(rbrData.OilTemperature, temperatureUnit));
+                FormatTemperature(rbrData.OilTemperature, temperatureUnit));
 
             PluginManager.SetPropertyValue("RBR.Data.BatteryVoltage", GetType(), rbrData.BatteryVoltage);
 

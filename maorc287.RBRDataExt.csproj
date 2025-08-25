@@ -75,6 +75,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Pointers.cs" />
+    <Compile Include="TelemetryCalc.cs" />
     <Compile Include="TelemetryData.cs" />
     <Compile Include="MemoryReader.cs" />
     <Compile Include="RBRDataExtPlugin.cs" />

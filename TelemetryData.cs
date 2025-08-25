@@ -1,8 +1,11 @@
 ﻿using maorc287.RBRDataExtPlugin;
 using System;
+using static maorc287.RBRDataExtPlugin.MemoryReader;
+using static maorc287.RBRDataExtPlugin.Offsets;
+using static maorc287.RBRDataExtPlugin.TelemetryCalc;
 
+namespace maorc287.RBRDataExtPlugin
 
-namespace maorc287.RBRDataPluginExt
 {
     internal static class TelemetryData
     {
@@ -11,332 +14,11 @@ namespace maorc287.RBRDataPluginExt
         // Process name for Richard Burns Rally
         private const string RBRProcessName = "RichardBurnsRally_SSE";
 
-        // Base adjustment for oil pressure calculation 
-        // BitConverter.ToSingle(BitConverter.GetBytes(0x3f8460fe), 0);
-        private const float OilPressureBaseAdjustment = 1.03421f;
-        private const float OilPressureBaseLimit = 0.02f;
-
-        // Conversion constants
-        private const float pascal_Bar = 1e-5f;
-        private const float bar_Psi = 14.5038f;
-        private const float bar_Kpa = 100f;
-        private const float kelvin_Celcius = 273.15f;
 
         // Cache for pointers to avoid repeated memory reads
         internal static readonly PointerCache pointerCache = new PointerCache();
 
-
-        /// Computes the oil pressure from raw values using RBRHUD logic.
-        private static float ComputeOilPressure(float rawBase, float pressureRaw)
-        {
-            float pressureBase = (rawBase > OilPressureBaseLimit) ? OilPressureBaseAdjustment :
-                (rawBase * OilPressureBaseAdjustment) / OilPressureBaseLimit;
-            float pressureRawBar = pressureRaw * pascal_Bar;
-            return pressureBase + pressureRawBar;
-        }
-
-        /// Formats the pressure value based on the specified unit.
-        internal static float FormatPressure(float pressure, string unit)
-        {
-            if (string.IsNullOrEmpty(unit)) return pressure;
-
-            unit = unit.Trim().ToLowerInvariant();
-            switch (unit)
-            {
-                case "psi":
-                    return pressure * bar_Psi;
-                case "kpa":
-                    return pressure * bar_Kpa;
-                case "bar":
-                default:
-                    return pressure; // default is Bar
-            }
-        }
-
-        /// Formats the temperature value based on the specified unit.
-        internal static float FormatTemperature(float temperature, string unit)
-        {
-            float tempC = temperature - kelvin_Celcius;
-            if (tempC < 0f) tempC = 0f;
-
-            if (string.IsNullOrEmpty(unit)) return tempC;
-
-            unit = unit.Trim().ToLowerInvariant();
-            switch (unit)
-            {
-                case "celcius":
-                    return tempC;
-                case "fahrenheit":
-                    return (tempC * 9f / 5f) + 32f;
-                case "kelvin":
-                    return temperature;
-                default:
-                    return tempC; // default is Celsius
-            }
-        }
-
-        /// Function to compute single whheel rotatinon speed in km/h.
-        private static float ComputeWheelSpeed(float wheelRadius, float wheelOmega)
-        {
-            float wheelSpeed = Math.Abs(wheelRadius * wheelOmega * 3.6f);
-            if (wheelSpeed < 1.0f)
-                return 0.0f; // Avoid very small values
-
-            return wheelSpeed;
-        }
-
-        /// Computes the ground speed based on velocity and forward direction vectors.
-        private static float ComputeGroundSpeed(
-            float velocityX,
-            float velocityY,
-            float velocityZ,
-            float forwardX,
-            float forwardY,
-            float forwardZ)
-        {
-            return (velocityX * forwardX +
-                    velocityY * forwardY +
-                    velocityZ * forwardZ) * -3.559f;
-        }
-
-        /// Computes the wheel lock ratio based on ground speed and wheel speed.
-        private static float ComputeWheelLockRatio(
-            float groundSpeed,
-            float wheelSpeed)
-        {
-            if (groundSpeed < 1.0f)
-                return 0.0f;
-
-            float lockRatio = (groundSpeed - wheelSpeed) / groundSpeed;
-
-            return Clamp01(lockRatio);
-        }
-
-        /// Computes the wheel spin ratio based on ground speed and wheel speed.
-        private static float ComputeWheelSpinRatio(
-            float groundSpeed,
-            float wheelSpeed)
-        {
-            if (groundSpeed < 1.0f)
-                return 0.0f;
-
-            float slipRatio = (wheelSpeed - groundSpeed) / groundSpeed;
-
-            return Clamp01(slipRatio);
-        }
-
-        private static float ComputeWheelSlipRatio(float groundSpeed, float wheelSpeed)
-        {
-            const float epsilon = 0.5f; // small threshold
-
-            if (Math.Abs(groundSpeed) < epsilon)
-            {
-                // Car is almost stationary; if wheel spinning, return +1
-                if (wheelSpeed > epsilon)
-                    return 1f;
-                else
-                    return 0f; // wheel not spinning
-            }
-
-            // Standard slip ratio calculation
-            float slipRatio = (wheelSpeed - groundSpeed) / Math.Abs(groundSpeed);
-
-            // Clamp to [-1, +1]
-            if (slipRatio < -1f) return -1f;
-            if (slipRatio > 1f) return 1f;
-
-            return slipRatio;
-        }
-
- 
-        // Helper to transform world velocity to car local frame (forward/right)
-        private static void WorldToLocal(float velX, 
-            float velY, float fwdX, float fwdY, 
-            out float vX_local, out float vY_local)
-        {
-            float fwdLength = (float)Math.Sqrt(fwdX * fwdX + fwdY * fwdY);
-            if (fwdLength < 1e-6f) { vX_local = 0; vY_local = 0; return; }
-
-            float fx = fwdX / fwdLength;
-            float fy = fwdY / fwdLength;
-
-            // right vector perpendicular to forward
-            float rx = fy;
-            float ry = -fx;
-
-            vX_local = velX * fx + velY * fy; // forward velocity
-            vY_local = velX * rx + velY * ry; // lateral velocity
-        }
-        
-        private static float NormalizeAngle(float a)
-        {
-            float twoPi = (float)(2.0 * Math.PI);
-            while (a <= -Math.PI) a += twoPi;
-            while (a > Math.PI) a -= twoPi;
-            return a;
-        }
-
-        public static float GetSlipAngleRad(float longitudinalSpeed, float lateralSpeed)
-        {
-            const float epslongitudinalSpeed = 0.05f;
-            if (Math.Abs(longitudinalSpeed) < epslongitudinalSpeed)
-                return 0f;
-
-            // atan2 gives the slip angle in radians
-            return (float)Math.Atan2(lateralSpeed, longitudinalSpeed);
-        }
-
-        public static float GetSlipLimit(float load, float[] table)
-        {
-            // Clamp load index between 0 and table.Length - 1
-            int idx = (int)Math.Floor(load);
-            int nextIdx = Math.Min(idx + 1, table.Length - 1);
-
-            float frac = load - idx;
-            return table[idx] * (1 - frac) + table[nextIdx] * frac;
-        }
-
-        private static float prevTimestamp = 0f; // in seconds
-
-        /// Clamps a value between 0 and 1.
-        internal static float Clamp01(float val) => val < 0f ? 0f : (val > 1f ? 1f : val);
-
-
-        /// <summary>
-        /// Determines the damage level of the oil pump based on its current health oilPumpCondition.
-        /// </summary>
-        /// <param name="oilPumpCondition">
-        /// The oil pump status as a float:
-        /// - 1.0 means the oil pump is fully functional (no damage).
-        /// - Values decrease as damage increases.
-        /// - 0.0 or below means the oil pump has completely failed.
-        /// </param>
-        /// <returns>
-        /// An integer damage level code:
-        /// 1 = Fine (near perfect condition),
-        /// 2 = Light damage,
-        /// 3 = Medium damage,
-        /// 4 = Severe damage (significant loss of performance),
-        /// 5 = Lost, Oil pump failure (no longer working).
-        /// </returns>
-        private static uint OilPumpDamageLevel(float oilPumpCondition)
-        {
-            if (oilPumpCondition > 0.9f)
-                return 1u;
-
-            if (oilPumpCondition > 0.6f)
-                return 2u;
-
-            if (oilPumpCondition > 0.2f)
-                return 3u;
-
-            if (oilPumpCondition > 0.0f)
-                return 4u;
-
-            return 5u;
-        }
-
-
-        /// <summary>
-        /// Determines the battery wear level based on the raw battery status batteryCondition normalized to 0.0–1.0 scale.
-        /// </summary>
-        /// <param name="batteryCondition">
-        /// Battery status normalized as a float between 0.0 and 1.0, where 1.0 represents full health.
-        /// 
-        /// Raw thresholds for in-game warnings (out of 12 in BatterySatauts 0x2B4):
-        /// - Below 0.833 (≈ 10.0) turns battery warning light on.
-        /// - Below 0.667  (≈ 8.0) starts blinking battery warning light.
-        /// - Below 0.5  (≈  6.0) triggers Co-Driver call about battery issues.
-        /// </param>
-        /// <returns>
-        /// An integer wear level code:
-        /// 1 = Fine (above ~0.9),
-        /// 2 = Light (above ~0.8),
-        /// 3 = Medium (above ~0.65),
-        /// 4 = Severe (above ~0.5),
-        /// 5 = Battery failure or very poor condition (0.5 or below). Not able to start the car.
-        /// </returns>
-        private static uint BatteryHealthLevel(float batteryCondition)
-        {
-            if (batteryCondition > 0.9f)
-                return 1u;  // Fine
-
-            if (batteryCondition > 0.8f)
-                return 2u;  // Light
-
-            if (batteryCondition > 0.65f)
-                return 3u;  // Medium
-
-            if (batteryCondition > 0.5f)
-                return 4u;  // Severe
-
-            return 5u;      // Lost
-        }
-
-
-        /// <summary>
-        /// Categorizes the intercooler damage based on the damage float intercoolerCondition.
-        /// Lower values indicate better condition. Higher values indicate more damage.
-        /// </summary>
-        /// <param name="intercoolerCondition">
-        /// The intercooler damage intercoolerCondition (0.0 = no damage, 0.4 = fully damaged).</param>
-        /// <returns>
-        /// An integer representing damage severity:
-        /// 1 = Fine, 2 = Light, 3 = Medium, 4 = Severe, 5 = Lost.
-        /// </returns>
-        private static uint IntercoolerDamageLevel(float intercoolerCondition)
-        {
-            if (intercoolerCondition < 0.01f)
-                return 1u; // Fine
-
-            if (intercoolerCondition < 0.05f)
-                return 2u; // Light
-
-            if (intercoolerCondition < 0.1f)
-                return 3u; // Medium
-
-            if (intercoolerCondition < 0.4f)
-                return 4u; // Severe
-
-            return 5u; // Lost
-        }
-
-        /// <summary>
-        /// Categorizes radiator damage based on a damage float radiatorCondition.
-        /// Lower values mean healthier radiator. Higher values indicate more severe damage.
-        /// </summary>
-        /// <param name="radiatorCondition">
-        /// Radiator damage radiatorCondition (0.0 = perfect, 0.2 = lost).</param>
-        /// <returns>
-        /// Damage severity level:
-        /// 1 = Fine, 2 = Light, 3 = Medium, 5 = Lost.
-        /// </returns>
-        private static uint RadiatorDamageLevel(float radiatorCondition)
-        {
-            if (radiatorCondition < 0.005f)
-                return 1u; // Fine
-
-            if (radiatorCondition < 0.03f)
-                return 2u; // Light
-
-            if (radiatorCondition < 0.2f)
-                return 3u; // Medium
-
-            return 5u; // Lost
-        }
-
-
-        /// Determines if the part is lost or working no intermediate values.
-        private static uint PartWorkingStatus(int value)
-        {
-            return value == 0 ? 5u : 1u;
-        }
-
-        /// Determines if the part is lost or working no intermediate values.
-        private static uint InversePartWorkingStatus(int value)
-        {
-            return value == 0 ? 1u : 5u;
-        }
+   
 
         /// Reads telemetry data from the Richard Burns Rally process.
         /// this method accesses the game's memory to retrieve various telemetry values.
@@ -347,10 +29,10 @@ namespace maorc287.RBRDataPluginExt
         {
             var rbrData = new RBRTelemetryData();
 
-            IntPtr hProcess = MemoryReader.GetOrOpenProcessHandle(RBRProcessName);
+            IntPtr hProcess = GetOrOpenProcessHandle(RBRProcessName);
             if (hProcess == IntPtr.Zero)
             {
-                pointerCache.ClearAll(); // Clear cached pointers if process is not found
+                pointerCache.ClearAllCache(); // Clear cached pointers if process is not found
                 return rbrData;
             }
 
@@ -358,24 +40,24 @@ namespace maorc287.RBRDataPluginExt
             {
                 if (!pointerCache.IsGeameModeBaseValid())
                     pointerCache.GameModeBasePtr =
-                        (IntPtr)MemoryReader.ReadUInt(hProcess, (IntPtr)Offsets.Pointers.GameMode);
+                        (IntPtr)ReadUInt(hProcess, (IntPtr)Pointers.GameMode);
 
                 IntPtr gameModeBasePtr = pointerCache.GameModeBasePtr;
 
-                IntPtr gameModePtr = gameModeBasePtr + Offsets.Pointers.GameModeOffset;
-                int gameMode = MemoryReader.ReadInt(hProcess, gameModePtr);
+                IntPtr gameModePtr = gameModeBasePtr + Pointers.GameModeOffset;
+                int gameMode = ReadInt(hProcess, gameModePtr);
                 rbrData.IsOnStage = (gameMode == 1);
 
                 if (!rbrData.IsOnStage)
                 {
-                    pointerCache.ClearAll(); // Clear cached pointers if not on stage
+                    pointerCache.ClearAllCache(); // Clear cached pointers if not on stage
                     LatestValidTelemetry.IsOnStage = false;
                     return LatestValidTelemetry;
                 }
 
                 if (!pointerCache.IsCarInfoPointerValid())
                     pointerCache.CarInfoBasePtr =
-                        (IntPtr)MemoryReader.ReadUInt(hProcess, (IntPtr)Offsets.Pointers.CarInfo);
+                        (IntPtr)ReadUInt(hProcess, (IntPtr)Pointers.CarInfo);
 
                 IntPtr carInfoBasePtr = pointerCache.CarInfoBasePtr;
 
@@ -383,12 +65,23 @@ namespace maorc287.RBRDataPluginExt
                 {
 
                     pointerCache.CarMovBasePtr =
-                        MemoryReader.ReadPointer(hProcess, (IntPtr)Offsets.Pointers.CarMov);
-                    pointerCache.FLWheelPtr = MemoryReader.ReadPointer(hProcess, pointerCache.CarMovBasePtr + Offsets.CarMov.FLWheel);
-                    pointerCache.FRWheelPtr = MemoryReader.ReadPointer(hProcess, pointerCache.CarMovBasePtr + Offsets.CarMov.FRWheel);
-                    pointerCache.RLWheelPtr = MemoryReader.ReadPointer(hProcess, pointerCache.CarMovBasePtr + Offsets.CarMov.RLWheel);
-                    pointerCache.RRWheelPtr = MemoryReader.ReadPointer(hProcess, pointerCache.CarMovBasePtr + Offsets.CarMov.RRWheel);
+                        ReadPointer(hProcess, (IntPtr)Pointers.CarMov);
 
+                    pointerCache.FLWheelPtr = 
+                        ReadPointer(hProcess, pointerCache.CarMovBasePtr + CarMov.FLWheel);
+                    pointerCache.FRWheelPtr = 
+                        ReadPointer(hProcess, pointerCache.CarMovBasePtr + CarMov.FRWheel);
+                    pointerCache.RLWheelPtr = 
+                        ReadPointer(hProcess, pointerCache.CarMovBasePtr + CarMov.RLWheel);
+                    pointerCache.RRWheelPtr = 
+                        ReadPointer(hProcess, pointerCache.CarMovBasePtr + CarMov.RRWheel);
+
+                }
+
+                if (!pointerCache.IsTiresPhysicsPointerValid())
+                {
+                    pointerCache.TiresPhysicsBasePtr =
+                        (IntPtr)ReadUInt(hProcess, (IntPtr) Pointers.TiresPhysics);
                 }
 
                 IntPtr carMovBasePtr = pointerCache.CarMovBasePtr;
@@ -398,65 +91,66 @@ namespace maorc287.RBRDataPluginExt
                 IntPtr RLWheelPointer = pointerCache.RLWheelPtr;
                 IntPtr RRWheelPointer = pointerCache.RRWheelPtr;
 
+                IntPtr tiresPhysicsBasePtr = pointerCache.TiresPhysicsBasePtr;
 
                 if (!pointerCache.IsDamagePointerValid())
                 {
-                    IntPtr damageStructPtr = carMovBasePtr + Offsets.CarMov.DamageStructurePointer;
-                    int damagePointer = MemoryReader.ReadInt(hProcess, damageStructPtr);
+                    IntPtr damageStructPtr = carMovBasePtr + CarMov.DamageStructurePointer;
+                    int damagePointer = ReadInt(hProcess, damageStructPtr);
                     pointerCache.DamageBasePtr = (IntPtr)damagePointer;
                 }
 
                 IntPtr damageBasePtr = pointerCache.DamageBasePtr;
 
                 rbrData.BatteryWearLevel =
-                    BatteryHealthLevel(MemoryReader.ReadFloat(hProcess, damageBasePtr
-                    + Offsets.Damage.BatteryWearPercent));
+                    BatteryHealthLevel(ReadFloat(hProcess, damageBasePtr
+                    + Damage.BatteryWearPercent));
                 rbrData.OilPumpDamage =
-                    OilPumpDamageLevel(MemoryReader.ReadFloat(hProcess, damageBasePtr
-                    + Offsets.Damage.OilPump));
+                    OilPumpDamageLevel(ReadFloat(hProcess, damageBasePtr
+                    + Damage.OilPump));
                 rbrData.WaterPumpDamage =
-                    PartWorkingStatus(MemoryReader.ReadInt(hProcess, damageBasePtr
-                    + Offsets.Damage.WaterPump));
+                    PartWorkingStatus(ReadInt(hProcess, damageBasePtr
+                    + Damage.WaterPump));
                 rbrData.ElectricSystemDamage =
-                    PartWorkingStatus(MemoryReader.ReadInt(hProcess, damageBasePtr
-                    + Offsets.Damage.ElectricSystem));
+                    PartWorkingStatus(ReadInt(hProcess, damageBasePtr
+                    + Damage.ElectricSystem));
                 rbrData.BrakeCircuitDamage =
-                    PartWorkingStatus(MemoryReader.ReadInt(hProcess, damageBasePtr
-                    + Offsets.Damage.BrakeCircuit));
+                    PartWorkingStatus(ReadInt(hProcess, damageBasePtr
+                    + Damage.BrakeCircuit));
                 rbrData.GearboxActuatorDamage =
-                    PartWorkingStatus(MemoryReader.ReadInt(hProcess, damageBasePtr
-                    + Offsets.Damage.GearboxActuatorDamage));
+                    PartWorkingStatus(ReadInt(hProcess, damageBasePtr
+                    + Damage.GearboxActuatorDamage));
                 rbrData.RadiatorDamage =
-                    RadiatorDamageLevel(MemoryReader.ReadFloat(hProcess, damageBasePtr
-                    + Offsets.Damage.RadiatiorDamage));
+                    RadiatorDamageLevel(ReadFloat(hProcess, damageBasePtr
+                    + Damage.RadiatiorDamage));
                 rbrData.IntercoolerDamage =
-                    IntercoolerDamageLevel(MemoryReader.ReadFloat(hProcess, damageBasePtr
-                    + Offsets.Damage.IntercoolerDamage));
+                    IntercoolerDamageLevel(ReadFloat(hProcess, damageBasePtr
+                    + Damage.IntercoolerDamage));
                 rbrData.StarterDamage =
-                    PartWorkingStatus(MemoryReader.ReadInt(hProcess, damageBasePtr
-                    + Offsets.Damage.StarterDamage));
+                    PartWorkingStatus(ReadInt(hProcess, damageBasePtr
+                    + Damage.StarterDamage));
                 rbrData.HydraulicsDamage =
-                    PartWorkingStatus(MemoryReader.ReadInt(hProcess, damageBasePtr
-                    + Offsets.Damage.HydraulicsDamage));
+                    PartWorkingStatus(ReadInt(hProcess, damageBasePtr
+                    + Damage.HydraulicsDamage));
                 rbrData.OilCoolerDamage =
-                    InversePartWorkingStatus(MemoryReader.ReadInt(hProcess, damageBasePtr
-                    + Offsets.Damage.OilCoolerDamage));
+                    InversePartWorkingStatus(ReadInt(hProcess, damageBasePtr
+                    + Damage.OilCoolerDamage));
 
                 rbrData.IsEngineOn =
-                    MemoryReader.ReadFloat(hProcess, carInfoBasePtr + Offsets.CarInfo.EngineStatus) == 1.0f;
+                    ReadFloat(hProcess, carInfoBasePtr + CarInfo.EngineStatus) == 1.0f;
 
                 rbrData.RadiatorCoolantTemperature =
-                    MemoryReader.ReadFloat(hProcess, carMovBasePtr + Offsets.CarMov.RadiatorCoolantTemperature);
+                    ReadFloat(hProcess, carMovBasePtr + CarMov.RadiatorCoolantTemperature);
 
                 rbrData.OilTemperature =
-                    MemoryReader.ReadFloat(hProcess, carMovBasePtr + Offsets.CarMov.OilTempKelvin);
+                    ReadFloat(hProcess, carMovBasePtr + CarMov.OilTempKelvin);
 
                 rbrData.OilTemperatureWarning = rbrData.OilTemperature > 140.0f + kelvin_Celcius;
 
                 float oilPRawBase =
-                    MemoryReader.ReadFloat(hProcess, carMovBasePtr + Offsets.CarMov.OilPressureRawBase);
+                    ReadFloat(hProcess, carMovBasePtr + CarMov.OilPressureRawBase);
                 float oilPRaw =
-                    MemoryReader.ReadFloat(hProcess, carMovBasePtr + Offsets.CarMov.OilPressureRaw);
+                    ReadFloat(hProcess, carMovBasePtr + CarMov.OilPressureRaw);
                 rbrData.OilPressure = ComputeOilPressure(oilPRawBase, oilPRaw);
 
                 rbrData.OilPressureWarning = !rbrData.IsEngineOn
@@ -464,75 +158,98 @@ namespace maorc287.RBRDataPluginExt
                     | rbrData.OilPumpDamage >= 2;
 
                 float waterTemperature =
-                    MemoryReader.ReadFloat(hProcess, carInfoBasePtr + Offsets.CarInfo.WaterTemperatureCelsius);
+                    ReadFloat(hProcess, carInfoBasePtr + CarInfo.WaterTemperatureCelsius);
                 rbrData.WaterTemperatureWarning = waterTemperature > 120.0f;
 
                 rbrData.BatteryStatus =
-                    MemoryReader.ReadFloat(hProcess, carInfoBasePtr + Offsets.CarInfo.BatteryStatus);
+                    ReadFloat(hProcess, carInfoBasePtr + CarInfo.BatteryStatus);
                 rbrData.BatteryVoltage = rbrData.IsEngineOn ? 14.5f //simulate Alternator output when engine is on
                     : (rbrData.BatteryStatus * 0.2f) + 10.4f;
                 rbrData.LowBatteryWarning = rbrData.BatteryStatus < 10.0f;
 
-                float velX = MemoryReader.ReadFloat(hProcess, carMovBasePtr + Offsets.CarMov.VelocityX);
-                float velY = MemoryReader.ReadFloat(hProcess, carMovBasePtr + Offsets.CarMov.VelocityY);
-                float velZ = MemoryReader.ReadFloat(hProcess, carMovBasePtr + Offsets.CarMov.VelocityZ);
-                float fwdX = MemoryReader.ReadFloat(hProcess, carMovBasePtr + Offsets.CarMov.ForwardX);
-                float fwdY = MemoryReader.ReadFloat(hProcess, carMovBasePtr + Offsets.CarMov.ForwardY);
-                float fwdZ = MemoryReader.ReadFloat(hProcess, carMovBasePtr + Offsets.CarMov.ForwardZ);
-                float accX = MemoryReader.ReadFloat(hProcess, carMovBasePtr + Offsets.CarMov.AccelerationX);
-                float accY = MemoryReader.ReadFloat(hProcess, carMovBasePtr + Offsets.CarMov.AccelerationY);
-                float accZ = MemoryReader.ReadFloat(hProcess, carMovBasePtr + Offsets.CarMov.AccelerationZ);
+                float velX = ReadFloat(hProcess, carMovBasePtr + CarMov.VelocityX);
+                float velY = ReadFloat(hProcess, carMovBasePtr + CarMov.VelocityY);
+                float velZ = ReadFloat(hProcess, carMovBasePtr + CarMov.VelocityZ);
+                float fwdX = ReadFloat(hProcess, carMovBasePtr + CarMov.ForwardX);
+                float fwdY = ReadFloat(hProcess, carMovBasePtr + CarMov.ForwardY);
+                float fwdZ = ReadFloat(hProcess, carMovBasePtr + CarMov.ForwardZ);
+                float accX = ReadFloat(hProcess, carMovBasePtr + CarMov.AccelerationX);
+                float accY = ReadFloat(hProcess, carMovBasePtr + CarMov.AccelerationY);
+                float accZ = ReadFloat(hProcess, carMovBasePtr + CarMov.AccelerationZ);
 
-                float wheelSpeed = MemoryReader.ReadFloat(hProcess, carInfoBasePtr + Offsets.CarInfo.WheelSpeed);
+                float flLoad = ReadFloat(hProcess, FLWheelPointer + Wheel.Load);
+                float frLoad = ReadFloat(hProcess, FRWheelPointer + Wheel.Load);
+                float rlLoad = ReadFloat(hProcess, RLWheelPointer + Wheel.Load);
+                float rrLoad = ReadFloat(hProcess, RRWheelPointer + Wheel.Load);
+
+                float[] slipCornerPk = 
+                    ReadFloatArray(hProcess,tiresPhysicsBasePtr + TiresPhysics.SlpPkCrn, 8);
+                float[] slipTractionPk =
+                    ReadFloatArray(hProcess, tiresPhysicsBasePtr + TiresPhysics.SlpPkTrct, 8);
+                float[] cornerStiff = 
+                    ReadFloatArray(hProcess, tiresPhysicsBasePtr + TiresPhysics.CrnStf, 8);
+                float[] tractionStiff = 
+                    ReadFloatArray(hProcess, tiresPhysicsBasePtr + TiresPhysics.TrctStf, 8);
+
+                float wheelSpeed = ReadFloat(hProcess, carInfoBasePtr + CarInfo.WheelSpeed);
                 rbrData.GroundSpeed = ComputeGroundSpeed(velX, velY, velZ, fwdX, fwdY, fwdZ);
                 rbrData.WheelLock = ComputeWheelLockRatio(rbrData.GroundSpeed, wheelSpeed);
                 rbrData.WheelSlip = ComputeWheelSpinRatio(rbrData.GroundSpeed, wheelSpeed);
 
 
                 rbrData.FLWheelSpeed = ComputeWheelSpeed(
-                    MemoryReader.ReadFloat(hProcess, FLWheelPointer + Offsets.CarMov.WheelRadiusOffset),
-                    MemoryReader.ReadFloat(hProcess, FLWheelPointer + Offsets.CarMov.WheelRotationOffset));
+                    ReadFloat(hProcess, FLWheelPointer + Wheel.WheelRadiusOffset),
+                    ReadFloat(hProcess, FLWheelPointer + Wheel.WheelRotationOffset));
                 rbrData.FRWheelSpeed = ComputeWheelSpeed(
-                    MemoryReader.ReadFloat(hProcess, FRWheelPointer + Offsets.CarMov.WheelRadiusOffset),
-                    MemoryReader.ReadFloat(hProcess, FRWheelPointer + Offsets.CarMov.WheelRotationOffset));
+                    ReadFloat(hProcess, FRWheelPointer + Wheel.WheelRadiusOffset),
+                    ReadFloat(hProcess, FRWheelPointer + Wheel.WheelRotationOffset));
                 rbrData.RLWheelSpeed = ComputeWheelSpeed(
-                    MemoryReader.ReadFloat(hProcess, RLWheelPointer + Offsets.CarMov.WheelRadiusOffset),
-                    MemoryReader.ReadFloat(hProcess, RLWheelPointer + Offsets.CarMov.WheelRotationOffset));
+                    ReadFloat(hProcess, RLWheelPointer + Wheel.WheelRadiusOffset),
+                    ReadFloat(hProcess, RLWheelPointer + Wheel.WheelRotationOffset));
                 rbrData.RRWheelSpeed = ComputeWheelSpeed(
-                    MemoryReader.ReadFloat(hProcess, RRWheelPointer + Offsets.CarMov.WheelRadiusOffset),
-                    MemoryReader.ReadFloat(hProcess, RRWheelPointer + Offsets.CarMov.WheelRotationOffset));
+                    ReadFloat(hProcess, RRWheelPointer + Wheel.WheelRadiusOffset),
+                    ReadFloat(hProcess, RRWheelPointer + Wheel.WheelRotationOffset));
 
                 rbrData.FLWheelSteeringAngle =
-                    MemoryReader.ReadFloat(hProcess, FLWheelPointer + Offsets.CarMov.FrontWheelSteeringAngle);
+                    ReadFloat(hProcess, FLWheelPointer + Wheel.FrontWheelSteeringAngle);
                 rbrData.FRWheelSteeringAngle =
-                    MemoryReader.ReadFloat(hProcess, FRWheelPointer + Offsets.CarMov.FrontWheelSteeringAngle);
+                    ReadFloat(hProcess, FRWheelPointer + Wheel.FrontWheelSteeringAngle);
 
+                //timing calculations not used currently
+                /*
                 float currentTimestamp = MemoryReader.ReadFloat(hProcess, carInfoBasePtr + Offsets.CarInfo.Timer);
                 
                 if (currentTimestamp < 0.016f || currentTimestamp < prevTimestamp)
                 {
-                    // Reset previous values if currentTimestamp is invalid or goes backwards
-                    prevFwdX = fwdX;
-                    prevFwdY = fwdY;
                     prevTimestamp = currentTimestamp;
                 }
 
-                float dt = currentTimestamp + 0.001f - prevTimestamp;
+                //float dt = currentTimestamp + 0.001f - prevTimestamp;
+                */
 
-                float lateralFL = MemoryReader.ReadFloat(hProcess, FLWheelPointer + Offsets.CarMov.LateralSpeedOffset);
-                float longitudinalFL = MemoryReader.ReadFloat(hProcess, FLWheelPointer + Offsets.CarMov.LongitudinalSpeedOffset);
-                float lateralFR = MemoryReader.ReadFloat(hProcess, FRWheelPointer + Offsets.CarMov.LateralSpeedOffset);
-                float longitudinalFR = MemoryReader.ReadFloat(hProcess, FRWheelPointer + Offsets.CarMov.LongitudinalSpeedOffset);
-                float lateralRL = MemoryReader.ReadFloat(hProcess, RLWheelPointer + Offsets.CarMov.LateralSpeedOffset);
-                float longitudinalRL = MemoryReader.ReadFloat(hProcess, RLWheelPointer + Offsets.CarMov.LongitudinalSpeedOffset);
-                float lateralRR = MemoryReader.ReadFloat(hProcess, RRWheelPointer + Offsets.CarMov.LateralSpeedOffset);
+                float lateralFL = ReadFloat(hProcess, FLWheelPointer + Wheel.LateralSpeedOffset);
+                float longitudinalFL = ReadFloat(hProcess, FLWheelPointer + Wheel.LongitudinalSpeedOffset);
+                float lateralFR = ReadFloat(hProcess, FRWheelPointer + Wheel.LateralSpeedOffset);
+                float longitudinalFR = ReadFloat(hProcess, FRWheelPointer + Wheel.LongitudinalSpeedOffset);
+                float lateralRL = ReadFloat(hProcess, RLWheelPointer + Wheel.LateralSpeedOffset);
+                float longitudinalRL = ReadFloat(hProcess, RLWheelPointer + Wheel.LongitudinalSpeedOffset);
+                float lateralRR = ReadFloat(hProcess, RRWheelPointer + Wheel.LateralSpeedOffset);
 
 
-                rbrData.FLWheelSlipAngle = GetSlipAngleRad(longitudinalFL, lateralFL) - rbrData.FLWheelSteeringAngle;
-                rbrData.FRWheelSlipAngle = GetSlipAngleRad(longitudinalRL, lateralFR) - rbrData.FRWheelSteeringAngle;
+                rbrData.FLWheelSlipAngle = GetSlipAngleRad(longitudinalFL, lateralFL, rbrData.FLWheelSteeringAngle);
+                rbrData.FRWheelSlipAngle = GetSlipAngleRad(longitudinalRL, lateralFR, rbrData.FRWheelSteeringAngle);
 
                 rbrData.RLWheelSlipAngle = GetSlipAngleRad(longitudinalRL, lateralRL);
                 rbrData.RRWheelSlipAngle = GetSlipAngleRad(longitudinalRL, lateralRR);
+
+                rbrData.FLWheelMaxSlipAngle =
+                GetNormalizedSlip(rbrData.FLWheelSlipAngle, flLoad, cornerStiff, slipCornerPk);
+                rbrData.FRWheelMaxSlipAngle =
+                GetNormalizedSlip(rbrData.FRWheelSlipAngle, frLoad, cornerStiff, slipCornerPk);
+                rbrData.RLWheelMaxSlipAngle =
+                GetNormalizedSlip(rbrData.RLWheelSlipAngle, rlLoad, cornerStiff, slipCornerPk);
+                rbrData.RRWheelMaxSlipAngle =
+                GetNormalizedSlip(rbrData.RRWheelSlipAngle, rrLoad, cornerStiff, slipCornerPk);
 
                 rbrData.FLWheelSlipRatio = ComputeWheelSlipRatio(rbrData.GroundSpeed, rbrData.FLWheelSpeed);
                 rbrData.FRWheelSlipRatio = ComputeWheelSlipRatio(rbrData.GroundSpeed, rbrData.FRWheelSpeed);
@@ -581,7 +298,7 @@ namespace maorc287.RBRDataPluginExt
             public float RLWheelSpeed { get; set; } = 0.0f;
             public float RRWheelSpeed { get; set; } = 0.0f;
 
-            // Steering angles for front wheels. These values are probably wrong.
+            // Steering angles for front wheels.
             public float FLWheelSteeringAngle { get; set; } = 0.0f;
             public float FRWheelSteeringAngle { get; set; } = 0.0f;
 

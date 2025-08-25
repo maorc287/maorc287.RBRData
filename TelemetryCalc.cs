@@ -171,8 +171,10 @@ namespace maorc287.RBRDataExtPlugin
 
 
         //Calculates the slip angle in radians from longitudinal and lateral speeds of wheel.
-        internal static float GetSlipAngleRad(float longitudinalSpeed, float lateralSpeed , float steeringAngle = 0)
+        internal static float GetSlipAngleRad(float groundSpeed, float longitudinalSpeed, float lateralSpeed , float steeringAngle = 0)
         {
+            if(groundSpeed < 1.0f)
+                return 0f;
             const float epslongitudinalSpeed = 1.5f;
             if (Math.Abs(longitudinalSpeed) < epslongitudinalSpeed)
                 return 0f;
@@ -215,7 +217,17 @@ namespace maorc287.RBRDataExtPlugin
             if (limit <= 0.001f) return 0f;
             if (currentSlipRad == 0.00f) return 0f;
 
-            return Math.Max(0.0f, Math.Min(1.0f, Math.Abs(currentSlipRad) / limit));
+            // How far beyond peak (in radians and as a ratio)
+            // compute signed excess
+            float excessRad = Math.Abs(currentSlipRad) - limit;
+            if (excessRad < 0f) excessRad = 0f; // not past limit → zero
+
+            // normalize to [-1, 1] by dividing by limit (optional scaling factor)
+            float normalized = Math.Min(excessRad * 2 / limit, 1f);
+            normalized *= Math.Sign(currentSlipRad); // now in -1..1
+            return normalized;
+
+            //return Math.Max(0.0f, Math.Min(1.0f, (excessRad*2) / limit));
         }
 
         //private static float prevTimestamp = 0f; // in seconds

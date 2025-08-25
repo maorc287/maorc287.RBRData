@@ -236,11 +236,11 @@ namespace maorc287.RBRDataExtPlugin
                 float lateralRR = ReadFloat(hProcess, RRWheelPointer + Wheel.LateralSpeedOffset);
 
 
-                rbrData.FLWheelSlipAngle = GetSlipAngleRad(longitudinalFL, lateralFL, rbrData.FLWheelSteeringAngle);
-                rbrData.FRWheelSlipAngle = GetSlipAngleRad(longitudinalRL, lateralFR, rbrData.FRWheelSteeringAngle);
+                rbrData.FLWheelSlipAngle = GetSlipAngleRad(rbrData.GroundSpeed, longitudinalFL, lateralFL, rbrData.FLWheelSteeringAngle);
+                rbrData.FRWheelSlipAngle = GetSlipAngleRad(rbrData.GroundSpeed, longitudinalRL, lateralFR, rbrData.FRWheelSteeringAngle);
 
-                rbrData.RLWheelSlipAngle = GetSlipAngleRad(longitudinalRL, lateralRL);
-                rbrData.RRWheelSlipAngle = GetSlipAngleRad(longitudinalRL, lateralRR);
+                rbrData.RLWheelSlipAngle = GetSlipAngleRad(rbrData.GroundSpeed, longitudinalRL, lateralRL);
+                rbrData.RRWheelSlipAngle = GetSlipAngleRad(rbrData.GroundSpeed, longitudinalRL, lateralRR);
 
                 rbrData.FLWheelMaxSlipAngle =
                 GetNormalizedSlip(rbrData.FLWheelSlipAngle, flLoad, cornerStiff, slipCornerPk);

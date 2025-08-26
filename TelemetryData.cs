@@ -1,5 +1,6 @@
 ﻿using maorc287.RBRDataExtPlugin;
 using System;
+using System.Diagnostics;
 using static maorc287.RBRDataExtPlugin.MemoryReader;
 using static maorc287.RBRDataExtPlugin.Offsets;
 using static maorc287.RBRDataExtPlugin.TelemetryCalc;
@@ -17,14 +18,223 @@ namespace maorc287.RBRDataExtPlugin
 
         // Cache for pointers to avoid repeated memory reads
         internal static readonly PointerCache pointerCache = new PointerCache();
+       
 
-   
+        // ---------------- Helpers ---------------- //
+
+        private static IntPtr EnsureProcess()
+        {
+            var hProcess = GetOrOpenProcessHandle(RBRProcessName);
+            if (hProcess == IntPtr.Zero)
+                pointerCache.ClearAllCache();
+            return hProcess;
+        }
+
+        private static void EnsurePointers(IntPtr hProcess)
+        {
+            if (!pointerCache.IsGeameModeBaseValid())
+                pointerCache.GameModeBasePtr = (IntPtr)ReadUInt(hProcess, (IntPtr)Pointers.GameMode);
+
+            if (!pointerCache.IsCarInfoPointerValid())
+                pointerCache.CarInfoBasePtr = (IntPtr)ReadUInt(hProcess, (IntPtr)Pointers.CarInfo);
+
+            if (!pointerCache.IsCarMovPointerValid())
+            {
+                pointerCache.CarMovBasePtr = ReadPointer(hProcess, (IntPtr)Pointers.CarMov);
+                pointerCache.FLWheelPtr = ReadPointer(hProcess, pointerCache.CarMovBasePtr + CarMov.FLWheel);
+                pointerCache.FRWheelPtr = ReadPointer(hProcess, pointerCache.CarMovBasePtr + CarMov.FRWheel);
+                pointerCache.RLWheelPtr = ReadPointer(hProcess, pointerCache.CarMovBasePtr + CarMov.RLWheel);
+                pointerCache.RRWheelPtr = ReadPointer(hProcess, pointerCache.CarMovBasePtr + CarMov.RRWheel);
+            }
+
+            if (!pointerCache.IsTiresPhysicsPointerValid())
+                pointerCache.TireModelBasePtr = (IntPtr)ReadUInt(hProcess, (IntPtr)Pointers.TireModel);
+
+            if (!pointerCache.IsDamagePointerValid())
+            {
+                IntPtr damageStructPtr = pointerCache.CarMovBasePtr + CarMov.DamageStructurePointer;
+                int damagePointer = ReadInt(hProcess, damageStructPtr);
+                pointerCache.DamageBasePtr = (IntPtr)damagePointer;
+            }
+        }
+
+        private static bool IsOnStage(IntPtr hProcess, RBRTelemetryData rbrData)
+        {
+            int gameMode = ReadInt(hProcess, pointerCache.GameModeBasePtr + Pointers.GameModeOffset);
+            rbrData.IsOnStage = (gameMode == 1);
+
+            if (!rbrData.IsOnStage)
+            {
+                LatestValidTelemetry.IsOnStage = false;
+                pointerCache.ClearAllCache();
+                return false;
+            }
+            return true;
+        }
+
+        private static void ReadDamageData(IntPtr hProcess, IntPtr damageBasePtr, RBRTelemetryData rbrData)
+        {
+            rbrData.BatteryWearLevel = BatteryHealthLevel(ReadFloat(hProcess, damageBasePtr + Damage.BatteryWearPercent));
+            rbrData.OilPumpDamage = OilPumpDamageLevel(ReadFloat(hProcess, damageBasePtr + Damage.OilPump));
+            rbrData.WaterPumpDamage = PartWorkingStatus(ReadInt(hProcess, damageBasePtr + Damage.WaterPump));
+            rbrData.ElectricSystemDamage = PartWorkingStatus(ReadInt(hProcess, damageBasePtr + Damage.ElectricSystem));
+            rbrData.BrakeCircuitDamage = PartWorkingStatus(ReadInt(hProcess, damageBasePtr + Damage.BrakeCircuit));
+            rbrData.GearboxActuatorDamage = PartWorkingStatus(ReadInt(hProcess, damageBasePtr + Damage.GearboxActuatorDamage));
+            rbrData.RadiatorDamage = RadiatorDamageLevel(ReadFloat(hProcess, damageBasePtr + Damage.RadiatiorDamage));
+            rbrData.IntercoolerDamage = IntercoolerDamageLevel(ReadFloat(hProcess, damageBasePtr + Damage.IntercoolerDamage));
+            rbrData.StarterDamage = PartWorkingStatus(ReadInt(hProcess, damageBasePtr + Damage.StarterDamage));
+            rbrData.HydraulicsDamage = PartWorkingStatus(ReadInt(hProcess, damageBasePtr + Damage.HydraulicsDamage));
+            rbrData.OilCoolerDamage = InversePartWorkingStatus(ReadInt(hProcess, damageBasePtr + Damage.OilCoolerDamage));
+        }
+
+        private static void ReadEngineAndFluids(IntPtr hProcess, IntPtr carInfoBasePtr, IntPtr carMovBasePtr, RBRTelemetryData rbrData)
+        {
+            rbrData.IsEngineOn = ReadFloat(hProcess, carInfoBasePtr + CarInfo.EngineStatus) == 1.0f;
+
+            rbrData.RadiatorCoolantTemperature = ReadFloat(hProcess, carMovBasePtr + CarMov.RadiatorCoolantTemperature);
+            rbrData.OilTemperature = ReadFloat(hProcess, carMovBasePtr + CarMov.OilTempKelvin);
+            rbrData.OilTemperatureWarning = rbrData.OilTemperature > 140.0f + kelvin_Celcius;
+
+            float oilPRawBase = ReadFloat(hProcess, carMovBasePtr + CarMov.OilPressureRawBase);
+            float oilPRaw = ReadFloat(hProcess, carMovBasePtr + CarMov.OilPressureRaw);
+            rbrData.OilPressure = ComputeOilPressure(oilPRawBase, oilPRaw);
+
+            rbrData.OilPressureWarning = !rbrData.IsEngineOn
+                | rbrData.OilPressure < 0.2
+                | rbrData.OilPumpDamage >= 2;
+
+            float waterTemperature = ReadFloat(hProcess, carInfoBasePtr + CarInfo.WaterTemperatureCelsius);
+            rbrData.WaterTemperatureWarning = waterTemperature > 120.0f;
+        }
+
+        private static void ReadBatteryData(IntPtr hProcess, IntPtr carInfoBasePtr, RBRTelemetryData rbrData)
+        {
+            rbrData.BatteryStatus = ReadFloat(hProcess, carInfoBasePtr + CarInfo.BatteryStatus);
+            rbrData.BatteryVoltage = rbrData.IsEngineOn ? 14.5f
+                : (rbrData.BatteryStatus * 0.2f) + 10.4f;
+            rbrData.LowBatteryWarning = rbrData.BatteryStatus < 10.0f;
+        }
+
+        private static void ReadVelocityData(IntPtr hProcess, IntPtr carMovBasePtr, RBRTelemetryData rbrData)
+        {
+            float velX = ReadFloat(hProcess, carMovBasePtr + CarMov.VelocityX);
+            float velY = ReadFloat(hProcess, carMovBasePtr + CarMov.VelocityY);
+            float velZ = ReadFloat(hProcess, carMovBasePtr + CarMov.VelocityZ);
+            float fwdX = ReadFloat(hProcess, carMovBasePtr + CarMov.ForwardX);
+            float fwdY = ReadFloat(hProcess, carMovBasePtr + CarMov.ForwardY);
+            float fwdZ = ReadFloat(hProcess, carMovBasePtr + CarMov.ForwardZ);
+
+            float wheelSpeed = ReadFloat(hProcess, pointerCache.CarInfoBasePtr + CarInfo.WheelSpeed);
+
+            rbrData.GroundSpeed = ComputeGroundSpeed(velX, velY, velZ, fwdX, fwdY, fwdZ);
+            rbrData.WheelLock = ComputeWheelLockRatio(rbrData.GroundSpeed, wheelSpeed);
+            rbrData.WheelSlip = ComputeWheelSpinRatio(rbrData.GroundSpeed, wheelSpeed);
+        }
+
+        private static void ReadWheelData(IntPtr hProcess, RBRTelemetryData rbrData)
+        {
+            rbrData.FLWheelSpeed = ComputeWheelSpeed(
+                ReadFloat(hProcess, pointerCache.FLWheelPtr + Wheel.WheelRadiusOffset),
+                ReadFloat(hProcess, pointerCache.FLWheelPtr + Wheel.WheelRotationOffset));
+
+            rbrData.FRWheelSpeed = ComputeWheelSpeed(
+                ReadFloat(hProcess, pointerCache.FRWheelPtr + Wheel.WheelRadiusOffset),
+                ReadFloat(hProcess, pointerCache.FRWheelPtr + Wheel.WheelRotationOffset));
+
+            rbrData.RLWheelSpeed = ComputeWheelSpeed(
+                ReadFloat(hProcess, pointerCache.RLWheelPtr + Wheel.WheelRadiusOffset),
+                ReadFloat(hProcess, pointerCache.RLWheelPtr + Wheel.WheelRotationOffset));
+
+            rbrData.RRWheelSpeed = ComputeWheelSpeed(
+                ReadFloat(hProcess, pointerCache.RRWheelPtr + Wheel.WheelRadiusOffset),
+                ReadFloat(hProcess, pointerCache.RRWheelPtr + Wheel.WheelRotationOffset));
+
+            rbrData.FLWheelSteeringAngle = ReadFloat(hProcess, pointerCache.FLWheelPtr + Wheel.FrontWheelSteeringAngle);
+            rbrData.FRWheelSteeringAngle = ReadFloat(hProcess, pointerCache.FRWheelPtr + Wheel.FrontWheelSteeringAngle);
+        }
+
+        private static void ReadSlipAndTireModel(IntPtr hProcess, RBRTelemetryData rbrData)
+        {
+            float flCornerStiffness = ReadFloat(hProcess, pointerCache.FLWheelPtr + Wheel.CornerStiffnes);
+            float frCornerStiffness = ReadFloat(hProcess, pointerCache.FRWheelPtr + Wheel.CornerStiffnes);
+            float rlCornerStiffness = ReadFloat(hProcess, pointerCache.RLWheelPtr + Wheel.CornerStiffnes);
+            float rrCornerStiffness = ReadFloat(hProcess, pointerCache.RRWheelPtr + Wheel.CornerStiffnes);
+
+            float[] slipCornerPk = ReadFloatArray(hProcess, pointerCache.TireModelBasePtr + TireModel.SlpPkCrn, 8);
+            float[] slipTractionPk = ReadFloatArray(hProcess, pointerCache.TireModelBasePtr + TireModel.SlpPkTrct, 8);
+            float[] cornerStiff = ReadFloatArray(hProcess, pointerCache.TireModelBasePtr + TireModel.CrnStf, 8);
+            float[] tractionStiff = ReadFloatArray(hProcess, pointerCache.TireModelBasePtr + TireModel.TrctStf, 8);
+
+            float lateralFL = ReadFloat(hProcess, pointerCache.FLWheelPtr + Wheel.LateralSpeedOffset);
+            float longitudinalFL = ReadFloat(hProcess, pointerCache.FLWheelPtr + Wheel.LongitudinalSpeedOffset);
+            float lateralFR = ReadFloat(hProcess, pointerCache.FRWheelPtr + Wheel.LateralSpeedOffset);
+            float longitudinalFR = ReadFloat(hProcess, pointerCache.FRWheelPtr + Wheel.LongitudinalSpeedOffset);
+            float lateralRL = ReadFloat(hProcess, pointerCache.RLWheelPtr + Wheel.LateralSpeedOffset);
+            float longitudinalRL = ReadFloat(hProcess, pointerCache.RLWheelPtr + Wheel.LongitudinalSpeedOffset);
+            float lateralRR = ReadFloat(hProcess, pointerCache.RRWheelPtr + Wheel.LateralSpeedOffset);
+            float longitudinalRR = ReadFloat(hProcess, pointerCache.RRWheelPtr + Wheel.LongitudinalSpeedOffset);
+
+            rbrData.FLWheelSlipAngle = GetSlipAngleRad(rbrData.GroundSpeed, longitudinalFL, lateralFL, rbrData.FLWheelSteeringAngle);
+            rbrData.FRWheelSlipAngle = GetSlipAngleRad(rbrData.GroundSpeed, longitudinalFR, lateralFR, rbrData.FRWheelSteeringAngle);
+            rbrData.RLWheelSlipAngle = GetSlipAngleRad(rbrData.GroundSpeed, longitudinalRL, lateralRL);
+            rbrData.RRWheelSlipAngle = GetSlipAngleRad(rbrData.GroundSpeed, longitudinalRR, lateralRR);
+
+            rbrData.FLWheelMaxSlipAngle = GetNormalizedSlip(rbrData.FLWheelSlipAngle, flCornerStiffness, cornerStiff, slipCornerPk);
+            rbrData.FRWheelMaxSlipAngle = GetNormalizedSlip(rbrData.FRWheelSlipAngle, frCornerStiffness, cornerStiff, slipCornerPk);
+            rbrData.RLWheelMaxSlipAngle = GetNormalizedSlip(rbrData.RLWheelSlipAngle, rlCornerStiffness, cornerStiff, slipCornerPk);
+            rbrData.RRWheelMaxSlipAngle = GetNormalizedSlip(rbrData.RRWheelSlipAngle, rrCornerStiffness, cornerStiff, slipCornerPk);
+
+            rbrData.FLWheelSlipRatio = ComputeWheelSlipRatio(rbrData.GroundSpeed, rbrData.FLWheelSpeed);
+            rbrData.FRWheelSlipRatio = ComputeWheelSlipRatio(rbrData.GroundSpeed, rbrData.FRWheelSpeed);
+            rbrData.RLWheelSlipRatio = ComputeWheelSlipRatio(rbrData.GroundSpeed, rbrData.RLWheelSpeed);
+            rbrData.RRWheelSlipRatio = ComputeWheelSlipRatio(rbrData.GroundSpeed, rbrData.RRWheelSpeed);
+        }
+
+        private static void ReadExternalPluginData(RBRTelemetryData rbrData)
+        {
+            if (!MemoryReader.TryReadFromDll("GaugerPlugin.dll", 0x7ADFC, out float GaugerPluginLockSlip))
+                GaugerPluginLockSlip = 0.0f;
+            rbrData.GaugerLockSlip = GaugerPluginLockSlip;
+        }
+
 
         /// Reads telemetry data from the Richard Burns Rally process.
         /// this method accesses the game's memory to retrieve various telemetry values.
         /// as a result, it requires the game to be running and the process to be accessible.
         /// without the game running and on stage, it will return default values.
-        /// 
+        internal static RBRTelemetryData ReadTelemetryData()
+        {
+            var rbrData = new RBRTelemetryData();
+            IntPtr hProcess = EnsureProcess();
+            if (hProcess == IntPtr.Zero) return rbrData;
+
+            try
+            {
+                EnsurePointers(hProcess);
+
+                if (!IsOnStage(hProcess, rbrData))
+                {
+                    return LatestValidTelemetry;
+                }
+
+                ReadDamageData(hProcess, pointerCache.DamageBasePtr, rbrData);
+                ReadEngineAndFluids(hProcess, pointerCache.CarInfoBasePtr, pointerCache.CarMovBasePtr, rbrData);
+                ReadBatteryData(hProcess, pointerCache.CarInfoBasePtr, rbrData);
+                ReadVelocityData(hProcess, pointerCache.CarMovBasePtr, rbrData);
+                ReadWheelData(hProcess, rbrData);
+                ReadSlipAndTireModel(hProcess, rbrData);
+                ReadExternalPluginData(rbrData);
+            }
+            catch (Exception ex)
+            {
+                SimHub.Logging.Current.Warn($"[RBRDataExt] Failed to read memory: {ex.Message}");
+            }
+
+            LatestValidTelemetry = rbrData;
+            return rbrData;
+        }
+
+        /*
         internal static RBRTelemetryData ReadTelemetryData()
         {
             var rbrData = new RBRTelemetryData();
@@ -43,15 +253,15 @@ namespace maorc287.RBRDataExtPlugin
                         (IntPtr)ReadUInt(hProcess, (IntPtr)Pointers.GameMode);
 
                 IntPtr gameModeBasePtr = pointerCache.GameModeBasePtr;
-
                 IntPtr gameModePtr = gameModeBasePtr + Pointers.GameModeOffset;
+
                 int gameMode = ReadInt(hProcess, gameModePtr);
                 rbrData.IsOnStage = (gameMode == 1);
 
                 if (!rbrData.IsOnStage)
                 {
-                    pointerCache.ClearAllCache(); // Clear cached pointers if not on stage
                     LatestValidTelemetry.IsOnStage = false;
+                    pointerCache.ClearAllCache(); // Clear cached pointers if not on stage
                     return LatestValidTelemetry;
                 }
 
@@ -80,8 +290,8 @@ namespace maorc287.RBRDataExtPlugin
 
                 if (!pointerCache.IsTiresPhysicsPointerValid())
                 {
-                    pointerCache.TiresPhysicsBasePtr =
-                        (IntPtr)ReadUInt(hProcess, (IntPtr) Pointers.TiresPhysics);
+                    pointerCache.TireModelBasePtr =
+                        (IntPtr)ReadUInt(hProcess, (IntPtr) Pointers.TireModel);
                 }
 
                 IntPtr carMovBasePtr = pointerCache.CarMovBasePtr;
@@ -91,7 +301,7 @@ namespace maorc287.RBRDataExtPlugin
                 IntPtr RLWheelPointer = pointerCache.RLWheelPtr;
                 IntPtr RRWheelPointer = pointerCache.RRWheelPtr;
 
-                IntPtr tiresPhysicsBasePtr = pointerCache.TiresPhysicsBasePtr;
+                IntPtr tireModelBasePtr = pointerCache.TireModelBasePtr;
 
                 if (!pointerCache.IsDamagePointerValid())
                 {
@@ -173,23 +383,20 @@ namespace maorc287.RBRDataExtPlugin
                 float fwdX = ReadFloat(hProcess, carMovBasePtr + CarMov.ForwardX);
                 float fwdY = ReadFloat(hProcess, carMovBasePtr + CarMov.ForwardY);
                 float fwdZ = ReadFloat(hProcess, carMovBasePtr + CarMov.ForwardZ);
-                float accX = ReadFloat(hProcess, carMovBasePtr + CarMov.AccelerationX);
-                float accY = ReadFloat(hProcess, carMovBasePtr + CarMov.AccelerationY);
-                float accZ = ReadFloat(hProcess, carMovBasePtr + CarMov.AccelerationZ);
 
-                float flLoad = ReadFloat(hProcess, FLWheelPointer + Wheel.Load);
-                float frLoad = ReadFloat(hProcess, FRWheelPointer + Wheel.Load);
-                float rlLoad = ReadFloat(hProcess, RLWheelPointer + Wheel.Load);
-                float rrLoad = ReadFloat(hProcess, RRWheelPointer + Wheel.Load);
+                float flCornerStiffness = ReadFloat(hProcess, FLWheelPointer + Wheel.CornerStiffnes);
+                float frCornerStiffness = ReadFloat(hProcess, FRWheelPointer + Wheel.CornerStiffnes);
+                float rlCornerStiffness = ReadFloat(hProcess, RLWheelPointer + Wheel.CornerStiffnes);
+                float rrCornerStiffness = ReadFloat(hProcess, RRWheelPointer + Wheel.CornerStiffnes);
 
                 float[] slipCornerPk = 
-                    ReadFloatArray(hProcess,tiresPhysicsBasePtr + TiresPhysics.SlpPkCrn, 8);
+                    ReadFloatArray(hProcess, tireModelBasePtr + TireModel.SlpPkCrn, 8);
                 float[] slipTractionPk =
-                    ReadFloatArray(hProcess, tiresPhysicsBasePtr + TiresPhysics.SlpPkTrct, 8);
+                    ReadFloatArray(hProcess, tireModelBasePtr + TireModel.SlpPkTrct, 8);
                 float[] cornerStiff = 
-                    ReadFloatArray(hProcess, tiresPhysicsBasePtr + TiresPhysics.CrnStf, 8);
+                    ReadFloatArray(hProcess, tireModelBasePtr + TireModel.CrnStf, 8);
                 float[] tractionStiff = 
-                    ReadFloatArray(hProcess, tiresPhysicsBasePtr + TiresPhysics.TrctStf, 8);
+                    ReadFloatArray(hProcess, tireModelBasePtr + TireModel.TrctStf, 8);
 
                 float wheelSpeed = ReadFloat(hProcess, carInfoBasePtr + CarInfo.WheelSpeed);
                 rbrData.GroundSpeed = ComputeGroundSpeed(velX, velY, velZ, fwdX, fwdY, fwdZ);
@@ -225,7 +432,7 @@ namespace maorc287.RBRDataExtPlugin
                 }
 
                 //float dt = currentTimestamp + 0.001f - prevTimestamp;
-                */
+                *//*
 
                 float lateralFL = ReadFloat(hProcess, FLWheelPointer + Wheel.LateralSpeedOffset);
                 float longitudinalFL = ReadFloat(hProcess, FLWheelPointer + Wheel.LongitudinalSpeedOffset);
@@ -243,13 +450,13 @@ namespace maorc287.RBRDataExtPlugin
                 rbrData.RRWheelSlipAngle = GetSlipAngleRad(rbrData.GroundSpeed, longitudinalRL, lateralRR);
 
                 rbrData.FLWheelMaxSlipAngle =
-                GetNormalizedSlip(rbrData.FLWheelSlipAngle, flLoad, cornerStiff, slipCornerPk);
+                GetNormalizedSlip(rbrData.FLWheelSlipAngle, flCornerStiffness, cornerStiff, slipCornerPk);
                 rbrData.FRWheelMaxSlipAngle =
-                GetNormalizedSlip(rbrData.FRWheelSlipAngle, frLoad, cornerStiff, slipCornerPk);
+                GetNormalizedSlip(rbrData.FRWheelSlipAngle, frCornerStiffness, cornerStiff, slipCornerPk);
                 rbrData.RLWheelMaxSlipAngle =
-                GetNormalizedSlip(rbrData.RLWheelSlipAngle, rlLoad, cornerStiff, slipCornerPk);
+                GetNormalizedSlip(rbrData.RLWheelSlipAngle, rlCornerStiffness, cornerStiff, slipCornerPk);
                 rbrData.RRWheelMaxSlipAngle =
-                GetNormalizedSlip(rbrData.RRWheelSlipAngle, rrLoad, cornerStiff, slipCornerPk);
+                GetNormalizedSlip(rbrData.RRWheelSlipAngle, rrCornerStiffness, cornerStiff, slipCornerPk);
 
                 rbrData.FLWheelSlipRatio = ComputeWheelSlipRatio(rbrData.GroundSpeed, rbrData.FLWheelSpeed);
                 rbrData.FRWheelSlipRatio = ComputeWheelSlipRatio(rbrData.GroundSpeed, rbrData.FRWheelSpeed);
@@ -272,6 +479,7 @@ namespace maorc287.RBRDataExtPlugin
             LatestValidTelemetry = rbrData;
             return rbrData;
         }
+            */
 
         /// Class to hold telemetry data read from the game
         internal class RBRTelemetryData

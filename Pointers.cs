@@ -16,7 +16,7 @@ namespace maorc287.RBRDataExtPlugin
         public IntPtr RLWheelPtr { get; set; } = IntPtr.Zero;
         public IntPtr RRWheelPtr { get; set; } = IntPtr.Zero;
 
-        public IntPtr TiresPhysicsBasePtr { get; set; } = IntPtr.Zero;
+        public IntPtr TireModelBasePtr { get; set; } = IntPtr.Zero;
 
         internal void ClearAllCache()
         {
@@ -24,12 +24,12 @@ namespace maorc287.RBRDataExtPlugin
             CarMovBasePtr = IntPtr.Zero;
             GameModeBasePtr = IntPtr.Zero;
             DamageBasePtr = IntPtr.Zero;
-            TiresPhysicsBasePtr = IntPtr.Zero;
+            TireModelBasePtr = IntPtr.Zero;
         }
 
         internal bool IsTiresPhysicsPointerValid()
         {
-            return TiresPhysicsBasePtr != IntPtr.Zero;
+            return TireModelBasePtr != IntPtr.Zero;
         }
 
         internal bool IsCarInfoPointerValid()
@@ -119,7 +119,7 @@ namespace maorc287.RBRDataExtPlugin
             public const int LateralSpeedOffset = 0x1268; // Offset to lateral speed
 
             public const int LockSlipMagnitude = 0x1330; // ?? Offset to wheel lock slip magnitude? (0.5 to 2.0 float value)
-            public const int Load = 0x1290; // Offset to wheel load maybe? Don't know what unit
+            public const int CornerStiffnes = 0x1290; // Offset to wheel load maybe? Don't know what unit
 
             //Not sure about this, maybe it is related to steering angle in Radians (Offset for the Front Wheels Only)
             public const int FrontWheelSteeringAngle = 0x9E4;
@@ -156,7 +156,7 @@ namespace maorc287.RBRDataExtPlugin
             public const int GearboxDamage = 0x48;
         }
 
-        public static class TiresPhysics
+        public static class TireModel
         {
             // Array of 8 float values from the Tires structure from File tyres.lsp
             public const int SlpPkCrn = 0x7F0;  // Slip Peak Cornering value in the Tires structure from File tyres.lsp
@@ -173,7 +173,7 @@ namespace maorc287.RBRDataExtPlugin
             public const int CarMov = 0x008EF660;
             public const int GameMode = 0x007EAC48;
             public const int GameModeOffset = 0x728;
-            public const int TiresPhysics = 0x007C8318; // Pointer to the tires.lsp file structure in memory
+            public const int TireModel = 0x007C8318; // Pointer to the tires.lsp file structure in memory
 
         }
     }

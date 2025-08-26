@@ -173,40 +173,37 @@ namespace maorc287.RBRDataExtPlugin
         //Calculates the slip angle in radians from longitudinal and lateral speeds of wheel.
         internal static float GetSlipAngleRad(float groundSpeed, float longitudinalSpeed, float lateralSpeed , float steeringAngle = 0)
         {
-            float vLongMS = longitudinalSpeed * 1000f / 3600f;
-            float vLatMS = lateralSpeed * 1000f / 3600f;
-
-            if (groundSpeed < 1.0f)
+            const float epsSpeed = 1.5f;
+            if (groundSpeed < epsSpeed)
                 return 0f;
-            const float epslongitudinalSpeed = 1.5f;
-            if (Math.Abs(vLongMS) < epslongitudinalSpeed)
+            if (Math.Abs(longitudinalSpeed) < epsSpeed)
                 return 0f;
 
             // the slip angle in radians
-            return (float)Math.Atan2(vLatMS, Math.Abs(vLongMS)) - steeringAngle;
+            return (float)Math.Atan2(lateralSpeed, Math.Abs(longitudinalSpeed)) - steeringAngle;
         }
 
         /// <summary>
         /// Gets slip angle limit for given wheel load.
         /// </summary>
-        internal static float GetSlipAngleLimit(float currentLoad, float[] loadTable, float[] slipTable)
+        internal static float GetSlipAngleLimit(float currentCrnStiff, float[] cornerStiffnessTable, float[] slipTable)
         {
-            if (loadTable == null || slipTable == null || loadTable.Length != slipTable.Length)
+            if (cornerStiffnessTable == null || slipTable == null || cornerStiffnessTable.Length != slipTable.Length)
                 return 0f;
 
-            if (currentLoad <= loadTable[0]) return slipTable[0];
-            if (currentLoad >= loadTable[loadTable.Length - 1]) return slipTable[slipTable.Length - 1];
+            if (currentCrnStiff <= cornerStiffnessTable[0]) return slipTable[0];
+            if (currentCrnStiff >= cornerStiffnessTable[cornerStiffnessTable.Length - 1]) return slipTable[slipTable.Length - 1];
 
             // find interval
             int i = 0;
-            while (i < loadTable.Length - 1 && currentLoad > loadTable[i + 1]) i++;
+            while (i < cornerStiffnessTable.Length - 1 && currentCrnStiff > cornerStiffnessTable[i + 1]) i++;
 
-            float loadLow = loadTable[i];
-            float loadHigh = loadTable[i + 1];
+            float loadLow = cornerStiffnessTable[i];
+            float loadHigh = cornerStiffnessTable[i + 1];
             float slipLow = slipTable[i];
             float slipHigh = slipTable[i + 1];
 
-            float t = (currentLoad - loadLow) / (loadHigh - loadLow);
+            float t = (currentCrnStiff - loadLow) / (loadHigh - loadLow);
             return slipLow + t * (slipHigh - slipLow); // radians
         }
 
@@ -214,9 +211,9 @@ namespace maorc287.RBRDataExtPlugin
         /// Normalizes current slip angle against the load-dependent limit.
         /// Returns 0.0 (no slip) to 1.0 (at limit).
         /// </summary>
-        internal static float GetNormalizedSlip(float currentSlipRad, float currentLoad, float[] loadTable, float[] slipTable)
+        internal static float GetNormalizedSlip(float currentSlipRad, float currentCrnStiff, float[] cornerStiffnessTable, float[] slipTable)
         {
-            float limit = GetSlipAngleLimit(currentLoad, loadTable, slipTable);
+            float limit = GetSlipAngleLimit(currentCrnStiff, cornerStiffnessTable, slipTable);
             if (limit <= 0.001f) return 0f;
             if (currentSlipRad == 0.00f) return 0f;
 

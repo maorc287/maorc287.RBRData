@@ -118,6 +118,7 @@ namespace maorc287.RBRDataExtPlugin
             public const int LongitudinalSpeedOffset = 0x1278; // Offset to longitudinal speed
             public const int LateralSpeedOffset = 0x1268; // Offset to lateral speed
 
+            public const int LockSlipMagnitude = 0x1330; // ?? Offset to wheel lock slip magnitude? (0.5 to 2.0 float value)
             public const int Load = 0x1290; // Offset to wheel load maybe? Don't know what unit
 
             //Not sure about this, maybe it is related to steering angle in Radians (Offset for the Front Wheels Only)

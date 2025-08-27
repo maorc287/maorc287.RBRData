@@ -137,16 +137,14 @@ namespace maorc287.RBRDataExtPlugin
 
         //Calculates the slip angle in radians from longitudinal and lateral speeds of wheel.
         internal static float GetSlipAngleRad(float groundSpeed, float wheelSpeed,
-            float longitudinalSpeed, float lateralSpeed , float steeringAngle = 0)
+            float longitudinalSpeed, float lateralSpeed)
         {
             const float epsSpeed = 1.5f;
-            if (Math.Abs(groundSpeed) < epsSpeed | Math.Abs(wheelSpeed) < epsSpeed)
-                return 0f;
-            if (Math.Abs(longitudinalSpeed) < epsSpeed)
+            if (Math.Abs(groundSpeed) < epsSpeed && Math.Abs(wheelSpeed) < epsSpeed)
                 return 0f;
 
             // the slip angle in radians
-            return (float)Math.Atan2(lateralSpeed, Math.Abs(longitudinalSpeed)) - steeringAngle;
+            return (float)Math.Atan2(lateralSpeed, Math.Abs(longitudinalSpeed));
         }
 
         /// <summary>
@@ -177,20 +175,24 @@ namespace maorc287.RBRDataExtPlugin
         /// Normalizes current slip angle against the load-dependent limit.
         /// Returns 0.0 (no slip) to 1.0 (at limit).
         /// </summary>
-        internal static float GetNormalizedSlip(float currentSlipRad, float currentCrnStiff, float[] cornerStiffnessTable, float[] slipTable)
+        internal static float GetNormalizedSlip(float currentSlipRad, 
+            float currentCrnStiff, float[] cornerStiffnessTable, float[] slipTable, out float slipMax)
         {
             float limit = GetSlipAngleLimit(currentCrnStiff, cornerStiffnessTable, slipTable);
-            if (limit <= 0.001f) return 0f;
-            if (currentSlipRad == 0.00f) return 0f;
+            if (limit <= 0.001f) { slipMax = 0; return 0f; }
+            if (currentSlipRad == 0.00f) { slipMax = 0; return 0f; }
 
             // How far beyond peak (in radians and as a ratio)
             // compute signed excess
             float excessRad = Math.Abs(currentSlipRad) - limit;
             if (excessRad < 0f) excessRad = 0f; // not past limit → zero
 
-            // normalize to [-1, 1] by dividing by limit (optional scaling factor)
-            float normalized = Math.Min((excessRad/2f) / limit, 1f);
-            normalized *= Math.Sign(currentSlipRad); // now in -1..1
+            // current slip percent [0..1]
+            slipMax = Math.Max(0.0f, Math.Min(1.0f, Math.Abs(currentSlipRad) / limit));
+
+            // normalize to [0, 1] by dividing by limit (optional scaling factor)
+            float normalized = Math.Min((excessRad) / limit, 1f);
+            normalized *= Math.Sign(currentSlipRad);
             return normalized;
 
             // limit current slip to [0..limit]

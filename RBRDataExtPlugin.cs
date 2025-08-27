@@ -65,6 +65,11 @@ namespace maorc287.RBRDataExtPlugin
             PluginManager.AddProperty("RBR.Wheel.SlipAngle.RLMax", GetType(), 0, "");
             PluginManager.AddProperty("RBR.Wheel.SlipAngle.RRMax", GetType(), 0, "");
 
+            PluginManager.AddProperty("RBR.Wheel.SlipAngle.FLExceed", GetType(), 0, "");
+            PluginManager.AddProperty("RBR.Wheel.SlipAngle.FRExceed", GetType(), 0, "");
+            PluginManager.AddProperty("RBR.Wheel.SlipAngle.RLExceed", GetType(), 0, "");
+            PluginManager.AddProperty("RBR.Wheel.SlipAngle.RRExceed", GetType(), 0, "");
+
             PluginManager.AddProperty("RBR.Wheel.SlipRatio.FL", GetType(), 0, "");
             PluginManager.AddProperty("RBR.Wheel.SlipRatio.FR", GetType(), 0, "");
             PluginManager.AddProperty("RBR.Wheel.SlipRatio.RL", GetType(), 0, "");
@@ -130,11 +135,17 @@ namespace maorc287.RBRDataExtPlugin
             PluginManager.SetPropertyValue("RBR.Wheel.SlipAngle.FR", GetType(), rbrData.FRWheelSlipAngle);
             PluginManager.SetPropertyValue("RBR.Wheel.SlipAngle.RL", GetType(), rbrData.RLWheelSlipAngle);
             PluginManager.SetPropertyValue("RBR.Wheel.SlipAngle.RR", GetType(), rbrData.RRWheelSlipAngle);
+
             PluginManager.SetPropertyValue("RBR.Wheel.SlipAngle.FLMax", GetType(), rbrData.FLWheelMaxSlipAngle);
             PluginManager.SetPropertyValue("RBR.Wheel.SlipAngle.FRMax", GetType(), rbrData.FRWheelMaxSlipAngle);
             PluginManager.SetPropertyValue("RBR.Wheel.SlipAngle.RLMax", GetType(), rbrData.RLWheelMaxSlipAngle);
             PluginManager.SetPropertyValue("RBR.Wheel.SlipAngle.RRMax", GetType(), rbrData.RRWheelMaxSlipAngle);
-           
+
+            PluginManager.SetPropertyValue("RBR.Wheel.SlipAngle.FLExceed", GetType(), rbrData.FLWheelExceedingSlipAngle);
+            PluginManager.SetPropertyValue("RBR.Wheel.SlipAngle.FRExceed", GetType(), rbrData.FRWheelExceedingSlipAngle);
+            PluginManager.SetPropertyValue("RBR.Wheel.SlipAngle.RLExceed", GetType(), rbrData.RLWheelExceedingSlipAngle);
+            PluginManager.SetPropertyValue("RBR.Wheel.SlipAngle.RRExceed", GetType(), rbrData.RRWheelExceedingSlipAngle);
+
 
             PluginManager.SetPropertyValue("RBR.Wheel.SlipRatio.FL", GetType(), rbrData.FLWheelSlipRatio);
             PluginManager.SetPropertyValue("RBR.Wheel.SlipRatio.FR", GetType(), rbrData.FRWheelSlipRatio);

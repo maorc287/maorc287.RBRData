@@ -75,12 +75,12 @@ namespace maorc287.RBRDataExtPlugin
             rbrData.WaterPumpDamage = PartWorkingStatus(ReadInt(hProcess, pointerCache.DamageBasePtr + Damage.WaterPump));
             rbrData.ElectricSystemDamage = PartWorkingStatus(ReadInt(hProcess, pointerCache.DamageBasePtr + Damage.ElectricSystem));
             rbrData.BrakeCircuitDamage = PartWorkingStatus(ReadInt(hProcess, pointerCache.DamageBasePtr + Damage.BrakeCircuit));
-            rbrData.GearboxActuatorDamage = PartWorkingStatus(ReadInt(hProcess, pointerCache.DamageBasePtr + Damage.GearboxActuatorDamage));
-            rbrData.RadiatorDamage = RadiatorDamageLevel(ReadFloat(hProcess, pointerCache.DamageBasePtr + Damage.RadiatiorDamage));
-            rbrData.IntercoolerDamage = IntercoolerDamageLevel(ReadFloat(hProcess, pointerCache.DamageBasePtr + Damage.IntercoolerDamage));
-            rbrData.StarterDamage = PartWorkingStatus(ReadInt(hProcess, pointerCache.DamageBasePtr + Damage.StarterDamage));
-            rbrData.HydraulicsDamage = PartWorkingStatus(ReadInt(hProcess, pointerCache.DamageBasePtr + Damage.HydraulicsDamage));
-            rbrData.OilCoolerDamage = InversePartWorkingStatus(ReadInt(hProcess, pointerCache.DamageBasePtr + Damage.OilCoolerDamage));
+            rbrData.GearboxActuatorDamage = PartWorkingStatus(ReadInt(hProcess, pointerCache.DamageBasePtr + Damage.GearboxActuator));
+            rbrData.RadiatorDamage = RadiatorDamageLevel(ReadFloat(hProcess, pointerCache.DamageBasePtr + Damage.Radiatior));
+            rbrData.IntercoolerDamage = IntercoolerDamageLevel(ReadFloat(hProcess, pointerCache.DamageBasePtr + Damage.Intercooler));
+            rbrData.StarterDamage = PartWorkingStatus(ReadInt(hProcess, pointerCache.DamageBasePtr + Damage.Starter));
+            rbrData.HydraulicsDamage = PartWorkingStatus(ReadInt(hProcess, pointerCache.DamageBasePtr + Damage.Hydraulics));
+            rbrData.OilCoolerDamage = InversePartWorkingStatus(ReadInt(hProcess, pointerCache.DamageBasePtr + Damage.OilCooler));
         }
 
         private static void ReadEngineAndFluids(IntPtr hProcess, RBRTelemetryData rbrData)
@@ -167,18 +167,28 @@ namespace maorc287.RBRDataExtPlugin
             float longitudinalRR = ReadFloat(hProcess, pointerCache.RRWheelPtr + Wheel.LongitudinalSpeedOffset);
 
             rbrData.FLWheelSlipAngle = GetSlipAngleRad(rbrData.GroundSpeed, rbrData.FLWheelSpeed,
-                longitudinalFL, lateralFL, rbrData.FLWheelSteeringAngle);
+                longitudinalFL, lateralFL);
             rbrData.FRWheelSlipAngle = GetSlipAngleRad(rbrData.GroundSpeed, rbrData.FRWheelSpeed,
-                longitudinalFR, lateralFR, rbrData.FRWheelSteeringAngle);
+                longitudinalFR, lateralFR);
             rbrData.RLWheelSlipAngle = GetSlipAngleRad(rbrData.GroundSpeed, rbrData.RLWheelSpeed,
                 longitudinalRL, lateralRL);
             rbrData.RRWheelSlipAngle = GetSlipAngleRad(rbrData.GroundSpeed, rbrData.RRWheelSpeed,
                 longitudinalRR, lateralRR);
 
-            rbrData.FLWheelMaxSlipAngle = GetNormalizedSlip(rbrData.FLWheelSlipAngle, flCornerStiffness, cornerStiff, slipCornerPk);
-            rbrData.FRWheelMaxSlipAngle = GetNormalizedSlip(rbrData.FRWheelSlipAngle, frCornerStiffness, cornerStiff, slipCornerPk);
-            rbrData.RLWheelMaxSlipAngle = GetNormalizedSlip(rbrData.RLWheelSlipAngle, rlCornerStiffness, cornerStiff, slipCornerPk);
-            rbrData.RRWheelMaxSlipAngle = GetNormalizedSlip(rbrData.RRWheelSlipAngle, rrCornerStiffness, cornerStiff, slipCornerPk);
+
+            rbrData.FLWheelExceedingSlipAngle = 
+                GetNormalizedSlip(rbrData.FLWheelSlipAngle, flCornerStiffness, cornerStiff, slipCornerPk, out float slipMaxFL);
+            rbrData.FRWheelExceedingSlipAngle = 
+                GetNormalizedSlip(rbrData.FRWheelSlipAngle, frCornerStiffness, cornerStiff, slipCornerPk, out float slipMaxFR);
+            rbrData.RLWheelExceedingSlipAngle = 
+                GetNormalizedSlip(rbrData.RLWheelSlipAngle, rlCornerStiffness, cornerStiff, slipCornerPk, out float slipMaxRL);
+            rbrData.RRWheelExceedingSlipAngle = 
+                GetNormalizedSlip(rbrData.RRWheelSlipAngle, rrCornerStiffness, cornerStiff, slipCornerPk, out float slipMaxRR);
+
+            rbrData.FLWheelMaxSlipAngle = slipMaxFL;
+            rbrData.FRWheelMaxSlipAngle = slipMaxFR;
+            rbrData.RLWheelMaxSlipAngle = slipMaxRL;
+            rbrData.RRWheelMaxSlipAngle = slipMaxRR;
 
             rbrData.FLWheelSlipRatio = ComputeWheelSlipRatio(rbrData.GroundSpeed, rbrData.FLWheelSpeed);
             rbrData.FRWheelSlipRatio = ComputeWheelSlipRatio(rbrData.GroundSpeed, rbrData.FRWheelSpeed);
@@ -272,6 +282,14 @@ namespace maorc287.RBRDataExtPlugin
             public float FRWheelMaxSlipAngle { get; set; } = 0.0f;
             public float RLWheelMaxSlipAngle { get; set; } = 0.0f;
             public float RRWheelMaxSlipAngle { get; set; } = 0.0f;
+
+            public float FLWheelExceedingSlipAngle { get; set; } = 0.0f;
+            public float FRWheelExceedingSlipAngle { get; set; } = 0.0f;
+            public float RLWheelExceedingSlipAngle { get; set; } = 0.0f;
+            public float RRWheelExceedingSlipAngle { get; set; } = 0.0f;
+
+
+
 
             // Damage Value, when Value is 5 means part is lost, 1 means part is Fine
             public uint OilPumpDamage { get; set; } = 1;

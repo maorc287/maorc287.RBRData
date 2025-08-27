@@ -112,11 +112,10 @@ namespace maorc287.RBRDataExtPlugin
             public const int WheelRadiusOffset = 0xAA0;
             public const int WheelRotationOffset = 0xA50;
 
-            public const int LongitudinalSlipOffset = 0x12B8; // ?? Offset to longitudinal slip 
-            public const int LateralSlipOffset = 0x12BC; // ?? Offset to lateral slip
+            public const int LongSpeedNegativeOffset = 0x12BC; // ?? Offset to negative longitudinal speed (m/s)
 
-            public const int LongitudinalSpeedOffset = 0x1278; // Offset to longitudinal speed
-            public const int LateralSpeedOffset = 0x1268; // Offset to lateral speed
+            public const int LongitudinalSpeedOffset = 0x126C; // Offset to longitudinal speed (m/s)
+            public const int LateralSpeedOffset = 0x1268; // Offset to lateral speed (m/s)
 
             public const int LockSlipMagnitude = 0x1330; // ?? Offset to wheel lock slip magnitude? (0.5 to 2.0 float value)
             public const int CornerStiffnes = 0x1290; // Offset to wheel load maybe? Don't know what unit
@@ -135,19 +134,19 @@ namespace maorc287.RBRDataExtPlugin
 
             //Value is 1.0f when fine, 0.0 float Value means part is lost
             public const int OilPump = 0xF0;
-            public const int IntercoolerDamage = 0xF8;
-            public const int RadiatiorDamage = 0xE8;
+            public const int Intercooler = 0xF8;
+            public const int Radiatior = 0xE8;
 
             //Oil Cooler valus is 0 when it is working, 1 when it is damaged
-            public const int OilCoolerDamage = 0xF4;
+            public const int OilCooler = 0xF4;
 
             // These Parts start all at Value 1, when Value is 0 means not working and lost
             public const int WaterPump = 0xDC;
             public const int ElectricSystem = 0x1E8;
             public const int BrakeCircuit = 0x80;
-            public const int GearboxActuatorDamage = 0x78;
-            public const int StarterDamage = 0x7C;
-            public const int HydraulicsDamage = 0x90;
+            public const int GearboxActuator = 0x78;
+            public const int Starter = 0x7C;
+            public const int Hydraulics = 0x90;
 
             // 10 Parameters for Gearbox Damage all float values, 1.0f is the best condition,
             //0x48 is the first parameter, 0x6C is the last (4bytes interval)
@@ -163,8 +162,6 @@ namespace maorc287.RBRDataExtPlugin
             public const int SlpPkTrct = 0x810;  // Slip Peak Traction value in the Tires structure from File tyres.lsp
             public const int CrnStf = 0x780;  // Cornering Stiffness value in the Tires structure from File tyres.lsp
             public const int TrctStf = 0x890;  // Traction Stiffness value in the Tires structure from File tyres.lsp
-
-
         }
 
         public static class Pointers

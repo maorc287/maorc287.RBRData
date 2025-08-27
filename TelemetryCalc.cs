@@ -195,8 +195,6 @@ namespace maorc287.RBRDataExtPlugin
             normalized *= Math.Sign(currentSlipRad);
             return normalized;
 
-            // limit current slip to [0..limit]
-            //return Math.Max(0.0f, Math.Min(1.0f, currentSlipRad / limit));
         }
 
         //private static float prevTimestamp = 0f; // in seconds

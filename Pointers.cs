@@ -27,7 +27,7 @@ namespace maorc287.RBRDataExtPlugin
             TireModelBasePtr = IntPtr.Zero;
         }
 
-        internal bool IsTiresPhysicsPointerValid()
+        internal bool IsTireModelPointerValid()
         {
             return TireModelBasePtr != IntPtr.Zero;
         }

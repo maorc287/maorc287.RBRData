@@ -19,7 +19,7 @@ namespace maorc287.RBRDataExtPlugin
         internal static readonly PointerCache pointerCache = new PointerCache();
       
         // ---------------- Helpers ---------------- //
-        private static IntPtr EnsureProcess()
+        private static IntPtr GetProcess()
         {
             var hProcess = GetOrOpenProcessHandle(RBRProcessName);
             if (hProcess == IntPtr.Zero)
@@ -27,13 +27,13 @@ namespace maorc287.RBRDataExtPlugin
             return hProcess;
         }
 
-        private static void EnsurePointers(IntPtr hProcess)
+        private static void InitializePointers(IntPtr hProcess)
         {
             if (!pointerCache.IsGeameModeBaseValid())
-                pointerCache.GameModeBasePtr = (IntPtr)ReadUInt(hProcess, (IntPtr)Pointers.GameMode);
+                pointerCache.GameModeBasePtr = ReadPointer(hProcess, (IntPtr)Pointers.GameMode);
 
             if (!pointerCache.IsCarInfoPointerValid())
-                pointerCache.CarInfoBasePtr = (IntPtr)ReadUInt(hProcess, (IntPtr)Pointers.CarInfo);
+                pointerCache.CarInfoBasePtr = ReadPointer(hProcess, (IntPtr)Pointers.CarInfo);
 
             if (!pointerCache.IsCarMovPointerValid())
             {
@@ -44,14 +44,13 @@ namespace maorc287.RBRDataExtPlugin
                 pointerCache.RRWheelPtr = ReadPointer(hProcess, pointerCache.CarMovBasePtr + CarMov.RRWheel);
             }
 
-            if (!pointerCache.IsTiresPhysicsPointerValid())
-                pointerCache.TireModelBasePtr = (IntPtr)ReadUInt(hProcess, (IntPtr)Pointers.TireModel);
+            if (!pointerCache.IsTireModelPointerValid())
+                pointerCache.TireModelBasePtr = ReadPointer(hProcess, (IntPtr)Pointers.TireModel);
 
             if (!pointerCache.IsDamagePointerValid())
             {
-                IntPtr damageStructPtr = pointerCache.CarMovBasePtr + CarMov.DamageStructurePointer;
-                int damagePointer = ReadInt(hProcess, damageStructPtr);
-                pointerCache.DamageBasePtr = (IntPtr)damagePointer;
+                IntPtr damageStructPtr = pointerCache.CarMovBasePtr + CarMov.DamageStructurePointer;  
+                pointerCache.DamageBasePtr = ReadPointer(hProcess, damageStructPtr);
             }
         }
 
@@ -69,57 +68,57 @@ namespace maorc287.RBRDataExtPlugin
             return true;
         }
 
-        private static void ReadDamageData(IntPtr hProcess, IntPtr damageBasePtr, RBRTelemetryData rbrData)
+        private static void ReadDamageData(IntPtr hProcess, RBRTelemetryData rbrData)
         {
-            rbrData.BatteryWearLevel = BatteryHealthLevel(ReadFloat(hProcess, damageBasePtr + Damage.BatteryWearPercent));
-            rbrData.OilPumpDamage = OilPumpDamageLevel(ReadFloat(hProcess, damageBasePtr + Damage.OilPump));
-            rbrData.WaterPumpDamage = PartWorkingStatus(ReadInt(hProcess, damageBasePtr + Damage.WaterPump));
-            rbrData.ElectricSystemDamage = PartWorkingStatus(ReadInt(hProcess, damageBasePtr + Damage.ElectricSystem));
-            rbrData.BrakeCircuitDamage = PartWorkingStatus(ReadInt(hProcess, damageBasePtr + Damage.BrakeCircuit));
-            rbrData.GearboxActuatorDamage = PartWorkingStatus(ReadInt(hProcess, damageBasePtr + Damage.GearboxActuatorDamage));
-            rbrData.RadiatorDamage = RadiatorDamageLevel(ReadFloat(hProcess, damageBasePtr + Damage.RadiatiorDamage));
-            rbrData.IntercoolerDamage = IntercoolerDamageLevel(ReadFloat(hProcess, damageBasePtr + Damage.IntercoolerDamage));
-            rbrData.StarterDamage = PartWorkingStatus(ReadInt(hProcess, damageBasePtr + Damage.StarterDamage));
-            rbrData.HydraulicsDamage = PartWorkingStatus(ReadInt(hProcess, damageBasePtr + Damage.HydraulicsDamage));
-            rbrData.OilCoolerDamage = InversePartWorkingStatus(ReadInt(hProcess, damageBasePtr + Damage.OilCoolerDamage));
+            rbrData.BatteryWearLevel = BatteryHealthLevel(ReadFloat(hProcess, pointerCache.DamageBasePtr + Damage.BatteryWearPercent));
+            rbrData.OilPumpDamage = OilPumpDamageLevel(ReadFloat(hProcess, pointerCache.DamageBasePtr + Damage.OilPump));
+            rbrData.WaterPumpDamage = PartWorkingStatus(ReadInt(hProcess, pointerCache.DamageBasePtr + Damage.WaterPump));
+            rbrData.ElectricSystemDamage = PartWorkingStatus(ReadInt(hProcess, pointerCache.DamageBasePtr + Damage.ElectricSystem));
+            rbrData.BrakeCircuitDamage = PartWorkingStatus(ReadInt(hProcess, pointerCache.DamageBasePtr + Damage.BrakeCircuit));
+            rbrData.GearboxActuatorDamage = PartWorkingStatus(ReadInt(hProcess, pointerCache.DamageBasePtr + Damage.GearboxActuatorDamage));
+            rbrData.RadiatorDamage = RadiatorDamageLevel(ReadFloat(hProcess, pointerCache.DamageBasePtr + Damage.RadiatiorDamage));
+            rbrData.IntercoolerDamage = IntercoolerDamageLevel(ReadFloat(hProcess, pointerCache.DamageBasePtr + Damage.IntercoolerDamage));
+            rbrData.StarterDamage = PartWorkingStatus(ReadInt(hProcess, pointerCache.DamageBasePtr + Damage.StarterDamage));
+            rbrData.HydraulicsDamage = PartWorkingStatus(ReadInt(hProcess, pointerCache.DamageBasePtr + Damage.HydraulicsDamage));
+            rbrData.OilCoolerDamage = InversePartWorkingStatus(ReadInt(hProcess, pointerCache.DamageBasePtr + Damage.OilCoolerDamage));
         }
 
-        private static void ReadEngineAndFluids(IntPtr hProcess, IntPtr carInfoBasePtr, IntPtr carMovBasePtr, RBRTelemetryData rbrData)
+        private static void ReadEngineAndFluids(IntPtr hProcess, RBRTelemetryData rbrData)
         {
-            rbrData.IsEngineOn = ReadFloat(hProcess, carInfoBasePtr + CarInfo.EngineStatus) == 1.0f;
+            rbrData.IsEngineOn = ReadFloat(hProcess, pointerCache.CarInfoBasePtr + CarInfo.EngineStatus) == 1.0f;
 
-            rbrData.RadiatorCoolantTemperature = ReadFloat(hProcess, carMovBasePtr + CarMov.RadiatorCoolantTemperature);
-            rbrData.OilTemperature = ReadFloat(hProcess, carMovBasePtr + CarMov.OilTempKelvin);
+            rbrData.RadiatorCoolantTemperature = ReadFloat(hProcess, pointerCache.CarMovBasePtr + CarMov.RadiatorCoolantTemperature);
+            rbrData.OilTemperature = ReadFloat(hProcess, pointerCache.CarMovBasePtr + CarMov.OilTempKelvin);
             rbrData.OilTemperatureWarning = rbrData.OilTemperature > 140.0f + kelvin_Celcius;
 
-            float oilPRawBase = ReadFloat(hProcess, carMovBasePtr + CarMov.OilPressureRawBase);
-            float oilPRaw = ReadFloat(hProcess, carMovBasePtr + CarMov.OilPressureRaw);
+            float oilPRawBase = ReadFloat(hProcess, pointerCache.CarMovBasePtr + CarMov.OilPressureRawBase);
+            float oilPRaw = ReadFloat(hProcess, pointerCache.CarMovBasePtr + CarMov.OilPressureRaw);
             rbrData.OilPressure = ComputeOilPressure(oilPRawBase, oilPRaw);
 
             rbrData.OilPressureWarning = !rbrData.IsEngineOn
                 | rbrData.OilPressure < 0.2
                 | rbrData.OilPumpDamage >= 2;
 
-            float waterTemperature = ReadFloat(hProcess, carInfoBasePtr + CarInfo.WaterTemperatureCelsius);
+            float waterTemperature = ReadFloat(hProcess, pointerCache.CarInfoBasePtr + CarInfo.WaterTemperatureCelsius);
             rbrData.WaterTemperatureWarning = waterTemperature > 120.0f;
         }
 
-        private static void ReadBatteryData(IntPtr hProcess, IntPtr carInfoBasePtr, RBRTelemetryData rbrData)
+        private static void ReadBatteryData(IntPtr hProcess, RBRTelemetryData rbrData)
         {
-            rbrData.BatteryStatus = ReadFloat(hProcess, carInfoBasePtr + CarInfo.BatteryStatus);
+            rbrData.BatteryStatus = ReadFloat(hProcess, pointerCache.CarInfoBasePtr + CarInfo.BatteryStatus);
             rbrData.BatteryVoltage = rbrData.IsEngineOn ? 14.5f
                 : (rbrData.BatteryStatus * 0.2f) + 10.4f;
             rbrData.LowBatteryWarning = rbrData.BatteryStatus < 10.0f;
         }
 
-        private static void ReadVelocityData(IntPtr hProcess, IntPtr carMovBasePtr, RBRTelemetryData rbrData)
+        private static void ReadVelocityData(IntPtr hProcess, RBRTelemetryData rbrData)
         {
-            float velX = ReadFloat(hProcess, carMovBasePtr + CarMov.VelocityX);
-            float velY = ReadFloat(hProcess, carMovBasePtr + CarMov.VelocityY);
-            float velZ = ReadFloat(hProcess, carMovBasePtr + CarMov.VelocityZ);
-            float fwdX = ReadFloat(hProcess, carMovBasePtr + CarMov.ForwardX);
-            float fwdY = ReadFloat(hProcess, carMovBasePtr + CarMov.ForwardY);
-            float fwdZ = ReadFloat(hProcess, carMovBasePtr + CarMov.ForwardZ);
+            float velX = ReadFloat(hProcess, pointerCache.CarMovBasePtr + CarMov.VelocityX);
+            float velY = ReadFloat(hProcess, pointerCache.CarMovBasePtr + CarMov.VelocityY);
+            float velZ = ReadFloat(hProcess, pointerCache.CarMovBasePtr + CarMov.VelocityZ);
+            float fwdX = ReadFloat(hProcess, pointerCache.CarMovBasePtr + CarMov.ForwardX);
+            float fwdY = ReadFloat(hProcess, pointerCache.CarMovBasePtr + CarMov.ForwardY);
+            float fwdZ = ReadFloat(hProcess, pointerCache.CarMovBasePtr + CarMov.ForwardZ);
 
             rbrData.GroundSpeed = ComputeGroundSpeed(velX, velY, velZ, fwdX, fwdY, fwdZ);
         }
@@ -202,22 +201,22 @@ namespace maorc287.RBRDataExtPlugin
         internal static RBRTelemetryData ReadTelemetryData()
         {
             var rbrData = new RBRTelemetryData();
-            IntPtr hProcess = EnsureProcess();
+            IntPtr hProcess = GetProcess();
             if (hProcess == IntPtr.Zero) return rbrData;
 
             try
             {
-                EnsurePointers(hProcess);
+                InitializePointers(hProcess);
 
                 if (!IsOnStage(hProcess, rbrData))
                 {
                     return LatestValidTelemetry;
                 }
 
-                ReadDamageData(hProcess, pointerCache.DamageBasePtr, rbrData);
-                ReadEngineAndFluids(hProcess, pointerCache.CarInfoBasePtr, pointerCache.CarMovBasePtr, rbrData);
-                ReadBatteryData(hProcess, pointerCache.CarInfoBasePtr, rbrData);
-                ReadVelocityData(hProcess, pointerCache.CarMovBasePtr, rbrData);
+                ReadDamageData(hProcess, rbrData);
+                ReadEngineAndFluids(hProcess, rbrData);
+                ReadBatteryData(hProcess, rbrData);
+                ReadVelocityData(hProcess, rbrData);
                 ReadWheelData(hProcess, rbrData);
                 ReadSlipAndTireModel(hProcess, rbrData);
                 ReadExternalPluginData(rbrData);

@@ -121,11 +121,7 @@ namespace maorc287.RBRDataExtPlugin
             float fwdY = ReadFloat(hProcess, carMovBasePtr + CarMov.ForwardY);
             float fwdZ = ReadFloat(hProcess, carMovBasePtr + CarMov.ForwardZ);
 
-            float wheelSpeed = ReadFloat(hProcess, pointerCache.CarInfoBasePtr + CarInfo.WheelSpeed);
-
             rbrData.GroundSpeed = ComputeGroundSpeed(velX, velY, velZ, fwdX, fwdY, fwdZ);
-            rbrData.WheelLock = ComputeWheelLockRatio(rbrData.GroundSpeed, wheelSpeed);
-            rbrData.WheelSlip = ComputeWheelSpinRatio(rbrData.GroundSpeed, wheelSpeed);
         }
 
         private static void ReadWheelData(IntPtr hProcess, RBRTelemetryData rbrData)

@@ -89,33 +89,7 @@ namespace maorc287.RBRDataExtPlugin
         {
             return (velocityX * forwardX +
                     velocityY * forwardY +
-                    velocityZ * forwardZ) * -3.559f;
-        }
-
-        /// Computes the wheel lock ratio based on ground speed and wheel speed.
-        internal static float ComputeWheelLockRatio(
-            float groundSpeed,
-            float wheelSpeed)
-        {
-            if (groundSpeed < 1.0f)
-                return 0.0f;
-
-            float lockRatio = (groundSpeed - wheelSpeed) / groundSpeed;
-
-            return Clamp01(lockRatio);
-        }
-
-        /// Computes the wheel spin ratio based on ground speed and wheel speed.
-        internal static float ComputeWheelSpinRatio(
-            float groundSpeed,
-            float wheelSpeed)
-        {
-            if (groundSpeed < 1.0f)
-                return 0.0f;
-
-            float slipRatio = (wheelSpeed - groundSpeed) / groundSpeed;
-
-            return Clamp01(slipRatio);
+                    velocityZ * forwardZ) * -3.6f;
         }
 
         internal static float ComputeWheelSlipRatio(float groundSpeed, float wheelSpeed)
@@ -161,15 +135,6 @@ namespace maorc287.RBRDataExtPlugin
             vY_local = velX * rx + velY * ry; // lateral velocity
         }
 
-        internal static float NormalizeAngle(float a)
-        {
-            float twoPi = (float)(2.0 * Math.PI);
-            while (a <= -Math.PI) a += twoPi;
-            while (a > Math.PI) a -= twoPi;
-            return a;
-        }
-
-
         //Calculates the slip angle in radians from longitudinal and lateral speeds of wheel.
         internal static float GetSlipAngleRad(float groundSpeed, float wheelSpeed,
             float longitudinalSpeed, float lateralSpeed , float steeringAngle = 0)
@@ -185,7 +150,7 @@ namespace maorc287.RBRDataExtPlugin
         }
 
         /// <summary>
-        /// Gets slip angle limit for given wheel load.
+        /// Gets slip angle limit for given tire cornering stiffness.
         /// </summary>
         internal static float GetSlipAngleLimit(float currentCrnStiff, float[] cornerStiffnessTable, float[] slipTable)
         {

@@ -30,11 +30,6 @@ namespace maorc287.RBRDataExtPlugin
             PluginManager.AddProperty("RBR.Data.OilTemperature", GetType(), 0, "");
             PluginManager.AddProperty("RBR.Data.BatteryVoltage", GetType(), 0, "");
 
-            PluginManager.AddProperty("RBR.Data.GroundSpeed", GetType(), 0, "");
-            PluginManager.AddProperty("RBR.Data.WheelLockRatio", GetType(), 0, "");
-            PluginManager.AddProperty("RBR.Data.WheelSlipRatio", GetType(), 0, "");
-
-
             PluginManager.AddProperty("RBR.Info.OilPressureWarning", GetType(), 0, "");
             PluginManager.AddProperty("RBR.Info.LowBatteryWarning", GetType(), 0, "");
             PluginManager.AddProperty("RBR.Info.WaterTemperatureWarning", GetType(), 0, "");
@@ -105,10 +100,6 @@ namespace maorc287.RBRDataExtPlugin
                 FormatTemperature(rbrData.OilTemperature, temperatureUnit));
 
             PluginManager.SetPropertyValue("RBR.Data.BatteryVoltage", GetType(), rbrData.BatteryVoltage);
-
-            PluginManager.SetPropertyValue("RBR.Data.GroundSpeed", GetType(), rbrData.GroundSpeed);
-            PluginManager.SetPropertyValue("RBR.Data.WheelLockRatio", GetType(), rbrData.WheelLock);
-            PluginManager.SetPropertyValue("RBR.Data.WheelSlipRatio", GetType(), rbrData.WheelSlip);
 
             PluginManager.SetPropertyValue("RBR.Info.OilPressureWarning", GetType(), rbrData.OilPressureWarning);
             PluginManager.SetPropertyValue("RBR.Info.LowBatteryWarning", GetType(), rbrData.LowBatteryWarning);

@@ -194,6 +194,11 @@ namespace maorc287.RBRDataExtPlugin
             rbrData.RLWheelMaxSlipAngle = percentSlipAngleRL;
             rbrData.RRWheelMaxSlipAngle = percentSlipAngleRR;
 
+            rbrData.FLWheelLimitSlipAngleRad = slipMaxFL;
+            rbrData.FRWheelLimitSlipAngleRad = slipMaxFR;
+            rbrData.RLWheelLimitSlipAngleRad = slipMaxRL;
+            rbrData.RRWheelLimitSlipAngleRad = slipMaxRR;
+
             rbrData.FLWheelSlipRatio = ComputeWheelSlipRatio(rbrData.GroundSpeed, rbrData.FLWheelSpeed);
             rbrData.FRWheelSlipRatio = ComputeWheelSlipRatio(rbrData.GroundSpeed, rbrData.FRWheelSpeed);
             rbrData.RLWheelSlipRatio = ComputeWheelSlipRatio(rbrData.GroundSpeed, rbrData.RLWheelSpeed);
@@ -292,8 +297,10 @@ namespace maorc287.RBRDataExtPlugin
             public float RLWheelSlipAngleOver { get; set; } = 0.0f;
             public float RRWheelSlipAngleOver { get; set; } = 0.0f;
 
-
-
+            public float FLWheelLimitSlipAngleRad { get; set; } = 0.0f;
+            public float FRWheelLimitSlipAngleRad { get; set; } = 0.0f;
+            public float RLWheelLimitSlipAngleRad { get; set; } = 0.0f;
+            public float RRWheelLimitSlipAngleRad { get; set; } = 0.0f;
 
             // Damage Value, when Value is 5 means part is lost, 1 means part is Fine
             public uint OilPumpDamage { get; set; } = 1;

@@ -160,8 +160,9 @@ namespace maorc287.RBRDataExtPlugin
             // Array of 8 float values from the Tires structure from File tyres.lsp
             public const int SlpPkCrn = 0x7F0;  // Slip Peak Cornering value in the Tires structure from File tyres.lsp
             public const int SlpPkTrct = 0x810;  // Slip Peak Traction value in the Tires structure from File tyres.lsp
-            public const int CrnStf = 0x780;  // Cornering Stiffness value in the Tires structure from File tyres.lsp
-            public const int TrctStf = 0x890;  // Traction Stiffness value in the Tires structure from File tyres.lsp
+            public const int CrnStf = 0x770;  // Cornering Stiffness value in the Tires structure from File tyres.lsp
+            public const int TrctStf = 0x790;  // Traction Stiffness value in the Tires structure from File tyres.lsp
+            public const int SFric = 0x830; // ??Surface Friction value in the Tires structure from File tyres.lsp??
         }
 
         public static class Pointers

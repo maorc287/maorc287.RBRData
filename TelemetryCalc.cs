@@ -185,7 +185,7 @@ namespace maorc287.RBRDataExtPlugin
         {
             float limit = GetSlipAngleLimit(currentCrnStiff, cornerStiffnessTable, slipTable);
             if (limit <= 0.001f) { slipMax = 0; slipAnglePercent = 0; return 0f; }
-            if (currentSlipRad == 0.0f) { slipMax = 0; slipAnglePercent = 0; return 0f; }
+            if (currentSlipRad == 0.0f) { slipMax = limit; slipAnglePercent = 0; return 0f; }
 
             // How far beyond peak (in radians and as a ratio)
 

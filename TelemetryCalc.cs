@@ -179,7 +179,7 @@ namespace maorc287.RBRDataExtPlugin
         /// slipMax: the current slip angle limit in radians
         /// slipAnglePercent: current slip angle as percent of limit [0..1]
         /// </summary>
-        internal static float GetNormalizedSlip(float currentSlipRad, 
+        internal static float GetSlipAngleExcessNormalized(float currentSlipRad, 
             float currentCrnStiff, float[] cornerStiffnessTable, float[] slipTable, 
             out float slipMax, out float slipAnglePercent)
         {
@@ -188,6 +188,7 @@ namespace maorc287.RBRDataExtPlugin
             if (currentSlipRad == 0.0f) { slipMax = 0; slipAnglePercent = 0; return 0f; }
 
             // How far beyond peak (in radians and as a ratio)
+
             // compute signed excess
             float excessRad = Math.Abs(currentSlipRad) - limit;
             if (excessRad < 0f) excessRad = 0f; // not past limit → zero
@@ -200,6 +201,7 @@ namespace maorc287.RBRDataExtPlugin
 
             // normalize to [0, 1] by dividing by limit
             float normalized = Math.Min((excessRad) / limit, 1f);
+
             normalized *= Math.Sign(currentSlipRad);
             return normalized;
 

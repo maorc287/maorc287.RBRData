@@ -177,16 +177,16 @@ namespace maorc287.RBRDataExtPlugin
 
 
             rbrData.FLWheelSlipAngleOver = 
-                GetNormalizedSlip(rbrData.FLWheelSlipAngle, flCornerStiffness, cornerStiff, slipCornerPk,
+                GetSlipAngleExcessNormalized(rbrData.FLWheelSlipAngle, flCornerStiffness, cornerStiff, slipCornerPk,
                 out float slipMaxFL, out float percentSlipAngleFL);
             rbrData.FRWheelSlipAngleOver = 
-                GetNormalizedSlip(rbrData.FRWheelSlipAngle, frCornerStiffness, cornerStiff, slipCornerPk,
+                GetSlipAngleExcessNormalized(rbrData.FRWheelSlipAngle, frCornerStiffness, cornerStiff, slipCornerPk,
                 out float slipMaxFR, out float percentSlipAngleFR);
             rbrData.RLWheelSlipAngleOver = 
-                GetNormalizedSlip(rbrData.RLWheelSlipAngle, rlCornerStiffness, cornerStiff, slipCornerPk,
+                GetSlipAngleExcessNormalized(rbrData.RLWheelSlipAngle, rlCornerStiffness, cornerStiff, slipCornerPk,
                 out float slipMaxRL, out float percentSlipAngleRL);
             rbrData.RRWheelSlipAngleOver = 
-                GetNormalizedSlip(rbrData.RRWheelSlipAngle, rrCornerStiffness, cornerStiff, slipCornerPk,
+                GetSlipAngleExcessNormalized(rbrData.RRWheelSlipAngle, rrCornerStiffness, cornerStiff, slipCornerPk,
                 out float slipMaxRR, out float percentSlipAngleRR);
 
             rbrData.FLWheelMaxSlipAngle = percentSlipAngleFL;

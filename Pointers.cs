@@ -113,15 +113,21 @@ namespace maorc287.RBRDataExtPlugin
             public const int WheelRotationOffset = 0xA50;
 
             public const int LongSpeedNegativeOffset = 0x12BC; // ?? Offset to negative longitudinal speed (m/s)
-
             public const int LongitudinalSpeedOffset = 0x126C; // Offset to longitudinal speed (m/s)
             public const int LateralSpeedOffset = 0x1268; // Offset to lateral speed (m/s)
 
             public const int LockSlipMagnitude = 0x1330; // ?? Offset to wheel lock slip magnitude? (0.5 to 2.0 float value)
-            public const int CornerStiffnes = 0x1290; // Offset to wheel load maybe? Don't know what unit
+            public const int GripValue = 0x12E4; // ?? Offset to wheel lock slip magnitude? (0.0 to 2.0 float value)
+
+            public const int CorneringStiffness = 0x128C; // Offset to cornering stiffness load maybe? Don't know what unit Newton/m/rad?
+            public const int VerticalLoad = 0x1334; // Offset to vertical load in Newtons?
 
             //Not sure about this, maybe it is related to steering angle in Radians (Offset for the Front Wheels Only)
             public const int FrontWheelSteeringAngle = 0x9E4;
+
+            // Maybe some sort of Surface inverse friction coefficient based on the surface type 0.05 or less for tarmac
+            // 0.1 for snow, 0.15 for gravel, 0.2 for grass, 0.3 high grass
+            public const int FrictionFactor = 0xB9C;
         }
 
         //Incomplete offsets for damage structure (still need to be woked on)
@@ -135,7 +141,7 @@ namespace maorc287.RBRDataExtPlugin
             //Value is 1.0f when fine, 0.0 float Value means part is lost
             public const int OilPump = 0xF0;
             public const int Intercooler = 0xF8;
-            public const int Radiatior = 0xE8;
+            public const int Radiator = 0xE8;
 
             //Oil Cooler valus is 0 when it is working, 1 when it is damaged
             public const int OilCooler = 0xF4;
@@ -162,7 +168,10 @@ namespace maorc287.RBRDataExtPlugin
             public const int SlpPkTrct = 0x810;  // Slip Peak Traction value in the Tires structure from File tyres.lsp
             public const int CrnStf = 0x770;  // Cornering Stiffness value in the Tires structure from File tyres.lsp
             public const int TrctStf = 0x790;  // Traction Stiffness value in the Tires structure from File tyres.lsp
-            public const int SFric = 0x830; // ??Surface Friction value in the Tires structure from File tyres.lsp??
+            //Array of 5 float value for friction muliplier based on surface type?
+            public const int SFric = 0x830;
+
+            public const int TireType = 0x578; // Actual tire Type value in the Tires structure from File tyres.lsp
         }
 
         public static class Pointers
@@ -172,6 +181,7 @@ namespace maorc287.RBRDataExtPlugin
             public const int GameMode = 0x007EAC48;
             public const int GameModeOffset = 0x728;
             public const int TireModel = 0x007C8318; // Pointer to the tires.lsp file structure in memory
+            public const int WheelContact = 0x00893038; // Pointer to the Wheel Surface Contact structure in memory
 
         }
     }

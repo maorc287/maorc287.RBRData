@@ -92,6 +92,13 @@ namespace maorc287.RBRDataExtPlugin
                     velocityZ * forwardZ) * -3.6f;
         }
 
+        /// Computes the ground speed from longitudinal and lateral speeds.
+        internal float ComputeGroundSpeed(float longitudinalSpeed, float lateralSpeed)
+        {
+            return (float)Math.Sqrt(longitudinalSpeed * longitudinalSpeed +
+                                    lateralSpeed * lateralSpeed);
+        }
+
         internal static float ComputeWheelSlipRatio(float groundSpeed, float wheelSpeed)
         {
             const float epsilon = 0.5f; // small threshold
@@ -114,7 +121,6 @@ namespace maorc287.RBRDataExtPlugin
 
             return slipRatio;
         }
-
 
         // Helper to transform world velocity to car local frame (forward/right)
         internal static void WorldToLocal(float velX,
@@ -171,6 +177,7 @@ namespace maorc287.RBRDataExtPlugin
             return slipLow + t * (slipHigh - slipLow); // radians
         }
 
+
         /// <summary>
         /// Normalizes current slip angle against the corner stiffness-dependent limit.
         /// Returns 0.0 (limit not exceeded) to 1.0 (over double the limit). 
@@ -205,6 +212,72 @@ namespace maorc287.RBRDataExtPlugin
             normalized *= Math.Sign(currentSlipRad);
             return normalized;
 
+        }
+
+
+        // A) Physics-ish alpha_max from frictionC, load, cornering stiffness (rad)
+        public static float ComputeMaxSlipAngleRad(float frictionC, float vLoadN, float corneringStiffnessNPerRad)
+        {
+            if (corneringStiffnessNPerRad <= 1e-6) return 0.0f;
+            return (frictionC * vLoadN) / (corneringStiffnessNPerRad); // radians
+        }
+
+        // Stored reference max lateral slip angle (measured under minimal longitudinal slip)
+        private static float referenceMaxSlipAngle = 0f;
+
+        internal static void CalculateTireSlip(
+         float gripValue,              // 0–2 combined slip usage
+         float wheelSpeed,
+         float groundSpeed,
+         float currentSlipAngle,
+         out float signedLongitudinalSlip,
+         out float normalizedMaxLateralSlip)
+        {
+            // 1. Compute longitudinal slip ratio
+            float wheelDiff = wheelSpeed - groundSpeed;
+            float slipRatio = 0f;
+
+            if (Math.Abs(groundSpeed) > 0.1f)
+                slipRatio = wheelDiff / Math.Abs(groundSpeed);
+
+            // clamp to -1..1 for safety
+            slipRatio = Math.Max(-1f, Math.Min(1f, slipRatio));
+            signedLongitudinalSlip = slipRatio;
+
+            // 2. Update reference max slip angle when longitudinal slip is minimal
+            if (Math.Abs(slipRatio) < 0.05f)
+                referenceMaxSlipAngle = Math.Max(referenceMaxSlipAngle, Math.Abs(currentSlipAngle));
+
+            float latCapacity = LookupLateralWeight(gripValue);
+            normalizedMaxLateralSlip = latCapacity * (1f - Math.Abs(slipRatio));
+
+        }
+
+        private static readonly float[] lateralWeightTable = new float[]
+{
+    1.00f,  // gripValue = 0.0
+    0.99f,  // ~0.2
+    0.96f,  // ~0.3
+    0.87f,  // ~0.4
+    0.70f,  // ~0.5
+    0.50f,  // ~0.6
+    0.35f,  // ~0.7
+    0.20f,  // ~0.8
+    0.10f,  // ~0.9
+    0.05f,  // ~1.0
+    0.00f   // gripValue = 2.0
+};
+
+        private static float LookupLateralWeight(float gripValue)
+        {
+            // Map gripValue 0–2 into table indices 0–10
+            float t = gripValue * (lateralWeightTable.Length - 1) / 2.0f;
+
+            int i = (int)Math.Floor(t);
+            int j = Math.Min(i + 1, lateralWeightTable.Length - 1);
+
+            float frac = t - i;
+            return lateralWeightTable[i] * (1f - frac) + lateralWeightTable[j] * frac;
         }
 
         //private static float prevTimestamp = 0f; // in seconds

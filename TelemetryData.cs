@@ -76,7 +76,7 @@ namespace maorc287.RBRDataExtPlugin
             rbrData.ElectricSystemDamage = PartWorkingStatus(ReadInt(hProcess, pointerCache.DamageBasePtr + Damage.ElectricSystem));
             rbrData.BrakeCircuitDamage = PartWorkingStatus(ReadInt(hProcess, pointerCache.DamageBasePtr + Damage.BrakeCircuit));
             rbrData.GearboxActuatorDamage = PartWorkingStatus(ReadInt(hProcess, pointerCache.DamageBasePtr + Damage.GearboxActuator));
-            rbrData.RadiatorDamage = RadiatorDamageLevel(ReadFloat(hProcess, pointerCache.DamageBasePtr + Damage.Radiatior));
+            rbrData.RadiatorDamage = RadiatorDamageLevel(ReadFloat(hProcess, pointerCache.DamageBasePtr + Damage.Radiator));
             rbrData.IntercoolerDamage = IntercoolerDamageLevel(ReadFloat(hProcess, pointerCache.DamageBasePtr + Damage.Intercooler));
             rbrData.StarterDamage = PartWorkingStatus(ReadInt(hProcess, pointerCache.DamageBasePtr + Damage.Starter));
             rbrData.HydraulicsDamage = PartWorkingStatus(ReadInt(hProcess, pointerCache.DamageBasePtr + Damage.Hydraulics));
@@ -147,10 +147,10 @@ namespace maorc287.RBRDataExtPlugin
 
         private static void ReadSlipAndTireModel(IntPtr hProcess, RBRTelemetryData rbrData)
         {
-            float flCornerStiffness = ReadFloat(hProcess, pointerCache.FLWheelPtr + Wheel.CornerStiffnes);
-            float frCornerStiffness = ReadFloat(hProcess, pointerCache.FRWheelPtr + Wheel.CornerStiffnes);
-            float rlCornerStiffness = ReadFloat(hProcess, pointerCache.RLWheelPtr + Wheel.CornerStiffnes);
-            float rrCornerStiffness = ReadFloat(hProcess, pointerCache.RRWheelPtr + Wheel.CornerStiffnes);
+            float flCornerStiffness = ReadFloat(hProcess, pointerCache.FLWheelPtr + Wheel.CorneringStiffness);
+            float frCornerStiffness = ReadFloat(hProcess, pointerCache.FRWheelPtr + Wheel.CorneringStiffness);
+            float rlCornerStiffness = ReadFloat(hProcess, pointerCache.RLWheelPtr + Wheel.CorneringStiffness);
+            float rrCornerStiffness = ReadFloat(hProcess, pointerCache.RRWheelPtr + Wheel.CorneringStiffness);
 
             float[] slipCornerPk = ReadFloatArray(hProcess, pointerCache.TireModelBasePtr + TireModel.SlpPkCrn, 8);
             float[] slipTractionPk = ReadFloatArray(hProcess, pointerCache.TireModelBasePtr + TireModel.SlpPkTrct, 8);
@@ -175,6 +175,10 @@ namespace maorc287.RBRDataExtPlugin
             rbrData.RRWheelSlipAngle = GetSlipAngleRad(rbrData.GroundSpeed, rbrData.RRWheelSpeed,
                 longitudinalRR, lateralRR);
 
+            //float gripValueFL = ReadFloat(hProcess, pointerCache.FLWheelPtr + Wheel.GripValue);
+            float frictionFL = ReadFloat(hProcess, pointerCache.FLWheelPtr + Wheel.FrictionFactor);
+            float vLoadFL = ReadFloat(hProcess, pointerCache.FLWheelPtr + Wheel.VerticalLoad);
+      
 
             rbrData.FLWheelSlipAngleOver = 
                 GetSlipAngleExcessNormalized(rbrData.FLWheelSlipAngle, flCornerStiffness, cornerStiff, slipCornerPk,

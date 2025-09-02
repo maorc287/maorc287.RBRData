@@ -176,22 +176,25 @@ namespace maorc287.RBRDataExtPlugin
                 longitudinalRR, lateralRR);
 
             //float gripValueFL = ReadFloat(hProcess, pointerCache.FLWheelPtr + Wheel.GripValue);
-            float frictionFL = ReadFloat(hProcess, pointerCache.FLWheelPtr + Wheel.SlipAngleReduction);
+            float angleReductionFL = ReadFloat(hProcess, pointerCache.FLWheelPtr + Wheel.SlipAngleReduction);
+            float angleReductionFR = ReadFloat(hProcess, pointerCache.FRWheelPtr + Wheel.SlipAngleReduction);
+            float angleReductionRL = ReadFloat(hProcess, pointerCache.RLWheelPtr + Wheel.SlipAngleReduction);
+            float angleReductionRR = ReadFloat(hProcess, pointerCache.RRWheelPtr + Wheel.SlipAngleReduction);
             float vLoadFL = ReadFloat(hProcess, pointerCache.FLWheelPtr + Wheel.VerticalLoad);
       
 
             rbrData.FLWheelSlipAngleOver = 
                 GetSlipAngleExcessNormalized(rbrData.FLWheelSlipAngle, flCornerStiffness, cornerStiff, slipCornerPk,
-                out float slipMaxFL, out float percentSlipAngleFL);
+                angleReductionFL, out float slipMaxFL, out float percentSlipAngleFL);
             rbrData.FRWheelSlipAngleOver = 
                 GetSlipAngleExcessNormalized(rbrData.FRWheelSlipAngle, frCornerStiffness, cornerStiff, slipCornerPk,
-                out float slipMaxFR, out float percentSlipAngleFR);
+                angleReductionFR, out float slipMaxFR, out float percentSlipAngleFR);
             rbrData.RLWheelSlipAngleOver = 
                 GetSlipAngleExcessNormalized(rbrData.RLWheelSlipAngle, rlCornerStiffness, cornerStiff, slipCornerPk,
-                out float slipMaxRL, out float percentSlipAngleRL);
+                angleReductionRL, out float slipMaxRL, out float percentSlipAngleRL);
             rbrData.RRWheelSlipAngleOver = 
                 GetSlipAngleExcessNormalized(rbrData.RRWheelSlipAngle, rrCornerStiffness, cornerStiff, slipCornerPk,
-                out float slipMaxRR, out float percentSlipAngleRR);
+                angleReductionRR, out float slipMaxRR, out float percentSlipAngleRR);
 
             rbrData.FLWheelMaxSlipAngle = percentSlipAngleFL;
             rbrData.FRWheelMaxSlipAngle = percentSlipAngleFR;

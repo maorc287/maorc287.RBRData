@@ -156,7 +156,8 @@ namespace maorc287.RBRDataExtPlugin
         /// <summary>
         /// Gets slip angle limit for given tire cornering stiffness.
         /// </summary>
-        internal static float GetSlipAngleLimit(float currentCrnStiff, float[] cornerStiffnessTable, float[] slipTable)
+        internal static float GetSlipAngleLimit(float currentCrnStiff, float[] cornerStiffnessTable, float[] slipTable,
+            float slipAngleReduction)
         {
             if (cornerStiffnessTable == null || slipTable == null || cornerStiffnessTable.Length != slipTable.Length)
                 return 0f;
@@ -174,7 +175,8 @@ namespace maorc287.RBRDataExtPlugin
             float slipHigh = slipTable[i + 1];
 
             float t = (currentCrnStiff - loadLow) / (loadHigh - loadLow);
-            return slipLow + t * (slipHigh - slipLow); // radians
+            float maxSlip = slipLow + t * (slipHigh - slipLow); // radians
+            return maxSlip - slipAngleReduction; // apply surface reduction factor
         }
 
 
@@ -187,10 +189,10 @@ namespace maorc287.RBRDataExtPlugin
         /// slipAnglePercent: current slip angle as percent of limit [0..1]
         /// </summary>
         internal static float GetSlipAngleExcessNormalized(float currentSlipRad, 
-            float currentCrnStiff, float[] cornerStiffnessTable, float[] slipTable, 
+            float currentCrnStiff, float[] cornerStiffnessTable, float[] slipTable, float slipAngleReduction,
             out float slipMax, out float slipAnglePercent)
         {
-            float limit = GetSlipAngleLimit(currentCrnStiff, cornerStiffnessTable, slipTable);
+            float limit = GetSlipAngleLimit(currentCrnStiff, cornerStiffnessTable, slipTable, slipAngleReduction);
             if (limit <= 0.001f) { slipMax = 0; slipAnglePercent = 0; return 0f; }
             if (currentSlipRad == 0.0f) { slipMax = limit; slipAnglePercent = 0; return 0f; }
 

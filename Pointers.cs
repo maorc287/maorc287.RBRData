@@ -126,9 +126,9 @@ namespace maorc287.RBRDataExtPlugin
             public const int FrontWheelSteeringAngle = 0x9E4;
 
             // Maybe some sort of Surface inverse friction coefficient based on the surface type
-            // or max slip angle before losing grip?
+            // or slip angle reduction factor based on surface type?
             // 0.05 or less for tarmac, 0.1 for snow, 0.15 for gravel, 0.2 for grass, 0.3 high grass
-            public const int FrictionFactor = 0xB9C;
+            public const int SlipAngleReduction = 0xB9C;
         }
 
         //Incomplete offsets for damage structure (still need to be woked on)

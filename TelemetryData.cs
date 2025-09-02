@@ -176,7 +176,7 @@ namespace maorc287.RBRDataExtPlugin
                 longitudinalRR, lateralRR);
 
             //float gripValueFL = ReadFloat(hProcess, pointerCache.FLWheelPtr + Wheel.GripValue);
-            float frictionFL = ReadFloat(hProcess, pointerCache.FLWheelPtr + Wheel.FrictionFactor);
+            float frictionFL = ReadFloat(hProcess, pointerCache.FLWheelPtr + Wheel.SlipAngleReduction);
             float vLoadFL = ReadFloat(hProcess, pointerCache.FLWheelPtr + Wheel.VerticalLoad);
       
 

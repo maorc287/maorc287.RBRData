@@ -119,14 +119,15 @@ namespace maorc287.RBRDataExtPlugin
             public const int LockSlipMagnitude = 0x1330; // ?? Offset to wheel lock slip magnitude? (0.5 to 2.0 float value)
             public const int GripValue = 0x12E4; // ?? Offset to wheel lock slip magnitude? (0.0 to 2.0 float value)
 
-            public const int CorneringStiffness = 0x128C; // Offset to cornering stiffness load maybe? Don't know what unit Newton/m/rad?
+            public const int CorneringStiffness = 0x128C; // Offset to cornering stiffness maybe? Don't know what unit Newton/rad?
             public const int VerticalLoad = 0x1334; // Offset to vertical load in Newtons?
 
             //Not sure about this, maybe it is related to steering angle in Radians (Offset for the Front Wheels Only)
             public const int FrontWheelSteeringAngle = 0x9E4;
 
-            // Maybe some sort of Surface inverse friction coefficient based on the surface type 0.05 or less for tarmac
-            // 0.1 for snow, 0.15 for gravel, 0.2 for grass, 0.3 high grass
+            // Maybe some sort of Surface inverse friction coefficient based on the surface type
+            // or max slip angle before losing grip?
+            // 0.05 or less for tarmac, 0.1 for snow, 0.15 for gravel, 0.2 for grass, 0.3 high grass
             public const int FrictionFactor = 0xB9C;
         }
 

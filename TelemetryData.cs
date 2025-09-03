@@ -190,8 +190,8 @@ namespace maorc287.RBRDataExtPlugin
             int activeSlipPk2 = ReadInt(hProcess, pointerCache.FLWheelPtr + Wheel.ActiveSlpPkCrn2);
             float slipWeight = ReadFloat(hProcess, pointerCache.FLWheelPtr + Wheel.SlpPkCrnWeight);
 
-            float maxSlipAngleFL = GetSaturationSlipFromArray(slipCornerPk, activeSlipPk1, activeSlipPk2, slipWeight);
-            float maxSlipAngleFR = GetSaturationSlipFromArray(slipCornerPk, activeSlipPk1, activeSlipPk2, slipWeight);
+            float maxSlipAngleFL = GetSaturationSlipAngleFromArray(slipCornerPk, activeSlipPk1, activeSlipPk2, slipWeight);
+            float maxSlipAngleFR = GetSaturationSlipAngleFromArray(slipCornerPk, activeSlipPk1, activeSlipPk2, slipWeight);
             //ComputeMaxSlipAngleRad(frictionScalingFL ,vLoadFL, flCornerStiffness);
 
             rbrData.FLWheelSlipAngleOver = 

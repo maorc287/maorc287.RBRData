@@ -25,6 +25,10 @@ namespace maorc287.RBRDataExtPlugin
             GameModeBasePtr = IntPtr.Zero;
             DamageBasePtr = IntPtr.Zero;
             TireModelBasePtr = IntPtr.Zero;
+            FLWheelPtr = IntPtr.Zero;
+            FRWheelPtr = IntPtr.Zero;
+            RLWheelPtr = IntPtr.Zero;
+            RRWheelPtr = IntPtr.Zero;
         }
 
         internal bool IsTireModelPointerValid()
@@ -112,9 +116,10 @@ namespace maorc287.RBRDataExtPlugin
             public const int WheelRadiusOffset = 0xAA0;
             public const int WheelRotationOffset = 0xA50;
 
-            public const int LongSpeedNegativeOffset = 0x12BC; // ?? Offset to negative longitudinal speed (m/s)
-            public const int LongitudinalSpeedOffset = 0x126C; // Offset to longitudinal speed (m/s)
+            public const int LongSpeedNegativeOffset = 0x126C; // ?? Offset to negative longitudinal speed (m/s)
+            public const int LongitudinalSpeedOffset = 0x1260; // Offset to longitudinal speed (m/s)
             public const int LateralSpeedOffset = 0x1268; // Offset to lateral speed (m/s)
+            public const int CorrectionOffset = 0x12AC; // Offset to correction value?
 
             public const int LockSlipMagnitude = 0x1330; // ?? Offset to wheel lock slip magnitude? (0.5 to 2.0 float value)
             public const int GripValue = 0x12E4; // ?? Offset to wheel lock slip magnitude? (0.0 to 2.0 float value)
@@ -127,6 +132,12 @@ namespace maorc287.RBRDataExtPlugin
 
             public const int SurfaceEffectScaling = 0xB9C;
             public const int SurfaceFrictionScaling = 0xAEC;
+
+            // Active Slip Peak Cornering value integer (0 to 7) index for the array in the TireModel structure and 
+            // weigth of the 2 active in float value (0.0 to 1.0)
+            public const int ActiveSlpPkCrn1 = 0x74C;
+            public const int ActiveSlpPkCrn2 = 0x750;
+            public const int SlpPkCrnWeight = 0x754;
         }
 
         //Incomplete offsets for damage structure (still need to be woked on)

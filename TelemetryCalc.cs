@@ -141,16 +141,26 @@ namespace maorc287.RBRDataExtPlugin
             vY_local = velX * rx + velY * ry; // lateral velocity
         }
 
+        internal static float GetSaturationSlipFromArray(float[] arraySlpPkCrn, int indexSlip1, int indexSlip2, float weight)
+        {
+            if (indexSlip1 < 0 || indexSlip1 >= arraySlpPkCrn.Length ||
+                indexSlip2 < 0 || indexSlip2 >= arraySlpPkCrn.Length)
+                return 0f;
+
+            float maxSlip = (1.0f - weight) * arraySlpPkCrn[indexSlip1] + weight * arraySlpPkCrn[indexSlip2];
+            return maxSlip;
+        }
+
         //Calculates the slip angle in radians from longitudinal and lateral speeds of wheel.
         internal static float GetSlipAngleRad(float groundSpeed, float wheelSpeed,
-            float longitudinalSpeed, float lateralSpeed)
+            float longitudinalSpeed, float lateralSpeed, float steeringAngle = 0.0f)
         {
             const float epsSpeed = 1.5f;
             if (Math.Abs(groundSpeed) < epsSpeed && Math.Abs(wheelSpeed) < epsSpeed)
                 return 0f;
 
             // the slip angle in radians
-            return (float)Math.Atan2(lateralSpeed, Math.Abs(longitudinalSpeed));
+            return (float)Math.Atan2(lateralSpeed, longitudinalSpeed);
         }
 
         /// <summary>

@@ -124,23 +124,24 @@ namespace maorc287.RBRDataExtPlugin
             public const int LockSlipMagnitude = 0x1330; // ?? Offset to wheel lock slip magnitude? (0.5 to 2.0 float value)
             public const int GripValue = 0x12E4; // ?? Offset to wheel lock slip magnitude? (0.0 to 2.0 float value)
 
-            public const int CorneringStiffness = 0x128C; // Offset to cornering stiffness maybe? Don't know what unit Newton/rad?
+            public const int CorneringStiffness = 0x128C; // Cornering stiffness? Don't know what unit Newtons/rad?
             public const int VerticalLoad = 0x1334; // Offset to vertical load in Newtons?
 
             //Not sure about this, maybe it is related to steering angle in Radians (Offset for the Front Wheels Only)
-            public const int FrontWheelSteeringAngle = 0x9E4;
+            public const int SteeringAngle = 0x9E4;
 
             public const int SurfaceEffectScaling = 0xB9C;
             public const int SurfaceFrictionScaling = 0xAEC;
 
-            // Active Slip Peak Cornering value integer (0 to 7) index for the array in the TireModel structure and 
-            // weigth of the 2 active in float value (0.0 to 1.0)
+            // Active Slip Peak Cornering value integer (0 to 7) based on load,
+            // index for the array in the TireModel structure.
+            // Weight of the 2 active SlpPkCrn value in float (0.0 to 1.0)
             public const int ActiveSlpPkCrn1 = 0x74C;
             public const int ActiveSlpPkCrn2 = 0x750;
             public const int SlpPkCrnWeight = 0x754;
         }
 
-        //Incomplete offsets for damage structure (still need to be woked on)
+        //Incomplete offsets for damage structure (still need to be worked on)
         //These offsets are used to read the damage structure from the game memory
 
         public static class Damage

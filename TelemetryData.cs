@@ -141,8 +141,8 @@ namespace maorc287.RBRDataExtPlugin
                 ReadFloat(hProcess, pointerCache.RRWheelPtr + Wheel.WheelRadiusOffset),
                 ReadFloat(hProcess, pointerCache.RRWheelPtr + Wheel.WheelRotationOffset));
 
-            rbrData.FLWheelSteeringAngle = ReadFloat(hProcess, pointerCache.FLWheelPtr + Wheel.FrontWheelSteeringAngle);
-            rbrData.FRWheelSteeringAngle = ReadFloat(hProcess, pointerCache.FRWheelPtr + Wheel.FrontWheelSteeringAngle);
+            rbrData.FLWheelSteeringAngle = ReadFloat(hProcess, pointerCache.FLWheelPtr + Wheel.SteeringAngle);
+            rbrData.FRWheelSteeringAngle = ReadFloat(hProcess, pointerCache.FRWheelPtr + Wheel.SteeringAngle);
         }
 
         private static void ReadSlipAndTireModel(IntPtr hProcess, RBRTelemetryData rbrData)

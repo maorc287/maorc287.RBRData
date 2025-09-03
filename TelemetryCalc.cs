@@ -233,8 +233,44 @@ namespace maorc287.RBRDataExtPlugin
 
         }
 
+        /// <summary>
+        /// Normalizes current slip angle against the Load-dependent limit.
+        /// Returns 0.0 (limit not exceeded) to 1.0 (over double the limit). 
+        /// returns negative values for negative slip angles (internal wheel).
+        /// also output slipMax and slipAnglePercent.
+        /// slipMax: the current slip angle limit in radians
+        /// slipAnglePercent: current slip angle as percent of limit [0..1]
+        /// </summary>
+        internal static float GetSlipAngleNormalized(float currentSlipRad,
+            float[] slipTable, int slipArray1, int slipArray2, float weightS, float surfaceFriction,
+            out float slipMax, out float slipAnglePercent)
+        {
+            float limit = GetSaturationSlipAngleFromArray(slipTable, slipArray1, slipArray2, weightS);
+            if (limit <= 0.001f) { slipMax = 0; slipAnglePercent = 0; return 0f; }
+            if (currentSlipRad == 0.0f) { slipMax = limit; slipAnglePercent = 0; return 0f; }
 
-        // A) Physics-ish alpha_max from frictionC, load, cornering stiffness (rad)
+            // How far beyond peak (in radians and as a ratio)
+
+            // compute signed excess
+            float excessRad = Math.Abs(currentSlipRad) - limit;
+            if (excessRad < 0f) excessRad = 0f; // not past limit → zero
+
+            // max slip angle in radians
+            slipMax = limit;
+
+            // current slip percent [0..1]
+            slipAnglePercent = Math.Max(0.0f, Math.Min(1.0f, Math.Abs(currentSlipRad) / limit));
+
+            // normalize to [0, 1] by dividing by limit
+            float normalized = Math.Min((excessRad) / limit, 1f);
+
+            normalized *= Math.Sign(currentSlipRad);
+            return normalized;
+
+        }
+
+
+        // A) Physics-ish alpha_max from frictionC, load, cornering stiffness (N/rad)
         public static float ComputeMaxSlipAngleRad(float frictionC, float vLoadN, float corneringStiffnessNPerRad)
         {
             if (corneringStiffnessNPerRad <= 1e-6) return 0.0f;

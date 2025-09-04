@@ -167,10 +167,14 @@ namespace maorc287.RBRDataExtPlugin
             float longitudinalRR = ReadFloat(hProcess, pointerCache.RRWheelPtr + Wheel.LongitudinalSpeedOffset);
 
             float correctionFL = ReadFloat(hProcess, pointerCache.FLWheelPtr + Wheel.CorrectionOffset);
+            float correctionFR = ReadFloat(hProcess, pointerCache.FRWheelPtr + Wheel.CorrectionOffset);
+            float correctionRL = ReadFloat(hProcess, pointerCache.RLWheelPtr + Wheel.CorrectionOffset);
+            float correctionRR = ReadFloat(hProcess, pointerCache.RRWheelPtr + Wheel.CorrectionOffset);
+
 
 
             rbrData.FLWheelSlipAngle = GetSlipAngleRad(rbrData.GroundSpeed, rbrData.FLWheelSpeed,
-                longitudinalFL, lateralFL,false,correctionFL);
+                longitudinalFL, lateralFL,true,correctionFL);
             rbrData.FRWheelSlipAngle = GetSlipAngleRad(rbrData.GroundSpeed, rbrData.FRWheelSpeed,
                 longitudinalFR, lateralFR);
             rbrData.RLWheelSlipAngle = GetSlipAngleRad(rbrData.GroundSpeed, rbrData.RLWheelSpeed,
@@ -189,12 +193,11 @@ namespace maorc287.RBRDataExtPlugin
             float frictionScalingRL = ReadFloat(hProcess, pointerCache.RLWheelPtr + Wheel.SurfaceFrictionScaling);
             float frictionScalingRR = ReadFloat(hProcess, pointerCache.RRWheelPtr + Wheel.SurfaceFrictionScaling);
 
-            int activeSlipPk1 = ReadInt(hProcess, pointerCache.FLWheelPtr + Wheel.ActiveSlpPkCrn1);
-            int activeSlipPk2 = ReadInt(hProcess, pointerCache.FLWheelPtr + Wheel.ActiveSlpPkCrn2);
-            float slipWeight = ReadFloat(hProcess, pointerCache.FLWheelPtr + Wheel.SlpPkCrnWeight);
+            int activeSlipPk1FL = ReadInt(hProcess, pointerCache.FLWheelPtr + Wheel.ActiveSlpPkCrn1);
+            int activeSlipPk2FL = ReadInt(hProcess, pointerCache.FLWheelPtr + Wheel.ActiveSlpPkCrn2);
+            float slipWeightFL = ReadFloat(hProcess, pointerCache.FLWheelPtr + Wheel.SlpPkCrnWeight);
 
-            float maxSlipAngleFL = GetSaturationSlipAngleFromArray(slipCornerPk, activeSlipPk1, activeSlipPk2, slipWeight);
-            float maxSlipAngleFR = GetSaturationSlipAngleFromArray(slipCornerPk, activeSlipPk1, activeSlipPk2, slipWeight);
+
             //ComputeMaxSlipAngleRad(frictionScalingFL ,vLoadFL, flCornerStiffness);
 
             rbrData.FLWheelSlipAngleOver = 
@@ -215,7 +218,7 @@ namespace maorc287.RBRDataExtPlugin
             rbrData.RLWheelMaxSlipAngle = percentSlipAngleRL;
             rbrData.RRWheelMaxSlipAngle = percentSlipAngleRR;
 
-            rbrData.FLWheelLimitSlipAngleRad = maxSlipAngleFL;//slipMaxFL;
+            rbrData.FLWheelLimitSlipAngleRad = slipMaxFL;
             rbrData.FRWheelLimitSlipAngleRad = slipMaxFR;
             rbrData.RLWheelLimitSlipAngleRad = slipMaxRL;
             rbrData.RRWheelLimitSlipAngleRad = slipMaxRR;

@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+
 
 namespace maorc287.RBRDataExtPlugin
 {
@@ -122,26 +119,9 @@ namespace maorc287.RBRDataExtPlugin
             return slipRatio;
         }
 
-        // Helper to transform world velocity to car local frame (forward/right)
-        internal static void WorldToLocal(float velX,
-            float velY, float fwdX, float fwdY,
-            out float vX_local, out float vY_local)
-        {
-            float fwdLength = (float)Math.Sqrt(fwdX * fwdX + fwdY * fwdY);
-            if (fwdLength < 1e-6f) { vX_local = 0; vY_local = 0; return; }
-
-            float fx = fwdX / fwdLength;
-            float fy = fwdY / fwdLength;
-
-            // right vector perpendicular to forward
-            float rx = fy;
-            float ry = -fx;
-
-            vX_local = velX * fx + velY * fy; // forward velocity
-            vY_local = velX * rx + velY * ry; // lateral velocity
-        }
-
-        internal static float GetSaturationSlipAngleFromArray(float[] arraySlpPkCrn, int indexSlip1, int indexSlip2, float weight)
+        //Calculates the maximum slip angle in radians from the slip angle table in the tire model file
+        //based on the load index.
+        internal static float GetSlipAngleSaturation(float[] arraySlpPkCrn, int indexSlip1, int indexSlip2, float weight)
         {
             if (indexSlip1 < 0 || indexSlip1 >= arraySlpPkCrn.Length ||
                 indexSlip2 < 0 || indexSlip2 >= arraySlpPkCrn.Length)
@@ -174,69 +154,6 @@ namespace maorc287.RBRDataExtPlugin
         }
 
         /// <summary>
-        /// Gets slip angle limit for given tire cornering stiffness.
-        /// </summary>
-        internal static float GetSlipAngleLimit(float currentCrnStiff, float[] cornerStiffnessTable, float[] slipTable,
-            float surfaceFriction)
-        {
-            if (cornerStiffnessTable == null || slipTable == null || cornerStiffnessTable.Length != slipTable.Length)
-                return 0f;
-
-            if (currentCrnStiff <= cornerStiffnessTable[0]) return slipTable[0];
-            if (currentCrnStiff >= cornerStiffnessTable[cornerStiffnessTable.Length - 1]) return slipTable[slipTable.Length - 1];
-
-            // find interval
-            int i = 0;
-            while (i < cornerStiffnessTable.Length - 1 && currentCrnStiff > cornerStiffnessTable[i + 1]) i++;
-
-            float loadLow = cornerStiffnessTable[i];
-            float loadHigh = cornerStiffnessTable[i + 1];
-            float slipLow = slipTable[i];
-            float slipHigh = slipTable[i + 1];
-
-            float t = (currentCrnStiff - loadLow) / (loadHigh - loadLow);
-            float maxSlip = slipLow + t * (slipHigh - slipLow); // radians
-            return maxSlip * surfaceFriction; // apply surface reduction factor
-        }
-
-
-        /// <summary>
-        /// Normalizes current slip angle against the corner stiffness-dependent limit.
-        /// Returns 0.0 (limit not exceeded) to 1.0 (over double the limit). 
-        /// returns negative values for negative slip angles (internal wheel).
-        /// also output slipMax and slipAnglePercent.
-        /// slipMax: the current slip angle limit in radians
-        /// slipAnglePercent: current slip angle as percent of limit [0..1]
-        /// </summary>
-        internal static float GetSlipAngleExcessNormalized(float currentSlipRad, 
-            float currentCrnStiff, float[] cornerStiffnessTable, float[] slipTable, float surfaceFriction,
-            out float slipMax, out float slipAnglePercent)
-        {
-            float limit = GetSlipAngleLimit(currentCrnStiff, cornerStiffnessTable, slipTable, surfaceFriction);
-            if (limit <= 0.001f) { slipMax = 0; slipAnglePercent = 0; return 0f; }
-            if (currentSlipRad == 0.0f) { slipMax = limit; slipAnglePercent = 0; return 0f; }
-
-            // How far beyond peak (in radians and as a ratio)
-
-            // compute signed excess
-            float excessRad = Math.Abs(currentSlipRad) - limit;
-            if (excessRad < 0f) excessRad = 0f; // not past limit → zero
-
-            // max slip angle in radians
-            slipMax = limit;
-
-            // current slip percent [0..1]
-            slipAnglePercent = Math.Max(0.0f, Math.Min(1.0f, Math.Abs(currentSlipRad) / limit));
-
-            // normalize to [0, 1] by dividing by limit
-            float normalized = Math.Min((excessRad) / limit, 1f);
-
-            normalized *= Math.Sign(currentSlipRad);
-            return normalized;
-
-        }
-
-        /// <summary>
         /// Normalizes current slip angle against the Load-dependent limit.
         /// Returns 0.0 (limit not exceeded) to 1.0 (over double the limit). 
         /// returns negative values for negative slip angles (internal wheel).
@@ -248,8 +165,11 @@ namespace maorc287.RBRDataExtPlugin
             float[] slipTable, int slipArray1, int slipArray2, float weightS, float surfaceFriction,
             out float slipMax, out float slipAnglePercent)
         {
-            float limit = GetSaturationSlipAngleFromArray(slipTable, slipArray1, slipArray2, weightS);
+            float limit = GetSlipAngleSaturation(slipTable, slipArray1, slipArray2, weightS) 
+                        * surfaceFriction;
+
             if (limit <= 0.001f) { slipMax = 0; slipAnglePercent = 0; return 0f; }
+
             if (currentSlipRad == 0.0f) { slipMax = limit; slipAnglePercent = 0; return 0f; }
 
             // How far beyond peak (in radians and as a ratio)
@@ -269,9 +189,7 @@ namespace maorc287.RBRDataExtPlugin
 
             normalized *= Math.Sign(currentSlipRad);
             return normalized;
-
         }
-
 
         // A) Physics-ish alpha_max from frictionC, load, cornering stiffness (N/rad)
         public static float ComputeMaxSlipAngleRad(float frictionC, float vLoadN, float corneringStiffnessNPerRad)
@@ -279,66 +197,6 @@ namespace maorc287.RBRDataExtPlugin
             if (corneringStiffnessNPerRad <= 1e-6) return 0.0f;
             return (frictionC * vLoadN) / (corneringStiffnessNPerRad); // radians
         }
-
-        // Stored reference max lateral slip angle (measured under minimal longitudinal slip)
-        private static float referenceMaxSlipAngle = 0f;
-
-        internal static void CalculateTireSlip(
-         float gripValue,              // 0–2 combined slip usage
-         float wheelSpeed,
-         float groundSpeed,
-         float currentSlipAngle,
-         out float signedLongitudinalSlip,
-         out float normalizedMaxLateralSlip)
-        {
-            // 1. Compute longitudinal slip ratio
-            float wheelDiff = wheelSpeed - groundSpeed;
-            float slipRatio = 0f;
-
-            if (Math.Abs(groundSpeed) > 0.1f)
-                slipRatio = wheelDiff / Math.Abs(groundSpeed);
-
-            // clamp to -1..1 for safety
-            slipRatio = Math.Max(-1f, Math.Min(1f, slipRatio));
-            signedLongitudinalSlip = slipRatio;
-
-            // 2. Update reference max slip angle when longitudinal slip is minimal
-            if (Math.Abs(slipRatio) < 0.05f)
-                referenceMaxSlipAngle = Math.Max(referenceMaxSlipAngle, Math.Abs(currentSlipAngle));
-
-            float latCapacity = LookupLateralWeight(gripValue);
-            normalizedMaxLateralSlip = latCapacity * (1f - Math.Abs(slipRatio));
-
-        }
-
-        private static readonly float[] lateralWeightTable = new float[]
-{
-    1.00f,  // gripValue = 0.0
-    0.99f,  // ~0.2
-    0.96f,  // ~0.3
-    0.87f,  // ~0.4
-    0.70f,  // ~0.5
-    0.50f,  // ~0.6
-    0.35f,  // ~0.7
-    0.20f,  // ~0.8
-    0.10f,  // ~0.9
-    0.05f,  // ~1.0
-    0.00f   // gripValue = 2.0
-};
-
-        private static float LookupLateralWeight(float gripValue)
-        {
-            // Map gripValue 0–2 into table indices 0–10
-            float t = gripValue * (lateralWeightTable.Length - 1) / 2.0f;
-
-            int i = (int)Math.Floor(t);
-            int j = Math.Min(i + 1, lateralWeightTable.Length - 1);
-
-            float frac = t - i;
-            return lateralWeightTable[i] * (1f - frac) + lateralWeightTable[j] * frac;
-        }
-
-        //private static float prevTimestamp = 0f; // in seconds
 
         /// Clamps a value between 0 and 1.
         internal static float Clamp01(float val) => val < 0f ? 0f : (val > 1f ? 1f : val);

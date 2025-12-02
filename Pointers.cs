@@ -136,9 +136,9 @@ namespace maorc287.RBRDataExtPlugin
             // Active Slip Peak Cornering value integer (0 to 7) based on load,
             // index for the array in the TireModel structure.
             // Weight of the 2 active SlpPkCrn value in float (0.0 to 1.0)
-            public const int ActiveSlpPkCrn1 = 0x74C;
-            public const int ActiveSlpPkCrn2 = 0x750;
-            public const int SlpPkCrnWeight = 0x754;
+            public const int ActiveLoad1 = 0x74C;
+            public const int ActiveLoad2 = 0x750;
+            public const int LoadWeight = 0x754;
         }
 
         //Incomplete offsets for damage structure (still need to be worked on)

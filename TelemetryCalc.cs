@@ -90,13 +90,13 @@ namespace maorc287.RBRDataExtPlugin
         }
 
         /// Computes the ground speed from longitudinal and lateral speeds.
-        internal float ComputeGroundSpeed(float longitudinalSpeed, float lateralSpeed)
+        internal static float ComputeGroundSpeed(float longitudinalSpeed, float lateralSpeed)
         {
             return (float)Math.Sqrt(longitudinalSpeed * longitudinalSpeed +
                                     lateralSpeed * lateralSpeed);
         }
 
-        internal static float ComputeWheelSlipRatio(float groundSpeed, float wheelSpeed)
+        internal static float GetWheelSlipRatio(float groundSpeed, float wheelSpeed)
         {
             const float epsilon = 0.5f; // small threshold
 
@@ -119,15 +119,15 @@ namespace maorc287.RBRDataExtPlugin
             return slipRatio;
         }
 
-        //Calculates the maximum slip angle in radians from the slip angle table in the tire model file
+        //Calculates the maximum slip from the slip table in the tire model file
         //based on the load index.
-        internal static float GetSlipAngleSaturation(float[] arraySlpPkCrn, int indexSlip1, int indexSlip2, float weight)
+        internal static float GetSlipSaturation(float[] arraySlpPk, int indexLoad1, int indexLoad2, float weight)
         {
-            if (indexSlip1 < 0 || indexSlip1 >= arraySlpPkCrn.Length ||
-                indexSlip2 < 0 || indexSlip2 >= arraySlpPkCrn.Length)
+            if (indexLoad1 < 0 || indexLoad1 >= arraySlpPk.Length ||
+                indexLoad2 < 0 || indexLoad2 >= arraySlpPk.Length)
                 return 0f;
 
-            float maxSlip = (1.0f - weight) * arraySlpPkCrn[indexSlip1] + weight * arraySlpPkCrn[indexSlip2];
+            float maxSlip = (1.0f - weight) * arraySlpPk[indexLoad1] + weight * arraySlpPk[indexLoad2];
             return maxSlip;
         }
 
@@ -153,6 +153,35 @@ namespace maorc287.RBRDataExtPlugin
             return slipAngle;
         }
 
+        internal static float GetSlipRatioNormalized(float slipRatio, float currentSlipRad, 
+                 float[] slipTableLong, float[] slipTableAlpha,
+                 int slipArray1, int slipArray2, float weightS, float surfaceFriction,
+                 out float slipRatioMax, out float slipRatioPercent)
+        {
+            float limit = GetSlipSaturation(slipTableLong, slipArray1, slipArray2, weightS) * surfaceFriction;
+
+            if (limit <= 0.001f) { slipRatioMax = 0; slipRatioPercent = 0; return 0f; }
+            if (slipRatio == 0.0f) { slipRatioMax = limit; slipRatioPercent = 0; return 0f; }
+
+            // Ellipse factor from lateral slip
+            float alphaPeak = GetSlipSaturation(slipTableAlpha, slipArray1, slipArray2, weightS);
+            float alphaNorm = Math.Abs(currentSlipRad) / alphaPeak;
+            alphaNorm = Math.Min(alphaNorm, 1f);
+            float ellipseFactor = (float)Math.Sqrt(1f - alphaNorm * alphaNorm);
+
+            float combinedLimit = limit * ellipseFactor;
+
+            slipRatioMax = combinedLimit;
+            float fullRatio = Math.Abs(slipRatio) / combinedLimit;
+            slipRatioPercent = Math.Min(fullRatio, 1.0f);
+
+            float excess = Math.Max(0f, Math.Abs(slipRatio) - combinedLimit);
+            float normalized = Math.Min(excess / combinedLimit, 1f);
+            normalized *= Math.Sign(slipRatio);
+
+            return normalized;
+        }
+
         /// <summary>
         /// Normalizes current slip angle against the Load-dependent limit.
         /// Returns 0.0 (limit not exceeded) to 1.0 (over double the limit). 
@@ -161,11 +190,12 @@ namespace maorc287.RBRDataExtPlugin
         /// slipMax: the current slip angle limit in radians
         /// slipAnglePercent: current slip angle as percent of limit [0..1]
         /// </summary>
+        /*
         internal static float GetSlipAngleNormalized(float currentSlipRad,
             float[] slipTable, int slipArray1, int slipArray2, float weightS, float surfaceFriction,
             out float slipMax, out float slipAnglePercent)
         {
-            float limit = GetSlipAngleSaturation(slipTable, slipArray1, slipArray2, weightS) 
+            float limit = GetSlipSaturation(slipTable, slipArray1, slipArray2, weightS) 
                         * surfaceFriction;
 
             if (limit <= 0.001f) { slipMax = 0; slipAnglePercent = 0; return 0f; }
@@ -188,6 +218,36 @@ namespace maorc287.RBRDataExtPlugin
             float normalized = Math.Min((excessRad) / limit, 1f);
 
             normalized *= Math.Sign(currentSlipRad);
+            return normalized;
+        }
+        */
+        internal static float GetSlipAngleNormalized(float currentSlipRad, float slipRatio,
+            float[] slipTableAlpha, float[] slipTableLong, int slipArray1, int slipArray2,
+            float weightS, float surfaceFriction,
+            out float slipMax, out float slipAnglePercent)
+        {
+            // Pure lateral peak
+            float pureAlphaPeak = GetSlipSaturation(slipTableAlpha, slipArray1, slipArray2, weightS);
+
+            // Ellipse factor from longitudinal slip
+            float pureLongPeak = GetSlipSaturation(slipTableLong, slipArray1, slipArray2, weightS);
+            float longNorm = Math.Abs(slipRatio) / pureLongPeak;
+            longNorm = Math.Min(longNorm, 1f);
+            float ellipseFactor = (float)Math.Sqrt(1f - longNorm * longNorm);
+
+            float limit = pureAlphaPeak * ellipseFactor * surfaceFriction;
+
+            if (limit <= 0.001f) { slipMax = 0; slipAnglePercent = 0; return 0f; }
+            if (currentSlipRad == 0.0f) { slipMax = limit; slipAnglePercent = 0; return 0f; }
+
+            slipMax = limit;
+            float fullRatio = Math.Abs(currentSlipRad) / limit;
+            slipAnglePercent = Math.Min(fullRatio, 1.0f);
+
+            float excessRad = Math.Max(0f, Math.Abs(currentSlipRad) - limit);
+            float normalized = Math.Min(excessRad / limit, 1f);
+            normalized *= Math.Sign(currentSlipRad);
+
             return normalized;
         }
 

@@ -263,6 +263,10 @@ namespace maorc287.RBRDataExtPlugin
             if (!MemoryReader.TryReadFromDll("GaugerPlugin.dll", 0x7ADFC, out float GaugerPluginLockSlip))
                 GaugerPluginLockSlip = 0.0f;
             rbrData.GaugerLockSlip = GaugerPluginLockSlip;
+
+            if (!MemoryReader.TryReadFromDll("RBRHUD.dll", 0x8C8B44, out float DeltaTime))
+                DeltaTime = 0.0f;
+            rbrData.RBRHUDDeltaTime = DeltaTime;
         }
 
 
@@ -384,6 +388,8 @@ namespace maorc287.RBRDataExtPlugin
             public uint HydraulicsDamage { get; set; } = 1;
             public uint GearboxDamage { get; set; } = 1;
             public uint OilCoolerDamage { get; set; } = 1;
+
+            public float RBRHUDDeltaTime { get; set; } = 0.0f;
         }
     }
 }

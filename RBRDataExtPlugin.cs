@@ -96,6 +96,7 @@ namespace maorc287.RBRDataExtPlugin
             PluginManager.AddProperty("RBR.Wheel.SlipRatio.RRLimit", GetType(), 0, "");
 
             PluginManager.AddProperty("RBR.GaugerPlugin.LockSlip", GetType(), 0, "");
+            PluginManager.AddProperty("RBR.RBRHUD.DeltaTime", GetType(), 0, "");
 
         }
 
@@ -192,6 +193,7 @@ namespace maorc287.RBRDataExtPlugin
             PluginManager.SetPropertyValue("RBR.Wheel.SlipRatio.RRLimit", GetType(), rbrData.RRWheelLimitSlipRatio);
 
             PluginManager.SetPropertyValue("RBR.GaugerPlugin.LockSlip", GetType(), rbrData.GaugerLockSlip);
+            PluginManager.SetPropertyValue("RBR.RBRHUD.DeltaTime", GetType(), rbrData.RBRHUDDeltaTime);
 
         }
     }

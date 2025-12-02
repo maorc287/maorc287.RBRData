@@ -191,8 +191,6 @@ namespace maorc287.RBRDataExtPlugin
             PluginManager.SetPropertyValue("RBR.Wheel.SlipRatio.RLLimit", GetType(), rbrData.RLWheelLimitSlipRatio);
             PluginManager.SetPropertyValue("RBR.Wheel.SlipRatio.RRLimit", GetType(), rbrData.RRWheelLimitSlipRatio);
 
-
-
             PluginManager.SetPropertyValue("RBR.GaugerPlugin.LockSlip", GetType(), rbrData.GaugerLockSlip);
 
         }

@@ -270,15 +270,30 @@ namespace maorc287.RBRDataExtPlugin
         }
 
 
+        private static DateTime _lastTelemetryRead = DateTime.MinValue;
+        private static readonly TimeSpan NoProcessInterval = TimeSpan.FromSeconds(5);   // Only when no RBR
+        private static bool _rbrRunning = false;
         /// Reads telemetry data from the Richard Burns Rally process.
         /// this method accesses the game's memory to retrieve various telemetry values.
         /// as a result, it requires the game to be running and the process to be accessible.
         /// without the game running and on stage, it will return default values.
         internal static RBRTelemetryData ReadTelemetryData()
         {
+            // Skip only when no RBR (non-blocking rate limit)
+            if (!_rbrRunning && DateTime.Now - _lastTelemetryRead < NoProcessInterval)
+                return LatestValidTelemetry;
+
+            _lastTelemetryRead = DateTime.Now;
+
             var rbrData = new RBRTelemetryData();
             IntPtr hProcess = GetProcess();
-            if (hProcess == IntPtr.Zero) return rbrData;
+            if (hProcess == IntPtr.Zero)
+            {
+                _rbrRunning = false; // Extend interval only when no RBR
+                return rbrData;
+            }
+
+            _rbrRunning = true; // Full speed when RBR running - no interval
 
             try
             {

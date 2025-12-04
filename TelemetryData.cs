@@ -202,60 +202,60 @@ namespace maorc287.RBRDataExtPlugin
             int activeLoad2RR = ReadInt(hProcess, pointerCache.RRWheelPtr + Wheel.ActiveLoad2);
             float loadWeightRR = ReadFloat(hProcess, pointerCache.RRWheelPtr + Wheel.LoadWeight);
 
-            rbrData.FLWheelSlipAngleOver = 
-                GetSlipAngleNormalized(rbrData.FLWheelSlipAngle, rbrData.FLWheelSlipRatio, slipCornerPk, slipTractPk,
-                activeLoad1FL, activeLoad2FL, loadWeightFL, frictionScalingFL, 
-                out float slipMaxFL, out float percentSlipAngleFL);
-            rbrData.FRWheelSlipAngleOver = 
-                GetSlipAngleNormalized(rbrData.FRWheelSlipAngle, rbrData.FRWheelSlipRatio, slipCornerPk, slipTractPk,
-                activeLoad1FR, activeLoad2FR, loadWeightFR, frictionScalingFR, 
-                out float slipMaxFR, out float percentSlipAngleFR);
-            rbrData.RLWheelSlipAngleOver = 
-                GetSlipAngleNormalized(rbrData.RLWheelSlipAngle, rbrData.RLWheelSlipRatio, slipCornerPk, slipTractPk, 
-                activeLoad1RL, activeLoad2RL, loadWeightRL, frictionScalingRL,
-                out float slipMaxRL, out float percentSlipAngleRL);
-            rbrData.RRWheelSlipAngleOver = 
-                GetSlipAngleNormalized(rbrData.RRWheelSlipAngle, rbrData.RRWheelSlipRatio, slipCornerPk, slipTractPk,
-                activeLoad1RR, activeLoad2RR, loadWeightRR, frictionScalingRR,
-                out float slipMaxRR, out float percentSlipAngleRR);
+            GetCombinedSlipData(rbrData.FLWheelSlipAngle, rbrData.FLWheelSlipRatio, 
+                slipCornerPk, slipTractPk, activeLoad1FL, activeLoad2FL, loadWeightFL, 
+                frictionScalingFL,out float alphaLimitFL, out float kappaLimitFL, 
+                out float excessAlphaFL, out float excessKappaFL, out float slipAnglePercentFL, 
+                out float slipRatioPercentFL);
 
-            rbrData.FLWheelMaxSlipAngle = percentSlipAngleFL;
-            rbrData.FRWheelMaxSlipAngle = percentSlipAngleFR;
-            rbrData.RLWheelMaxSlipAngle = percentSlipAngleRL;
-            rbrData.RRWheelMaxSlipAngle = percentSlipAngleRR;
+            GetCombinedSlipData(rbrData.FRWheelSlipAngle, rbrData.FRWheelSlipRatio,
+                slipCornerPk, slipTractPk, activeLoad1FR, activeLoad2FR, loadWeightFR,
+                frictionScalingFR, out float alphaLimitFR, out float kappaLimitFR,
+                out float excessAlphaFR, out float excessKappaFR, out float slipAnglePercentFR,
+                out float slipRatioPercentFR);
 
-            rbrData.FLWheelLimitSlipAngleRad = slipMaxFL;
-            rbrData.FRWheelLimitSlipAngleRad = slipMaxFR;
-            rbrData.RLWheelLimitSlipAngleRad = slipMaxRL;
-            rbrData.RRWheelLimitSlipAngleRad = slipMaxRR;
+            GetCombinedSlipData(rbrData.RLWheelSlipAngle, rbrData.RLWheelSlipRatio,
+                slipCornerPk, slipTractPk, activeLoad1RL, activeLoad2RL, loadWeightRL,
+                frictionScalingRL, out float alphaLimitRL, out float kappaLimitRL,
+                out float excessAlphaRL, out float excessKappaRL, out float slipAnglePercentRL,
+                out float slipRatioPercentRL);
+
+            GetCombinedSlipData(rbrData.RRWheelSlipAngle, rbrData.RRWheelSlipRatio,
+                slipCornerPk, slipTractPk, activeLoad1RR, activeLoad2RR, loadWeightRR,
+                frictionScalingRR, out float alphaLimitRR, out float kappaLimitRR,
+                out float excessAlphaRR, out float excessKappaRR, out float slipAnglePercentRR,
+                out float slipRatioPercentRR);
+
+            rbrData.FLWheelSlipAngleOver = excessAlphaFL;
+            rbrData.FRWheelSlipAngleOver = excessAlphaFR;
+            rbrData.RLWheelSlipAngleOver = excessAlphaRL;
+            rbrData.RRWheelSlipAngleOver = excessAlphaRR;
+
+            rbrData.FLWheelMaxSlipAngle = slipAnglePercentFL;
+            rbrData.FRWheelMaxSlipAngle = slipAnglePercentFR;
+            rbrData.RLWheelMaxSlipAngle = slipAnglePercentRL;
+            rbrData.RRWheelMaxSlipAngle = slipAnglePercentRR;
+
+            rbrData.FLWheelLimitSlipAngleRad = alphaLimitFL;
+            rbrData.FRWheelLimitSlipAngleRad = alphaLimitFR;
+            rbrData.RLWheelLimitSlipAngleRad = alphaLimitRL;
+            rbrData.RRWheelLimitSlipAngleRad = alphaLimitRR;
 
             // Slip Ratio Normalized
-            rbrData.FLWheelSlipRatioOver =
-                GetSlipRatioNormalized(rbrData.FLWheelSlipRatio, rbrData.FLWheelSlipAngle, slipTractPk, slipCornerPk,
-                activeLoad1FL, activeLoad2FL, loadWeightFL, frictionScalingFL,
-                out float slipRatioMaxFL, out float percentSlipRatioFL);
-            rbrData.FRWheelSlipRatioOver =
-                GetSlipRatioNormalized(rbrData.FRWheelSlipRatio, rbrData.FRWheelSlipAngle, slipTractPk, slipCornerPk,
-                activeLoad1FR, activeLoad2FR, loadWeightFR, frictionScalingFR,
-                out float slipRatioMaxFR, out float percentSlipRatioFR);
-            rbrData.RLWheelSlipRatioOver =
-                GetSlipRatioNormalized(rbrData.RLWheelSlipRatio, rbrData.RLWheelSlipAngle, slipTractPk, slipCornerPk,
-                activeLoad1RL, activeLoad2RL, loadWeightRL, frictionScalingRL,
-                out float slipRatioMaxRL, out float percentSlipRatioRL);
-            rbrData.RRWheelSlipRatioOver =
-                GetSlipRatioNormalized(rbrData.RRWheelSlipRatio, rbrData.RRWheelSlipAngle, slipTractPk, slipCornerPk,
-                activeLoad1RR, activeLoad2RR, loadWeightRR, frictionScalingRR,
-                out float slipRatioMaxRR, out float percentSlipRatioRR);
+            rbrData.FLWheelSlipRatioOver = excessKappaFL;   
+            rbrData.FRWheelSlipRatioOver = excessKappaFR;
+            rbrData.RLWheelSlipRatioOver = excessKappaRL;
+            rbrData.RRWheelSlipRatioOver = excessKappaRR;
 
-            rbrData.FLWheelMaxSlipRatio = percentSlipRatioFL;
-            rbrData.FRWheelMaxSlipRatio = percentSlipRatioFR;
-            rbrData.RLWheelMaxSlipRatio = percentSlipRatioRL;
-            rbrData.RRWheelMaxSlipRatio = percentSlipRatioRR;
+            rbrData.FLWheelMaxSlipRatio = slipRatioPercentFL;
+            rbrData.FRWheelMaxSlipRatio = slipRatioPercentFR;
+            rbrData.RLWheelMaxSlipRatio = slipRatioPercentRL;
+            rbrData.RRWheelMaxSlipRatio = slipRatioPercentRR;
 
-            rbrData.FLWheelLimitSlipRatio = slipRatioMaxFL;
-            rbrData.FRWheelLimitSlipRatio = slipRatioMaxFR;
-            rbrData.RLWheelLimitSlipRatio = slipRatioMaxRL;
-            rbrData.RRWheelLimitSlipRatio = slipRatioMaxRR;
+            rbrData.FLWheelLimitSlipRatio = kappaLimitFL;
+            rbrData.FRWheelLimitSlipRatio = kappaLimitFR;
+            rbrData.RLWheelLimitSlipRatio = kappaLimitRL;
+            rbrData.RRWheelLimitSlipRatio = kappaLimitRR;
         }
 
         private static void ReadExternalPluginData(RBRTelemetryData rbrData)

@@ -153,103 +153,80 @@ namespace maorc287.RBRDataExtPlugin
             return slipAngle;
         }
 
-        internal static float GetSlipRatioNormalized(float slipRatio, float currentSlipRad, 
-                 float[] slipTableLong, float[] slipTableAlpha,
-                 int slipArray1, int slipArray2, float weightS, float surfaceFriction,
-                 out float slipRatioMax, out float slipRatioPercent)
-        {
-            float limit = GetSlipSaturation(slipTableLong, slipArray1, slipArray2, weightS) * surfaceFriction;
-
-            if (limit <= 0.001f) { slipRatioMax = 0; slipRatioPercent = 0; return 0f; }
-            if (slipRatio == 0.0f) { slipRatioMax = limit; slipRatioPercent = 0; return 0f; }
-
-            // Ellipse factor from lateral slip
-            float alphaPeak = GetSlipSaturation(slipTableAlpha, slipArray1, slipArray2, weightS);
-            float alphaNorm = Math.Abs(currentSlipRad) / alphaPeak;
-            alphaNorm = Math.Min(alphaNorm, 1f);
-            float ellipseFactor = (float)Math.Sqrt(1f - alphaNorm * alphaNorm);
-
-            float combinedLimit = limit * ellipseFactor;
-
-            slipRatioMax = combinedLimit;
-            float fullRatio = Math.Abs(slipRatio) / combinedLimit;
-            slipRatioPercent = Math.Min(fullRatio, 1.0f);
-
-            float excess = Math.Max(0f, Math.Abs(slipRatio) - combinedLimit);
-            float normalized = Math.Min(excess / combinedLimit, 1f);
-            normalized *= Math.Sign(slipRatio);
-
-            return normalized;
-        }
-
         /// <summary>
-        /// Normalizes current slip angle against the Load-dependent limit.
-        /// Returns 0.0 (limit not exceeded) to 1.0 (over double the limit). 
-        /// returns negative values for negative slip angles (internal wheel).
-        /// also output slipMax and slipAnglePercent.
-        /// slipMax: the current slip angle limit in radians
-        /// slipAnglePercent: current slip angle as percent of limit [0..1]
+        /// Computes the effective lateral and longitudinal slip limits, excess beyond those limits,
+        /// and normalized percentages relative to the peak.
         /// </summary>
-        /*
-        internal static float GetSlipAngleNormalized(float currentSlipRad,
-            float[] slipTable, int slipArray1, int slipArray2, float weightS, float surfaceFriction,
-            out float slipMax, out float slipAnglePercent)
+        public static void GetCombinedSlipData(
+            float slipAngleRad,          // Current lateral slip (α)
+            float slipRatio,             // Current longitudinal slip (κ)
+            float[] slipTableAlpha,      // Pure lateral peak slips from tyre table (SlpPkCrn_L#)
+            float[] slipTableLong,       // Pure longitudinal peak slips from tyre table (SlpPkTrct_L#)
+            int idx1, int idx2,          // Load band indices for interpolation
+            float weightS,               // Load scaling factor
+            float surfaceFriction,       // μ, already includes tyre wear, temp, surface effects
+
+            out float alphaLimit,        // Lateral slip at peak (limit)
+            out float longLimit,         // Longitudinal slip at peak (limit)
+            out float alphaExcess,       // α beyond limit (≥0)
+            out float longExcess,        // κ beyond limit (≥0)
+            out float alphaPercent,      // α / αLimit (0..1)
+            out float longPercent)       // κ / κLimit (0..1)
         {
-            float limit = GetSlipSaturation(slipTable, slipArray1, slipArray2, weightS) 
-                        * surfaceFriction;
+            // -----------------------------
+            // 1. Pure tyre peak values
+            // -----------------------------
+            float alphaPeak = GetSlipSaturation(slipTableAlpha, idx1, idx2, weightS);
+            float longPeak = GetSlipSaturation(slipTableLong, idx1, idx2, weightS);
 
-            if (limit <= 0.001f) { slipMax = 0; slipAnglePercent = 0; return 0f; }
+            // -----------------------------
+            // 2. Zero peak handling - early exit for invalid tyre data
+            // -----------------------------
+            bool alphaValid = alphaPeak > 0f;
+            bool longValid = longPeak > 0f;
 
-            if (currentSlipRad == 0.0f) { slipMax = limit; slipAnglePercent = 0; return 0f; }
+            // Initialize safe defaults
+            alphaLimit = 0f;
+            longLimit = 0f;
+            alphaExcess = Math.Max(0f, Math.Abs(slipAngleRad));
+            longExcess = Math.Max(0f, Math.Abs(slipRatio));
+            alphaPercent = 0f;
+            longPercent = 0f;
 
-            // How far beyond peak (in radians and as a ratio)
+            // Early exit if both peaks are invalid
+            if (!alphaValid && !longValid)
+                return;
 
-            // compute signed excess
-            float excessRad = Math.Abs(currentSlipRad) - limit;
-            if (excessRad < 0f) excessRad = 0f; // not past limit → zero
+            // -----------------------------
+            // 3. Normalize current slips to peaks (only if valid)
+            // -----------------------------
+            float aNorm = alphaValid ? Math.Min(Math.Abs(slipAngleRad) / alphaPeak, 1f) : 0f;
+            float lNorm = longValid ? Math.Min(Math.Abs(slipRatio) / longPeak, 1f) : 0f;
 
-            // max slip angle in radians
-            slipMax = limit;
+            // -----------------------------
+            // 4. Combined-slip ellipse factor
+            // -----------------------------
+            float ellipse = 1f - (aNorm * aNorm + lNorm * lNorm);
+            ellipse = (ellipse <= 0f) ? 0f : (float)Math.Sqrt(ellipse);
 
-            // current slip percent [0..1]
-            slipAnglePercent = Math.Max(0.0f, Math.Min(1.0f, Math.Abs(currentSlipRad) / limit));
+            // -----------------------------
+            // 5. Effective slip limits (scaled by surface/wear friction)
+            // -----------------------------
+            if (alphaValid)
+            {
+                alphaLimit = alphaPeak * ellipse * surfaceFriction;
+                alphaExcess = Math.Max(0f, Math.Abs(slipAngleRad) - alphaLimit);
+                alphaPercent = Math.Min(Math.Abs(slipAngleRad) / alphaLimit, 1f);
+            }
 
-            // normalize to [0, 1] by dividing by limit
-            float normalized = Math.Min((excessRad) / limit, 1f);
-
-            normalized *= Math.Sign(currentSlipRad);
-            return normalized;
+            if (longValid)
+            {
+                longLimit = longPeak * ellipse * surfaceFriction;
+                longExcess = Math.Max(0f, Math.Abs(slipRatio) - longLimit);
+                longPercent = Math.Min(Math.Abs(slipRatio) / longLimit, 1f);
+            }
         }
-        */
-        internal static float GetSlipAngleNormalized(float currentSlipRad, float slipRatio,
-            float[] slipTableAlpha, float[] slipTableLong, int slipArray1, int slipArray2,
-            float weightS, float surfaceFriction,
-            out float slipMax, out float slipAnglePercent)
-        {
-            // Pure lateral peak
-            float pureAlphaPeak = GetSlipSaturation(slipTableAlpha, slipArray1, slipArray2, weightS);
 
-            // Ellipse factor from longitudinal slip
-            float pureLongPeak = GetSlipSaturation(slipTableLong, slipArray1, slipArray2, weightS);
-            float longNorm = Math.Abs(slipRatio) / pureLongPeak;
-            longNorm = Math.Min(longNorm, 1f);
-            float ellipseFactor = (float)Math.Sqrt(1f - longNorm * longNorm);
-
-            float limit = pureAlphaPeak * ellipseFactor * surfaceFriction;
-
-            if (limit <= 0.001f) { slipMax = 0; slipAnglePercent = 0; return 0f; }
-            if (currentSlipRad == 0.0f) { slipMax = limit; slipAnglePercent = 0; return 0f; }
-
-            slipMax = limit;
-            float fullRatio = Math.Abs(currentSlipRad) / limit;
-            slipAnglePercent = Math.Min(fullRatio, 1.0f);
-
-            float excessRad = Math.Max(0f, Math.Abs(currentSlipRad) - limit);
-            float normalized = Math.Min(excessRad / limit, 1f);
-            normalized *= Math.Sign(currentSlipRad);
-
-            return normalized;
-        }
 
         // A) Physics-ish alpha_max from frictionC, load, cornering stiffness (N/rad)
         public static float ComputeMaxSlipAngleRad(float frictionC, float vLoadN, float corneringStiffnessNPerRad)

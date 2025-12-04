@@ -397,5 +397,28 @@ namespace maorc287.RBRDataExtPlugin
         {
             return value == 0 ? 1u : 5u;
         }
+
+        internal static string GetTireType(int tireID)
+        {
+            switch (tireID)
+            {
+                case 0:
+                    return "Dry Gravel";
+                case 1:
+                    return "Inters Gravel";
+                case 2:
+                    return "Wet Gravel";
+                case 3:
+                    return "Dry Tarmac";
+                case 4:
+                    return "Inters Tarmac";
+                case 5:
+                    return "Wet Tarmac";
+                case 6:
+                    return "Snow";
+                default:
+                    return "No Tires";
+            }
+        }
     }
 }

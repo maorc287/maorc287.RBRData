@@ -178,7 +178,6 @@ namespace maorc287.RBRDataExtPlugin
             rbrData.RLWheelPercentSlipAngle = percentAlphaRL;
             rbrData.RRWheelPercentSlipAngle = percentAlphaRR;
 
-            // Slip Ratio Normalized
             rbrData.FLWheelExcessSlipRatio = excessKappaFL;   
             rbrData.FRWheelExcessSlipRatio = excessKappaFR;
             rbrData.RLWheelExcessSlipRatio = excessKappaRL;

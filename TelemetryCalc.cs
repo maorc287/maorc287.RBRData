@@ -168,7 +168,6 @@ namespace maorc287.RBRDataExtPlugin
             percentKappa = Clamp01(longitudinalGrip);
         }
 
-
         /// <summary>
         /// not used RBR already does this internally
         /// Computes the effective lateral and longitudinal slip limits, excess beyond those limits,
@@ -182,8 +181,7 @@ namespace maorc287.RBRDataExtPlugin
             int idx1, int idx2,          // Load band indices for interpolation
             float weightS,               // Load scaling factor
             float surfaceFriction,       // μ, already includes tyre wear, temp, surface effects
-
-            out float alphaLimit,        // Lateral slip at peak (limit)
+                        out float alphaLimit,        // Lateral slip at peak (limit)
             out float longLimit,         // Longitudinal slip at peak (limit)
             out float alphaExcess,       // α beyond limit (≥0)
             out float longExcess,        // κ beyond limit (≥0)

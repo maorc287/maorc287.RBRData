@@ -168,25 +168,25 @@ namespace maorc287.RBRDataExtPlugin
             GetGripLevel(lateralGripRR, longitudinalGripRR,
                 out float excessAlphaRR, out float excessKappaRR, out float percentAlphaRR, out float percentKappaRR);
 
-            rbrData.FLWheelExcessSlipAngle = excessAlphaFL;
-            rbrData.FRWheelExcessSlipAngle = excessAlphaFR;
-            rbrData.RLWheelExcessSlipAngle = excessAlphaRL;
-            rbrData.RRWheelExcessSlipAngle = excessAlphaRR;
+            rbrData.FLWheelExcessLateral = excessAlphaFL;
+            rbrData.FRWheelExcessLateral = excessAlphaFR;
+            rbrData.RLWheelExcessLateral = excessAlphaRL;
+            rbrData.RRWheelExcessLateral = excessAlphaRR;
 
-            rbrData.FLWheelPercentSlipAngle = percentAlphaFL;
-            rbrData.FRWheelPercentSlipAngle = percentAlphaFR;
-            rbrData.RLWheelPercentSlipAngle = percentAlphaRL;
-            rbrData.RRWheelPercentSlipAngle = percentAlphaRR;
+            rbrData.FLWheelPercentLateral = percentAlphaFL;
+            rbrData.FRWheelPercentLateral = percentAlphaFR;
+            rbrData.RLWheelPercentLateral = percentAlphaRL;
+            rbrData.RRWheelPercentLateral = percentAlphaRR;
 
-            rbrData.FLWheelExcessSlipRatio = excessKappaFL;   
-            rbrData.FRWheelExcessSlipRatio = excessKappaFR;
-            rbrData.RLWheelExcessSlipRatio = excessKappaRL;
-            rbrData.RRWheelExcessSlipRatio = excessKappaRR;
+            rbrData.FLWheelExcessLongitudinal = excessKappaFL;   
+            rbrData.FRWheelExcessLongitudinal = excessKappaFR;
+            rbrData.RLWheelExcessLongitudinal = excessKappaRL;
+            rbrData.RRWheelExcessLongitudinal = excessKappaRR;
 
-            rbrData.FLWheelPercentSlipRatio = percentKappaFL;
-            rbrData.FRWheelPercentSlipRatio = percentKappaFR;
-            rbrData.RLWheelPercentSlipRatio = percentKappaRL;
-            rbrData.RRWheelPercentSlipRatio = percentKappaRR;
+            rbrData.FLWheelPercentLongitudinal = percentKappaFL;
+            rbrData.FRWheelPercentLongitudinal = percentKappaFR;
+            rbrData.RLWheelPercentLongitudinal = percentKappaRL;
+            rbrData.RRWheelPercentLongitudinal = percentKappaRR;
         }
 
         private static void ReadExternalPluginData(RBRTelemetryData rbrData)
@@ -204,6 +204,7 @@ namespace maorc287.RBRDataExtPlugin
         private static DateTime _lastTelemetryRead = DateTime.MinValue;
         private static readonly TimeSpan NoProcessInterval = TimeSpan.FromSeconds(5);   // Only when no RBR
         private static bool _rbrRunning = false;
+
         /// Reads telemetry data from the Richard Burns Rally process.
         /// this method accesses the game's memory to retrieve various telemetry values.
         /// as a result, it requires the game to be running and the process to be accessible.
@@ -291,30 +292,30 @@ namespace maorc287.RBRDataExtPlugin
             public float RLWheelSlipRatio { get; set; } = 0.0f;
             public float RRWheelSlipRatio { get; set; } = 0.0f;
 
-            public float FLWheelPercentSlipAngle { get; set; } = 0.0f;
-            public float FRWheelPercentSlipAngle { get; set; } = 0.0f;
-            public float RLWheelPercentSlipAngle { get; set; } = 0.0f;
-            public float RRWheelPercentSlipAngle { get; set; } = 0.0f;
+            public float FLWheelPercentLateral { get; set; } = 0.0f;
+            public float FRWheelPercentLateral { get; set; } = 0.0f;
+            public float RLWheelPercentLateral { get; set; } = 0.0f;
+            public float RRWheelPercentLateral { get; set; } = 0.0f;
 
-            public float FLWheelExcessSlipAngle { get; set; } = 0.0f;
-            public float FRWheelExcessSlipAngle { get; set; } = 0.0f;
-            public float RLWheelExcessSlipAngle { get; set; } = 0.0f;
-            public float RRWheelExcessSlipAngle { get; set; } = 0.0f;
+            public float FLWheelExcessLateral { get; set; } = 0.0f;
+            public float FRWheelExcessLateral { get; set; } = 0.0f;
+            public float RLWheelExcessLateral { get; set; } = 0.0f;
+            public float RRWheelExcessLateral { get; set; } = 0.0f;
 
             public float FLWheelLimitSlipAngleRad { get; set; } = 0.0f;
             public float FRWheelLimitSlipAngleRad { get; set; } = 0.0f;
             public float RLWheelLimitSlipAngleRad { get; set; } = 0.0f;
             public float RRWheelLimitSlipAngleRad { get; set; } = 0.0f;
 
-            public float FLWheelPercentSlipRatio { get; set; } = 0.0f;
-            public float FRWheelPercentSlipRatio { get; set; } = 0.0f;
-            public float RLWheelPercentSlipRatio { get; set; } = 0.0f;
-            public float RRWheelPercentSlipRatio { get; set; } = 0.0f;
+            public float FLWheelPercentLongitudinal { get; set; } = 0.0f;
+            public float FRWheelPercentLongitudinal { get; set; } = 0.0f;
+            public float RLWheelPercentLongitudinal { get; set; } = 0.0f;
+            public float RRWheelPercentLongitudinal { get; set; } = 0.0f;
 
-            public float FLWheelExcessSlipRatio { get; set; } = 0.0f;
-            public float FRWheelExcessSlipRatio { get; set; } = 0.0f;
-            public float RLWheelExcessSlipRatio { get; set; } = 0.0f;
-            public float RRWheelExcessSlipRatio { get; set; } = 0.0f;
+            public float FLWheelExcessLongitudinal { get; set; } = 0.0f;
+            public float FRWheelExcessLongitudinal { get; set; } = 0.0f;
+            public float RLWheelExcessLongitudinal { get; set; } = 0.0f;
+            public float RRWheelExcessLongitudinal { get; set; } = 0.0f;
 
             public float FLWheelLimitSlipRatio { get; set; } = 0.0f;
             public float FRWheelLimitSlipRatio { get; set; } = 0.0f;

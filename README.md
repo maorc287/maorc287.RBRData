@@ -31,11 +31,11 @@ SimHub plugin that exposes additional Richard Burns Rally (RBR) telemetry data f
   - `RBR.Damage.GearboxActuator`
   - `RBR.Damage.Hydraulics`
 
-- **Wheel Lateral Grip**
+- **Wheels Lateral Grip**
   - Percent Grip value 0 to 1: `RBR.LateralGrip.FL/FR/RL/RR`
   - Over the limit value 0 to 1: `RBR.LateralGrip.FL.Falloff/FR.Falloff/RL.Falloff/RR.Falloff`
 
-- **Wheel Longitudinal Grip**
+- **Wheels Longitudinal Grip**
   - Percent Grip value 0 to 1: `RBR.LongitudinalGrip.FL/FR/RL/RR`
   - Over the limit value 0 to 1: `RBR.LongitudinalGrip.FL.Falloff/FR.Falloff/RL.Falloff/RR.Falloff`
 

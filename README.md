@@ -32,16 +32,12 @@ SimHub plugin that exposes additional Richard Burns Rally (RBR) telemetry data f
   - `RBR.Damage.Hydraulics`
 
 - **Wheel Slip Angle**
-  - Current: `RBR.Wheel.SlipAngle.FL/FR/RL/RR`
   - Max seen: `RBR.Wheel.SlipAngle.FLMax/FRMax/RLMax/RRMax`
   - Over the limit value: `RBR.Wheel.SlipAngle.FLOverMax/...`
-  - Slip angle limit in rad: `RBR.Wheel.SlipAngle.FLLimit/...`
 
 - **Wheel Slip Ratio**
-  - Current: `RBR.Wheel.SlipRatio.FL/FR/RL/RR`
   - Max seen: `RBR.Wheel.SlipRatio.FLMax/FRMax/RLMax/RRMax`
   - Over the limit value: `RBR.Wheel.SlipRatio.FLOverMax/...`
-  - Slip ratio limit: `RBR.Wheel.SlipRatio.FLLimit/...`
 
 - **Other**
   - `RBR.GaugerPlugin.LockSlip`

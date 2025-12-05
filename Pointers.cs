@@ -122,7 +122,8 @@ namespace maorc287.RBRDataExtPlugin
             public const int CorrectionOffset = 0x12AC; // Offset to correction value?
 
             public const int LockSlipMagnitude = 0x1330; // ?? Offset to wheel lock slip magnitude? (0.5 to 2.0 float value)
-            public const int GripValue = 0x12E4; // ?? Offset to wheel lock slip magnitude? (0.0 to 2.0 float value)
+            public const int LateralGripValue = 0x12E0; // ?? Offset to wheel lateral grip value? (0.0 to 2.0 float value)
+            public const int LongitudinalGripValue = 0x12E4; // ?? Offset to wheel longitudinal grip value? (0.0 to 2.0 float value)
 
             public const int CorneringStiffness = 0x128C; // Cornering stiffness? Don't know what unit Newtons/rad?
             public const int VerticalLoad = 0x1334; // Offset to vertical load in Newtons?

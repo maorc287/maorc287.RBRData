@@ -153,11 +153,28 @@ namespace maorc287.RBRDataExtPlugin
             return slipAngle;
         }
 
+        /// <summary>   
+        /// Fetch the grip levels and excess slip values. From RBR telemetry data.
+        /// Outputs: excessAlpha, excessKappa, percentAlpha, percentKappa
+        /// those are excess lateral slip, excess longitudinal slip,
+        /// and percent lateral and longitudinal grip (0..1).
+        /// values are normalized to 1.0 being the peak grip level for the percent values.
+        internal static void GetGripLevel(float lateralGrip, float longitudinalGrip,
+            out float excessAlpha, out float excessKappa, out float percentAlpha, out float percentKappa)
+        {
+            excessAlpha = Math.Max(0f, lateralGrip - 1f);
+            excessKappa = Math.Max(0f, longitudinalGrip - 1f);
+            percentAlpha = Clamp01(lateralGrip);
+            percentKappa = Clamp01(longitudinalGrip);
+        }
+
+
         /// <summary>
+        /// not used RBR already does this internally
         /// Computes the effective lateral and longitudinal slip limits, excess beyond those limits,
         /// and normalized percentages relative to the peak.
         /// </summary>
-        public static void GetCombinedSlipData(
+        internal static void GetCombinedSlipData(
             float slipAngleRad,          // Current lateral slip (α)
             float slipRatio,             // Current longitudinal slip (κ)
             float[] slipTableAlpha,      // Pure lateral peak slips from tyre table (SlpPkCrn_L#)

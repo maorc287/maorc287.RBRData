@@ -186,11 +186,18 @@ namespace maorc287.RBRDataExtPlugin
             public const int TireType = 0x578; // Actual tire Type value in the Tires structure from File tyres.lsp
         }
 
+
+        private static IntPtr GetRBRModuleBase()
+        {
+            return MemoryReader.TryGetOrCacheDllBaseAddress("RichardBurnsRally_SSE.exe");
+        }
+
         public static class Pointers
         {
-            public const int CarInfo = 0x0165FC68;
-            public const int CarMov = 0x008EF660;
-            public const int GameMode = 0x007EAC48;
+            public const int CarMov = 0x8EF660;  // Dynamic!
+            public const int GameMode = 0x7EAC48;
+            public const int CarInfo = 0x165FC68;
+
             public const int GameModeOffset = 0x728;
             public const int TireModel = 0x007C8318; // Pointer to the tires.lsp file structure in memory
             public const int WheelContact = 0x00893038; // Pointer to the Wheel Surface Contact structure in memory

@@ -71,7 +71,7 @@ namespace maorc287.RBRDataExtPlugin
             PluginManager.AddProperty("RBR.GaugerPlugin.LockSlip", GetType(), 0, "");
             PluginManager.AddProperty("RBR.RBRHUD.DeltaTime", GetType(), 0, "");
 
-            //PluginManager.AddProperty("RBR.DeltaTime", GetType(), 0, "");
+            PluginManager.AddProperty("RBR.DeltaTime", GetType(), 0, "");
 
         }
 
@@ -85,12 +85,11 @@ namespace maorc287.RBRDataExtPlugin
             var rbrData = ReadTelemetryData();
 
             // Data Needed from SimHub Core Plugin For Delta calculation:
-             
-            int carModelId = (int)PluginManager.GetPropertyValue("DataCorePlugin.GameRawData.CarModelId");
             int trackId = (int)PluginManager.GetPropertyValue("DataCorePlugin.GameRawData.TrackId");
-            string carClass = (string)PluginManager.GetPropertyValue("DataCorePlugin.GameData.CarClass");
             float travelledDistance = (float)PluginManager.GetPropertyValue("DataCorePlugin.GameRawData.TravelledDistance");
+            float distanceToFinish = (float)PluginManager.GetPropertyValue("DataCorePlugin.GameRawData.DistanceToFinish");
             float raceTime = (float)PluginManager.GetPropertyValue("DataCorePlugin.GameRawData.RaceTime");
+
 
 
             string pressureUnit = (string)PluginManager.GetPropertyValue("DataCorePlugin.GameData.OilPressureUnit");
@@ -152,10 +151,12 @@ namespace maorc287.RBRDataExtPlugin
             PluginManager.SetPropertyValue("RBR.RBRHUD.DeltaTime", GetType(), rbrData.RBRHUDDeltaTime);
 
             // Delta Time Calculation
-            /*
-            DeltaCalculator.LoadDeltaData(trackId, carModelId);
+            if (raceTime > 0.1f)
+            DeltaCalc.LoadDeltaData(trackId, rbrData.CarId);
+            
+            DeltaCalc.SetStageLength(travelledDistance + distanceToFinish);
             PluginManager.SetPropertyValue("RBR.DeltaTime", GetType(), 
-                DeltaCalculator.CalculateDelta(travelledDistance,raceTime));*/
+                            DeltaCalc.CalculateDelta(travelledDistance,raceTime));
 
         }
     }

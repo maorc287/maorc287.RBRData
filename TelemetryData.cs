@@ -1,4 +1,5 @@
 ﻿using maorc287.RBRDataExtPlugin;
+using SimHub;
 using System;
 using System.Diagnostics;
 using static maorc287.RBRDataExtPlugin.MemoryReader;
@@ -38,10 +39,11 @@ namespace maorc287.RBRDataExtPlugin
             if (!pointerCache.IsCarMovPointerValid())
             {
                 pointerCache.CarMovBasePtr = ReadPointer(hProcess, (IntPtr)Pointers.CarMov);
-                pointerCache.FLWheelPtr = ReadPointer(hProcess, pointerCache.CarMovBasePtr + CarMov.FLWheel);
-                pointerCache.FRWheelPtr = ReadPointer(hProcess, pointerCache.CarMovBasePtr + CarMov.FRWheel);
-                pointerCache.RLWheelPtr = ReadPointer(hProcess, pointerCache.CarMovBasePtr + CarMov.RLWheel);
-                pointerCache.RRWheelPtr = ReadPointer(hProcess, pointerCache.CarMovBasePtr + CarMov.RRWheel);
+
+                    pointerCache.FLWheelPtr = ReadPointer(hProcess, pointerCache.CarMovBasePtr + CarMov.FLWheel);
+                    pointerCache.FRWheelPtr = ReadPointer(hProcess, pointerCache.CarMovBasePtr + CarMov.FRWheel);
+                    pointerCache.RLWheelPtr = ReadPointer(hProcess, pointerCache.CarMovBasePtr + CarMov.RLWheel);
+                    pointerCache.RRWheelPtr = ReadPointer(hProcess, pointerCache.CarMovBasePtr + CarMov.RRWheel);
             }
 
             if (!pointerCache.IsTireModelPointerValid())
@@ -56,6 +58,12 @@ namespace maorc287.RBRDataExtPlugin
 
         private static bool IsOnStage(IntPtr hProcess, RBRTelemetryData rbrData)
         {
+            if (!pointerCache.IsGeameModeBaseValid() || pointerCache.GameModeBasePtr == IntPtr.Zero)
+            {
+                Logging.Current.Warn("[RBRDataExt] GameMode pointer invalid");
+                return false;
+            }
+
             int gameMode = ReadInt(hProcess, pointerCache.GameModeBasePtr + Pointers.GameModeOffset);
             rbrData.IsOnStage = (gameMode == 1);
 
@@ -198,6 +206,11 @@ namespace maorc287.RBRDataExtPlugin
             if (!MemoryReader.TryReadFromDll("RBRHUD.dll", 0x8C8B44, out float DeltaTime))
                 DeltaTime = 0.0f;
             rbrData.RBRHUDDeltaTime = DeltaTime;
+
+            if (!MemoryReader.TryReadFromDll("Rallysimfans.hu.dll", 0x39859C, out int rsfCarId))
+                rsfCarId = 0;
+            rbrData.CarId = rsfCarId;
+
         }
 
 
@@ -337,6 +350,8 @@ namespace maorc287.RBRDataExtPlugin
             public uint OilCoolerDamage { get; set; } = 1;
 
             public float RBRHUDDeltaTime { get; set; } = 0.0f;
+
+            public int CarId { get; set; } = 0;
         }
     }
 }

@@ -68,6 +68,11 @@ namespace maorc287.RBRDataExtPlugin
 
         internal static T ReadValue<T>(IntPtr hProcess, IntPtr address) where T : struct
         {
+            if (hProcess == IntPtr.Zero || address == IntPtr.Zero || address.ToInt64() < 0x1000)
+            {
+                return default(T); // Null/zero address = safe default
+            }
+
             int size;
 
             if (typeof(T) == typeof(bool) || typeof(T) == typeof(byte))
@@ -237,7 +242,6 @@ namespace maorc287.RBRDataExtPlugin
 
             return result;
         }
-
 
         internal static float ReadFloat(IntPtr hProcess, IntPtr address) => ReadValue<float>(hProcess, address);
         internal static int ReadInt(IntPtr hProcess, IntPtr address) => ReadValue<int>(hProcess, address);

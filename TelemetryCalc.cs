@@ -24,6 +24,41 @@ namespace maorc287.RBRDataExtPlugin
             return pressureBase + pressureRawBar;
         }
 
+        /// <summary>
+        /// Smart formatter: float→"m:ss.fff" OR string→float seconds
+        /// </summary>
+        internal static object FormatTime(object input)
+        {
+            if (input == null) return "0.000";
+
+            // Input is float → format to "m:ss.fff"
+            if (input is float f)
+            {
+                int minutes = (int)(f / 60);
+                float seconds = f % 60;
+                return $"{minutes}:{seconds:00.000}";
+            }
+
+            // Input is string → parse to float seconds
+            if (input is string s)
+            {
+                try
+                {
+                    var parts = s.Split(':');
+                    if (parts.Length == 2)
+                    {
+                        int minutes = int.Parse(parts[0]);
+                        float seconds = float.Parse(parts[1]);
+                        return minutes * 60f + seconds;
+                    }
+                    return float.Parse(s);
+                }
+                catch { }
+            }
+
+            return input ?? "0.000";
+        }
+
         /// Formats the pressure value based on the specified unit.
         internal static float FormatPressure(float pressure, string unit)
         {

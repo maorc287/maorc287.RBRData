@@ -3,6 +3,7 @@ using System.Windows.Media;
 using static maorc287.RBRDataExtPlugin.TelemetryData;
 using static maorc287.RBRDataExtPlugin.TelemetryCalc;
 
+
 namespace maorc287.RBRDataExtPlugin
 {
     [PluginDescription("Richard Burns Rally Additional Data Reader")]
@@ -70,6 +71,8 @@ namespace maorc287.RBRDataExtPlugin
             PluginManager.AddProperty("RBR.GaugerPlugin.LockSlip", GetType(), 0, "");
             PluginManager.AddProperty("RBR.RBRHUD.DeltaTime", GetType(), 0, "");
 
+            //PluginManager.AddProperty("RBR.DeltaTime", GetType(), 0, "");
+
         }
 
         public void End(PluginManager pluginManager) { }
@@ -81,9 +84,18 @@ namespace maorc287.RBRDataExtPlugin
         {
             var rbrData = ReadTelemetryData();
 
+            // Data Needed from SimHub Core Plugin For Delta calculation:
+             
+            int carModelId = (int)PluginManager.GetPropertyValue("DataCorePlugin.GameRawData.CarModelId");
+            int trackId = (int)PluginManager.GetPropertyValue("DataCorePlugin.GameRawData.TrackId");
+            string carClass = (string)PluginManager.GetPropertyValue("DataCorePlugin.GameData.CarClass");
+            float travelledDistance = (float)PluginManager.GetPropertyValue("DataCorePlugin.GameRawData.TravelledDistance");
+            float raceTime = (float)PluginManager.GetPropertyValue("DataCorePlugin.GameRawData.RaceTime");
+
+
             string pressureUnit = (string)PluginManager.GetPropertyValue("DataCorePlugin.GameData.OilPressureUnit");
             string temperatureUnit = (string)PluginManager.GetPropertyValue("DataCorePlugin.GameData.TemperatureUnit");
-
+            
 
             PluginManager.SetPropertyValue("RBR.Game.OnStage", GetType(), rbrData.IsOnStage);
 
@@ -138,6 +150,12 @@ namespace maorc287.RBRDataExtPlugin
 
             PluginManager.SetPropertyValue("RBR.GaugerPlugin.LockSlip", GetType(), rbrData.GaugerLockSlip);
             PluginManager.SetPropertyValue("RBR.RBRHUD.DeltaTime", GetType(), rbrData.RBRHUDDeltaTime);
+
+            // Delta Time Calculation
+            /*
+            DeltaCalculator.LoadDeltaData(trackId, carModelId);
+            PluginManager.SetPropertyValue("RBR.DeltaTime", GetType(), 
+                DeltaCalculator.CalculateDelta(travelledDistance,raceTime));*/
 
         }
     }

@@ -1,5 +1,6 @@
 ﻿using maorc287.RBRDataExtPlugin;
 using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -36,6 +37,26 @@ namespace maorc287.RBRDataExtPlugin
             return (uint)(processes.Length > 0 ? processes[0].Id : 0);
         }
 
+        internal static string RBRGamePath { get; private set; } = null; 
+
+        internal static void UpdateRBRGamePath()
+        {
+            if (_cachedProcessId == 0 || _cachedHandle == IntPtr.Zero) return;
+
+            try
+            {
+                var process = Process.GetProcessById(_cachedProcessId);
+                if (process.HasExited) return;
+
+                // EXACT: richardburnsrally_SSE.exe folder path
+                RBRGamePath = Path.GetDirectoryName(process.MainModule.FileName);
+            }
+            catch (Exception ex)
+            {
+                SimHub.Logging.Current.Warn($"[RBRDataExt] Failed find RBR Game Path: {ex.Message}");
+                return;
+            }
+        }
 
         [DllImport("kernel32.dll", SetLastError = true)]
         private static extern bool ReadProcessMemory(
@@ -100,6 +121,8 @@ namespace maorc287.RBRDataExtPlugin
         {
             if (_cachedHandle != IntPtr.Zero)
             {
+                UpdateRBRGamePath();
+
                 try
                 {
                     var proc = Process.GetProcessById(_cachedProcessId);

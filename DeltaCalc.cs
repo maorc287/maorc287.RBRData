@@ -11,6 +11,7 @@ namespace maorc287.RBRDataExtPlugin
     {
         private static float[] _ghostSplitTimes;
         private static bool _isLoaded;
+        private static bool _noDataFound = false;
         private static int _lastStageId = -1;
         private static int _lastCarId = -1;
         private static DateTime _lastLoadAttempt = DateTime.MinValue;
@@ -33,6 +34,9 @@ namespace maorc287.RBRDataExtPlugin
         }
         internal static void LoadDeltaData(int stageId, int carId)
         {
+            if (_noDataFound)
+            return;
+
             if (DateTime.Now - _lastLoadAttempt < LoadCooldown)
                 return;
             _lastLoadAttempt = DateTime.Now;
@@ -48,12 +52,13 @@ namespace maorc287.RBRDataExtPlugin
 
             string dbPath = Path.Combine(MemoryReader.RBRGamePath ?? "",
                                          "Plugins", "RBRHUD", "delta_times.db");
-            Logging.Current.Info("[RBRDataExt] DB Path: " + dbPath);
+            Logging.Current.Info("[RBRDataExt] RBRHUD Delta Times DB Path: " + dbPath);
 
             if (!File.Exists(dbPath))
             {
                 Logging.Current.Warn("[RBRDataExt] DB file NOT FOUND: " + dbPath);
-                _isLoaded = false;
+                _isLoaded = false;           
+                _noDataFound = true;
                 return;
             }
 
@@ -173,6 +178,11 @@ namespace maorc287.RBRDataExtPlugin
         internal static bool IsReady
         {
             get { return _isLoaded; }
+        }
+
+        internal static bool HasData
+        {
+            get { return !_noDataFound; }
         }
 
         internal static int SplitCount

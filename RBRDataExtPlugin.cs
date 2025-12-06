@@ -151,7 +151,7 @@ namespace maorc287.RBRDataExtPlugin
             PluginManager.SetPropertyValue("RBR.RBRHUD.DeltaTime", GetType(), rbrData.RBRHUDDeltaTime);
 
             // Delta Time Calculation
-            if (rbrData.IsOnStage)
+            if (rbrData.IsOnStage && DeltaCalc.HasData)
                 DeltaCalc.LoadDeltaData(trackId, rbrData.CarId);
 
             if (raceTime > 0.005f && DeltaCalc.IsReady)

@@ -34,9 +34,6 @@ namespace maorc287.RBRDataExtPlugin
         }
         internal static void LoadDeltaData(int stageId, int carId)
         {
-            if (_noDataFound)
-            return;
-
             if (DateTime.Now - _lastLoadAttempt < LoadCooldown)
                 return;
             _lastLoadAttempt = DateTime.Now;

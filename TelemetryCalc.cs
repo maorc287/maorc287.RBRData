@@ -6,7 +6,6 @@ namespace maorc287.RBRDataExtPlugin
     internal class TelemetryCalc
     {
         // Base adjustment for oil pressure calculation 
-        // BitConverter.ToSingle(BitConverter.GetBytes(0x3f8460fe), 0);
         private const float OilPressureBaseAdjustment = 1.03421f;
         private const float OilPressureBaseLimit = 0.02f;
 

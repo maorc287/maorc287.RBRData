@@ -71,7 +71,9 @@ namespace maorc287.RBRDataExtPlugin
             PluginManager.AddProperty("RBR.GaugerPlugin.LockSlip", GetType(), 0, "");
             PluginManager.AddProperty("RBR.RBRHUD.DeltaTime", GetType(), 0, "");
 
-            PluginManager.AddProperty("RBR.DeltaTime", GetType(), 0, "");
+            PluginManager.AddProperty("RBR.Time.Delta", GetType(), 0, "");
+            PluginManager.AddProperty("RBR.Time.Best", GetType(), 0, "");
+
 
         }
 
@@ -158,8 +160,10 @@ namespace maorc287.RBRDataExtPlugin
             {
                 DeltaCalc.SetStageLength(travelledDistance + distanceToFinish);
                 float deltaTime = DeltaCalc.CalculateDelta(travelledDistance, raceTime);
-
-                PluginManager.SetPropertyValue("RBR.DeltaTime", GetType(), deltaTime);
+                float bestTime = DeltaCalc.BestTimeSeconds;
+                string fBestTime = (string)FormatTime(bestTime);
+                PluginManager.SetPropertyValue("RBR.Time.Delta", GetType(), deltaTime);
+                PluginManager.SetPropertyValue("RBR.Time.Best", GetType(), fBestTime);
             }
 
         }

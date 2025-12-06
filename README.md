@@ -10,8 +10,10 @@ SimHub plugin that exposes additional Richard Burns Rally (RBR) telemetry data f
   - `RBR.Data.OilPressure`
   - `RBR.Data.RadiatorCoolantTemeperature`
   - `RBR.Data.OilTemperature`
-  - `RBR.Data.BatteryVoltage`
-  - `RBR.DeltaTime`
+  - `RBR.Data.BatteryVoltage` 
+
+  - `RBR.Time.Best`
+  - `RBR.Time.Delta`
 
 - **Warnings**
   - `RBR.Info.OilPressureWarning`

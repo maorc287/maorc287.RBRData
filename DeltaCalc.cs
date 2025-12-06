@@ -27,6 +27,13 @@ namespace maorc287.RBRDataExtPlugin
 
         private static float _stageLength = 0f;
 
+        internal static bool IsReady { get { return _isLoaded; } }
+        internal static bool HasData { get { return !_noDataFound; } }
+        internal static int SplitCount { get { return _ghostSplitTimes != null ? _ghostSplitTimes.Length : 0; } }
+
+
+        private static float _bestTime = 0f;
+        internal static float BestTimeSeconds { get { return _bestTime; } }
 
         internal static void SetStageLength(float stageLengthMeters)
         {
@@ -72,7 +79,7 @@ namespace maorc287.RBRDataExtPlugin
                 return;
             }
 
-            // Use SQLNado to find best UID in records table
+            // Find best UID in records table
             int bestUid = FindBestUid(dbPath, stageId, carId);
             if (bestUid == 0)
             {
@@ -172,21 +179,6 @@ namespace maorc287.RBRDataExtPlugin
         }
 
 
-        internal static bool IsReady
-        {
-            get { return _isLoaded; }
-        }
-
-        internal static bool HasData
-        {
-            get { return !_noDataFound; }
-        }
-
-        internal static int SplitCount
-        {
-            get { return _ghostSplitTimes != null ? _ghostSplitTimes.Length : 0; }
-        }
-
         // --------------------------------------------------------------------
         // Find best UID for given stageId and carId
         // --------------------------------------------------------------------
@@ -194,6 +186,8 @@ namespace maorc287.RBRDataExtPlugin
         {
             try
             {
+                _bestTime = 0f;
+
                 using (var db = new SQLiteDatabase(dbPath))
                 {
                     // 1) Exact match: same stage + car
@@ -216,6 +210,8 @@ namespace maorc287.RBRDataExtPlugin
                         int dbStage = Convert.ToInt32(row["stage_id"], CultureInfo.InvariantCulture);
                         int dbCar = Convert.ToInt32(row["car_id"], CultureInfo.InvariantCulture);
                         float bestT = Convert.ToSingle(row["finish_time"], CultureInfo.InvariantCulture);
+
+                        _bestTime = bestT;
 
                         Logging.Current.Info(string.Format(
                             "[RBRDataExt] Best UID (exact): {0} (time: {1:F3}s) for stage_id {2}, car_id {3}",
@@ -271,6 +267,8 @@ namespace maorc287.RBRDataExtPlugin
                         int dbCar = Convert.ToInt32(row["car_id"], CultureInfo.InvariantCulture);
                         string dbGrp = Convert.ToString(row["car_group"], CultureInfo.InvariantCulture);
                         float bestT = Convert.ToSingle(row["finish_time"], CultureInfo.InvariantCulture);
+
+                        _bestTime = bestT;
 
                         Logging.Current.Info(string.Format(
                             "[RBRDataExt] Best UID (group fallback): {0} (time: {1:F3}s) for stage_id {2}, car_id {3}, group '{4}'",

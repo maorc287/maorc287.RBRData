@@ -151,12 +151,16 @@ namespace maorc287.RBRDataExtPlugin
             PluginManager.SetPropertyValue("RBR.RBRHUD.DeltaTime", GetType(), rbrData.RBRHUDDeltaTime);
 
             // Delta Time Calculation
-            if (raceTime > 0.1f)
-            DeltaCalc.LoadDeltaData(trackId, rbrData.CarId);
-            
-            DeltaCalc.SetStageLength(travelledDistance + distanceToFinish);
-            PluginManager.SetPropertyValue("RBR.DeltaTime", GetType(), 
-                            DeltaCalc.CalculateDelta(travelledDistance,raceTime));
+            if (rbrData.IsOnStage)
+                DeltaCalc.LoadDeltaData(trackId, rbrData.CarId);
+
+            if (raceTime > 0.005f && DeltaCalc.IsReady)
+            {
+                DeltaCalc.SetStageLength(travelledDistance + distanceToFinish);
+                float deltaTime = DeltaCalc.CalculateDelta(travelledDistance, raceTime);
+
+                PluginManager.SetPropertyValue("RBR.DeltaTime", GetType(), deltaTime);
+            }
 
         }
     }

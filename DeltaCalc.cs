@@ -53,7 +53,7 @@ namespace maorc287.RBRDataExtPlugin
 
             if (!File.Exists(dbPath))
             {
-                Logging.Current.Warn("[RBRDataExt] DB file NOT FOUND: " + dbPath);
+                Logging.Current.Warn("[RBRDataExt]Data file NOT FOUND: " + dbPath);
                 _isLoaded = false;           
                 _noDataFound = true;
                 return;
@@ -73,7 +73,7 @@ namespace maorc287.RBRDataExtPlugin
             }
 
             // Use SQLNado to find best UID in records table
-            int bestUid = FindBestUidWithSqlNado(dbPath, stageId, carId);
+            int bestUid = FindBestUid(dbPath, stageId, carId);
             if (bestUid == 0)
             {
                 Logging.Current.Warn(string.Format(
@@ -188,47 +188,16 @@ namespace maorc287.RBRDataExtPlugin
         }
 
         // --------------------------------------------------------------------
-        // SQLNado-based DB access
+        // Find best UID for given stageId and carId
         // --------------------------------------------------------------------
-        private static int FindBestUidWithSqlNado(string dbPath, int stageId, int carId)
+        private static int FindBestUid(string dbPath, int stageId, int carId)
         {
             try
             {
                 using (var db = new SQLiteDatabase(dbPath))
                 {
-                    // Debug: total row count
-                    object countObj = db.ExecuteScalar(
-                        "SELECT COUNT(*) FROM records;",
-                        (Func<SQLiteError, SQLiteOnErrorAction>)null,
-                        new object[0]);
-                    int total = Convert.ToInt32(countObj, CultureInfo.InvariantCulture);
-                    Logging.Current.Info(string.Format("[RBRDataExt] records total rows: {0}", total));
-
-                    // Debug: show a couple of rows for this stage+car to verify mapping
-                    string debugSql = string.Format(CultureInfo.InvariantCulture, @"
-                SELECT uid, stage_id, car_id, finish_time
-                FROM records
-                WHERE stage_id = {0} AND car_id = {1}
-                ORDER BY finish_time ASC
-                LIMIT 5;", stageId, carId);
-
-                    foreach (var row in db.LoadRows(
-                        debugSql,
-                        (Func<SQLiteError, SQLiteOnErrorAction>)null,
-                        new object[0]))
-                    {
-                        int duid = Convert.ToInt32(row["uid"], CultureInfo.InvariantCulture);
-                        int dstage = Convert.ToInt32(row["stage_id"], CultureInfo.InvariantCulture);
-                        int dcar = Convert.ToInt32(row["car_id"], CultureInfo.InvariantCulture);
-                        float dt = Convert.ToSingle(row["finish_time"], CultureInfo.InvariantCulture);
-
-                        Logging.Current.Info(string.Format(
-                            "[RBRDataExt] DB match row: uid={0}, stage_id={1}, car_id={2}, time={3:F3}",
-                            duid, dstage, dcar, dt));
-                    }
-
-                    // Actual best‑lap selection for this exact stage+car
-                    string bestSql = string.Format(CultureInfo.InvariantCulture, @"
+                    // 1) Exact match: same stage + car
+                    string bestExactSql = string.Format(CultureInfo.InvariantCulture, @"
                 SELECT uid, stage_id, car_id, finish_time
                 FROM records
                 WHERE stage_id = {0}
@@ -239,7 +208,7 @@ namespace maorc287.RBRDataExtPlugin
                 LIMIT 1;", stageId, carId);
 
                     foreach (var row in db.LoadRows(
-                        bestSql,
+                        bestExactSql,
                         (Func<SQLiteError, SQLiteOnErrorAction>)null,
                         new object[0]))
                     {
@@ -249,14 +218,69 @@ namespace maorc287.RBRDataExtPlugin
                         float bestT = Convert.ToSingle(row["finish_time"], CultureInfo.InvariantCulture);
 
                         Logging.Current.Info(string.Format(
-                            "[RBRDataExt] Best UID: {0} (time: {1:F3}s) for stage_id {2}, car_id {3}",
+                            "[RBRDataExt] Best UID (exact): {0} (time: {1:F3}s) for stage_id {2}, car_id {3}",
                             uid, bestT, dbStage, dbCar));
 
                         return uid;
                     }
 
+                    // 2) No exact car match: find car_group for this car_id (any stage)
+                    string groupSql = string.Format(CultureInfo.InvariantCulture, @"
+                SELECT car_group
+                FROM records
+                WHERE car_id = {0}
+                ORDER BY finish_time ASC
+                LIMIT 1;", carId);
+
+                    object groupObj = db.ExecuteScalar(
+                        groupSql,
+                        (Func<SQLiteError, SQLiteOnErrorAction>)null,
+                        new object[0]);
+
+                    if (groupObj == null || groupObj == DBNull.Value)
+                    {
+                        Logging.Current.Info(string.Format(
+                            "[RBRDataExt] No car_group found for car_id={0}, cannot use group fallback", carId));
+                        return 0;
+                    }
+
+                    string carGroup = Convert.ToString(groupObj, CultureInfo.InvariantCulture);
+
                     Logging.Current.Info(string.Format(
-                        "[RBRDataExt] No row found for stage_id={0}, car_id={1}", stageId, carId));
+                        "[RBRDataExt] Using car_group '{0}' as fallback for car_id={1}", carGroup, carId));
+
+                    // 3) Fallback: best time on this stage for same group
+                    // Note: car_group is TEXT, so we quote it
+                    string bestGroupSql = string.Format(CultureInfo.InvariantCulture, @"
+                SELECT uid, stage_id, car_id, car_group, finish_time
+                FROM records
+                WHERE stage_id = {0}
+                  AND car_group = '{1}'
+                  AND finish_time > 0
+                  AND finish_time < 20000
+                ORDER BY finish_time ASC
+                LIMIT 1;", stageId, carGroup.Replace("'", "''")); // escape quotes
+
+                    foreach (var row in db.LoadRows(
+                        bestGroupSql,
+                        (Func<SQLiteError, SQLiteOnErrorAction>)null,
+                        new object[0]))
+                    {
+                        int uid = Convert.ToInt32(row["uid"], CultureInfo.InvariantCulture);
+                        int dbStage = Convert.ToInt32(row["stage_id"], CultureInfo.InvariantCulture);
+                        int dbCar = Convert.ToInt32(row["car_id"], CultureInfo.InvariantCulture);
+                        string dbGrp = Convert.ToString(row["car_group"], CultureInfo.InvariantCulture);
+                        float bestT = Convert.ToSingle(row["finish_time"], CultureInfo.InvariantCulture);
+
+                        Logging.Current.Info(string.Format(
+                            "[RBRDataExt] Best UID (group fallback): {0} (time: {1:F3}s) for stage_id {2}, car_id {3}, group '{4}'",
+                            uid, bestT, dbStage, dbCar, dbGrp));
+
+                        return uid;
+                    }
+
+                    Logging.Current.Info(string.Format(
+                        "[RBRDataExt] No row found for stage_id={0} in car_group='{1}'", stageId, carGroup));
                 }
             }
             catch (Exception ex)
@@ -266,6 +290,7 @@ namespace maorc287.RBRDataExtPlugin
 
             return 0;
         }
+
 
         private static float[] LoadSplitsForUid(string dbPath, int uid)
         {
@@ -318,7 +343,7 @@ namespace maorc287.RBRDataExtPlugin
             }
             catch (Exception ex)
             {
-                Logging.Current.Warn("[RBRDataExt] SQLNado LoadSplits error: " + ex.Message);
+                Logging.Current.Warn("[RBRDataExt] LoadSplits error: " + ex.Message);
                 return null;
             }
         }

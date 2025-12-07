@@ -1,7 +1,8 @@
-﻿using SimHub.Plugins;
+﻿using SimHub;
+using SimHub.Plugins;
 using System.Windows.Media;
-using static maorc287.RBRDataExtPlugin.TelemetryData;
 using static maorc287.RBRDataExtPlugin.TelemetryCalc;
+using static maorc287.RBRDataExtPlugin.TelemetryData;
 
 
 namespace maorc287.RBRDataExtPlugin
@@ -78,7 +79,7 @@ namespace maorc287.RBRDataExtPlugin
         }
 
         public void End(PluginManager pluginManager)
-        { 
+        {
             pointerCache.ClearAllCache();
         }
 
@@ -89,17 +90,9 @@ namespace maorc287.RBRDataExtPlugin
         {
             var rbrData = ReadTelemetryData();
 
-            // Data Needed from SimHub Core Plugin For Delta calculation:
-            int trackId = (int)PluginManager.GetPropertyValue("DataCorePlugin.GameRawData.TrackId");
-            float travelledDistance = (float)PluginManager.GetPropertyValue("DataCorePlugin.GameRawData.TravelledDistance");
-            float distanceToFinish = (float)PluginManager.GetPropertyValue("DataCorePlugin.GameRawData.DistanceToFinish");
-            float raceTime = (float)PluginManager.GetPropertyValue("DataCorePlugin.GameRawData.RaceTime");
-
-
-
             string pressureUnit = (string)PluginManager.GetPropertyValue("DataCorePlugin.GameData.OilPressureUnit");
             string temperatureUnit = (string)PluginManager.GetPropertyValue("DataCorePlugin.GameData.TemperatureUnit");
-            
+
 
             PluginManager.SetPropertyValue("RBR.Game.OnStage", GetType(), rbrData.IsOnStage);
 
@@ -145,28 +138,39 @@ namespace maorc287.RBRDataExtPlugin
             PluginManager.SetPropertyValue("RBR.LongitudinalGrip.FL", GetType(), rbrData.FLWheelPercentLongitudinal);
             PluginManager.SetPropertyValue("RBR.LongitudinalGrip.FR", GetType(), rbrData.FRWheelPercentLongitudinal);
             PluginManager.SetPropertyValue("RBR.LongitudinalGrip.RL", GetType(), rbrData.RLWheelPercentLongitudinal);
-            PluginManager.SetPropertyValue("RBR.LongitudinalGrip.RR", GetType(), rbrData.RRWheelPercentLongitudinal);    
+            PluginManager.SetPropertyValue("RBR.LongitudinalGrip.RR", GetType(), rbrData.RRWheelPercentLongitudinal);
 
             PluginManager.SetPropertyValue("RBR.LongitudinalGrip.FL.Falloff", GetType(), rbrData.FLWheelExcessLongitudinal);
             PluginManager.SetPropertyValue("RBR.LongitudinalGrip.FR.Falloff", GetType(), rbrData.FRWheelExcessLongitudinal);
             PluginManager.SetPropertyValue("RBR.LongitudinalGrip.RL.Falloff", GetType(), rbrData.RLWheelExcessLongitudinal);
             PluginManager.SetPropertyValue("RBR.LongitudinalGrip.RR.Falloff", GetType(), rbrData.RRWheelExcessLongitudinal);
 
-            PluginManager.SetPropertyValue("RBR.GaugerPlugin.LockSlip", GetType(), rbrData.GaugerLockSlip);
+            PluginManager.SetPropertyValue("RBR.GaugerPlugin.LockSlip", GetType(), rbrData.GaugerSlip);
             PluginManager.SetPropertyValue("RBR.RBRHUD.DeltaTime", GetType(), rbrData.RBRHUDDeltaTime);
 
             // Delta Time Calculation
             if (rbrData.IsOnStage && DeltaCalc.HasData)
-                DeltaCalc.LoadDeltaData(trackId, rbrData.CarId);
-
-            if (raceTime > 0.005f && DeltaCalc.IsReady)
             {
-                DeltaCalc.SetStageLength(rbrData.TravelledDistance - rbrData.StartLine + distanceToFinish);
-                float deltaTime = DeltaCalc.CalculateDelta(rbrData.TravelledDistance- rbrData.StartLine, raceTime);
-                float bestTime = DeltaCalc.BestTimeSeconds;
-                string fBestTime = (string)FormatTime(bestTime);
-                PluginManager.SetPropertyValue("RBR.Time.Delta", GetType(), deltaTime);
-                PluginManager.SetPropertyValue("RBR.Time.Best", GetType(), fBestTime);
+                // Data Needed from SimHub Core Plugin For Delta calculation:
+                int trackId = (int)PluginManager.GetPropertyValue("DataCorePlugin.GameRawData.TrackId");
+                float travelledDistance = (float)PluginManager.GetPropertyValue("DataCorePlugin.GameRawData.DistanceFromStart");
+                float distanceToFinish = (float)PluginManager.GetPropertyValue("DataCorePlugin.GameRawData.DistanceToFinish");
+                float raceTime = (float)PluginManager.GetPropertyValue("DataCorePlugin.GameRawData.RaceTime");
+
+                if (raceTime > 0.005f)
+                    DeltaCalc.LoadDeltaData(trackId, rbrData.CarId);
+
+                if (DeltaCalc.IsReady)
+                {
+                    float travelledM = travelledDistance - rbrData.StartLine;
+                    if (travelledM < 0f) travelledM = 0f;
+
+                    float deltaTime = DeltaCalc.CalculateDelta(travelledM, raceTime);
+                    float bestTime = DeltaCalc.BestTimeSeconds;
+                    string fBestTime = (string)FormatTime(bestTime);
+                    PluginManager.SetPropertyValue("RBR.Time.Delta", GetType(), deltaTime);
+                    PluginManager.SetPropertyValue("RBR.Time.Best", GetType(), fBestTime);
+                }
             }
 
         }

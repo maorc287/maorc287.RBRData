@@ -1,7 +1,5 @@
-﻿using maorc287.RBRDataExtPlugin;
-using SimHub;
+﻿using SimHub;
 using System;
-using System.Diagnostics;
 using static maorc287.RBRDataExtPlugin.MemoryReader;
 using static maorc287.RBRDataExtPlugin.Offsets;
 using static maorc287.RBRDataExtPlugin.TelemetryCalc;
@@ -18,7 +16,7 @@ namespace maorc287.RBRDataExtPlugin
 
         // Cache for pointers to avoid repeated memory reads
         internal static readonly PointerCache pointerCache = new PointerCache();
-      
+
         // ---------------- Helpers ---------------- //
         private static IntPtr GetProcess()
         {
@@ -40,10 +38,10 @@ namespace maorc287.RBRDataExtPlugin
             {
                 pointerCache.CarMovBasePtr = ReadPointer(hProcess, (IntPtr)Pointers.CarMov);
 
-                    pointerCache.FLWheelPtr = ReadPointer(hProcess, pointerCache.CarMovBasePtr + CarMov.FLWheel);
-                    pointerCache.FRWheelPtr = ReadPointer(hProcess, pointerCache.CarMovBasePtr + CarMov.FRWheel);
-                    pointerCache.RLWheelPtr = ReadPointer(hProcess, pointerCache.CarMovBasePtr + CarMov.RLWheel);
-                    pointerCache.RRWheelPtr = ReadPointer(hProcess, pointerCache.CarMovBasePtr + CarMov.RRWheel);
+                pointerCache.FLWheelPtr = ReadPointer(hProcess, pointerCache.CarMovBasePtr + CarMov.FLWheel);
+                pointerCache.FRWheelPtr = ReadPointer(hProcess, pointerCache.CarMovBasePtr + CarMov.FRWheel);
+                pointerCache.RLWheelPtr = ReadPointer(hProcess, pointerCache.CarMovBasePtr + CarMov.RLWheel);
+                pointerCache.RRWheelPtr = ReadPointer(hProcess, pointerCache.CarMovBasePtr + CarMov.RRWheel);
             }
 
             if (!pointerCache.IsTireModelPointerValid())
@@ -51,7 +49,7 @@ namespace maorc287.RBRDataExtPlugin
 
             if (!pointerCache.IsDamagePointerValid())
             {
-                IntPtr damageStructPtr = pointerCache.CarMovBasePtr + CarMov.DamageStructurePointer;  
+                IntPtr damageStructPtr = pointerCache.CarMovBasePtr + CarMov.DamageStructurePointer;
                 pointerCache.DamageBasePtr = ReadPointer(hProcess, damageStructPtr);
             }
         }
@@ -186,7 +184,7 @@ namespace maorc287.RBRDataExtPlugin
             rbrData.RLWheelPercentLateral = percentAlphaRL;
             rbrData.RRWheelPercentLateral = percentAlphaRR;
 
-            rbrData.FLWheelExcessLongitudinal = excessKappaFL;   
+            rbrData.FLWheelExcessLongitudinal = excessKappaFL;
             rbrData.FRWheelExcessLongitudinal = excessKappaFR;
             rbrData.RLWheelExcessLongitudinal = excessKappaRL;
             rbrData.RRWheelExcessLongitudinal = excessKappaRR;
@@ -195,27 +193,25 @@ namespace maorc287.RBRDataExtPlugin
             rbrData.FRWheelPercentLongitudinal = percentKappaFR;
             rbrData.RLWheelPercentLongitudinal = percentKappaRL;
             rbrData.RRWheelPercentLongitudinal = percentKappaRR;
-
-            rbrData.TravelledDistance = ReadFloat(hProcess, pointerCache.CarInfoBasePtr + CarInfo.DistanceFromStartControl);
-           
         }
 
-        private static void ReadOtherData( RBRTelemetryData rbrData)
+        private static void ReadOtherData(RBRTelemetryData rbrData)
         {
-            if (!MemoryReader.TryReadFromDll("GaugerPlugin.dll", 0x7ADFC, out float GaugerPluginLockSlip))
-                GaugerPluginLockSlip = 0.0f;
-            rbrData.GaugerLockSlip = GaugerPluginLockSlip;
+            if (!MemoryReader.TryReadFromDll("GaugerPlugin.dll", Pointers.GaugerSlip, out float GaugerPluginSlip))
+                GaugerPluginSlip = 0.0f;
+            rbrData.GaugerSlip = GaugerPluginSlip;
 
-            if (!MemoryReader.TryReadFromDll("RBRHUD.dll", 0x8C8B44, out float DeltaTime))
+            if (!MemoryReader.TryReadFromDll("RBRHUD.dll", Pointers.RBRHUDTimeDelta, out float DeltaTime))
                 DeltaTime = 0.0f;
             rbrData.RBRHUDDeltaTime = DeltaTime;
 
-            if (!MemoryReader.TryReadFromDll("Rallysimfans.hu.dll", 0x39859C, out int rsfCarId))
+            if (!MemoryReader.TryReadFromDll("Rallysimfans.hu.dll", Pointers.RSFCarId, out int rsfCarId))
                 rsfCarId = 0;
             rbrData.CarId = rsfCarId;
 
-            if (!MemoryReader.TryReadFromDll("Rallysimfans.hu.dll", 0x3986F8, out int rsfStartLine))
+            if (!MemoryReader.TryReadFromDll("Rallysimfans.hu.dll", Pointers.RSFStartLineDistance, out float rsfStartLine))
                 rsfStartLine = 0;
+
             rbrData.StartLine = rsfStartLine;
 
         }
@@ -292,7 +288,7 @@ namespace maorc287.RBRDataExtPlugin
             public float GroundSpeed { get; set; } = 0.0f;
             public float WheelLock { get; set; } = 0.0f;
             public float WheelSlip { get; set; } = 0.0f;
-            public float GaugerLockSlip { get; set; } = 0.0f;
+            public float GaugerSlip { get; set; } = 0.0f;
             public float FLWheelSpeed { get; set; } = 0.0f;
             public float FRWheelSpeed { get; set; } = 0.0f;
             public float RLWheelSpeed { get; set; } = 0.0f;

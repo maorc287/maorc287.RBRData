@@ -9,7 +9,7 @@ namespace maorc287.RBRDataExtPlugin
 {
     public class DeltaCalc
     {
-        private static float[] _ghostSplitTimes;
+        private static float[] _bestSplitTimes;
         private static bool _isLoaded;
         private static bool _noDataFound = false;
         private static int _lastStageId = -1;
@@ -29,7 +29,7 @@ namespace maorc287.RBRDataExtPlugin
 
         internal static bool IsReady { get { return _isLoaded; } }
         internal static bool HasData { get { return !_noDataFound; } }
-        internal static int SplitCount { get { return _ghostSplitTimes != null ? _ghostSplitTimes.Length : 0; } }
+        internal static int SplitCount { get { return _bestSplitTimes != null ? _bestSplitTimes.Length : 0; } }
 
 
         private static float _bestTime = 0f;
@@ -41,12 +41,21 @@ namespace maorc287.RBRDataExtPlugin
         }
         internal static void LoadDeltaData(int stageId, int carId)
         {
+            // CRITICAL: REFRESH PATH RIGHT BEFORE DB ACCESS
+            MemoryReader.UpdateRBRGamePath();
+
             if (DateTime.Now - _lastLoadAttempt < LoadCooldown)
                 return;
             _lastLoadAttempt = DateTime.Now;
 
             Logging.Current.Debug(string.Format(
                 "[RBRDataExt] LoadDeltaData - Stage: {0}, Car: {1}", stageId, carId));
+
+            if (stageId <= 0)
+            {
+                Logging.Current.Debug("[RBRDataExt] Invalid stage ID");
+                return;
+            }
 
             if (stageId == _lastStageId && carId == _lastCarId && _isLoaded)
             {
@@ -61,7 +70,7 @@ namespace maorc287.RBRDataExtPlugin
             if (!File.Exists(dbPath))
             {
                 Logging.Current.Warn("[RBRDataExt]Data file NOT FOUND: " + dbPath);
-                _isLoaded = false;           
+                _isLoaded = false;
                 _noDataFound = true;
                 return;
             }
@@ -72,8 +81,8 @@ namespace maorc287.RBRDataExtPlugin
             if (DateTime.Now < _cacheExpiry && _splitsCache.ContainsKey(key))
             {
                 Logging.Current.Info("[RBRDataExt] Using cached splits");
-                _ghostSplitTimes = _splitsCache[key];
-                _isLoaded = _ghostSplitTimes != null && _ghostSplitTimes.Length > 0;
+                _bestSplitTimes = _splitsCache[key];
+                _isLoaded = _bestSplitTimes != null && _bestSplitTimes.Length > 0;
                 _lastStageId = stageId;
                 _lastCarId = carId;
                 return;
@@ -95,7 +104,7 @@ namespace maorc287.RBRDataExtPlugin
             {
                 try
                 {
-                    _ghostSplitTimes = LoadSplitsForUid(dbPath, bestUid);
+                    _bestSplitTimes = LoadSplitsForUid(dbPath, bestUid);
                     break;
                 }
                 catch (IOException ex)
@@ -114,7 +123,7 @@ namespace maorc287.RBRDataExtPlugin
                 }
             }
 
-            int splitCount = _ghostSplitTimes != null ? _ghostSplitTimes.Length : 0;
+            int splitCount = _bestSplitTimes != null ? _bestSplitTimes.Length : 0;
             Logging.Current.Info(string.Format(
                 "[RBRDataExt] Loaded {0} splits for best UID {1}",
                 splitCount, bestUid));
@@ -126,31 +135,31 @@ namespace maorc287.RBRDataExtPlugin
             if (_isLoaded)
             {
                 _uidCache[key] = bestUid;
-                _splitsCache[key] = _ghostSplitTimes;
+                _splitsCache[key] = _bestSplitTimes;
                 _cacheExpiry = DateTime.Now + CacheTtl;
             }
         }
         internal static float CalculateDelta(float travelledDistanceM, float currentTimeS)
         {
-            if (!_isLoaded || _ghostSplitTimes == null || _ghostSplitTimes.Length == 0)
+            if (!_isLoaded || _bestSplitTimes == null || _bestSplitTimes.Length == 0)
                 return 0f;
 
             int idx = (int)(travelledDistanceM / 10.0f);  // ← METERS, not time!
-            int count = _ghostSplitTimes.Length;
+            int count = _bestSplitTimes.Length;
 
             float ghostTime;
             if (idx < 0)
             {
-                ghostTime = _ghostSplitTimes[0];
+                ghostTime = _bestSplitTimes[0];
             }
             else if (idx >= count - 1)
             {
-                ghostTime = _ghostSplitTimes[count - 1];
+                ghostTime = _bestSplitTimes[count - 1];
             }
             else
             {
-                float t0 = _ghostSplitTimes[idx];
-                float t1 = _ghostSplitTimes[idx + 1];
+                float t0 = _bestSplitTimes[idx];
+                float t1 = _bestSplitTimes[idx + 1];
                 float segmentStartDist = idx * 10.0f;
                 float factor = (travelledDistanceM - segmentStartDist) / 10.0f;
                 ghostTime = t0 + (t1 - t0) * factor;
@@ -326,27 +335,6 @@ namespace maorc287.RBRDataExtPlugin
                 Logging.Current.Warn("[RBRDataExt] LoadSplits error: " + ex.Message);
                 return null;
             }
-        }
-
-
-
-        private static float[] BuildSplitArray(Dictionary<int, float> splits)
-        {
-            if (splits == null || splits.Count == 0)
-                return null;
-
-            int maxIndex = 0;
-            foreach (int key in splits.Keys)
-                if (key > maxIndex) maxIndex = key;
-
-            float[] arr = new float[maxIndex + 1];
-            foreach (KeyValuePair<int, float> kv in splits)
-            {
-                if (kv.Key >= 0 && kv.Key < arr.Length)
-                    arr[kv.Key] = kv.Value;
-            }
-
-            return arr;
         }
 
     }

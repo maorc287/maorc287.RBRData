@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics.Contracts;
 
 namespace maorc287.RBRDataExtPlugin
 {
@@ -51,14 +50,25 @@ namespace maorc287.RBRDataExtPlugin
             return DamageBasePtr != IntPtr.Zero;
         }
 
-        internal bool IsWheelPointerValid(int wheelOffset)
-        {
-            return CarMovBasePtr != IntPtr.Zero && CarMovBasePtr + wheelOffset != IntPtr.Zero;
-        }
-
         internal bool IsGeameModeBaseValid()
         {
             return GameModeBasePtr != IntPtr.Zero;
+        }
+
+        internal bool AreWheelPointersValid()
+        {
+            return CarMovBasePtr != IntPtr.Zero &&
+                   FLWheelPtr != IntPtr.Zero &&
+                   FRWheelPtr != IntPtr.Zero &&
+                   RLWheelPtr != IntPtr.Zero &&
+                   RRWheelPtr != IntPtr.Zero;
+        }
+
+        // Optional basic sanity check for any pointer
+        internal static bool IsLikelyValidPtr(IntPtr ptr)
+        {
+            long v = ptr.ToInt64();
+            return v >= 0x10000 && v < 0x7FFF_FFFF_FFFFL; // adjust upper bound if needed
         }
 
     }
@@ -202,6 +212,11 @@ namespace maorc287.RBRDataExtPlugin
             public const int GameModeOffset = 0x728;
             public const int TireModel = 0x007C8318; // Pointer to the tires.lsp file structure in memory
             public const int WheelContact = 0x00893038; // Pointer to the Wheel Surface Contact structure in memory
+
+            public const uint RSFStartLineDistance = 0x3986F8;
+            public const uint RSFCarId = 0x39859C;
+            public const uint GaugerSlip = 0x7ADFC;
+            public const uint RBRHUDTimeDelta = 0x8C8B44;
 
         }
     }

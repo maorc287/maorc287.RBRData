@@ -1,8 +1,7 @@
-﻿using maorc287.RBRDataExtPlugin;
-using System;
-using System.IO;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 
@@ -37,7 +36,7 @@ namespace maorc287.RBRDataExtPlugin
             return (uint)(processes.Length > 0 ? processes[0].Id : 0);
         }
 
-        internal static string RBRGamePath { get; private set; } = null; 
+        internal static string RBRGamePath { get; private set; } = null;
 
         internal static void UpdateRBRGamePath()
         {
@@ -69,28 +68,22 @@ namespace maorc287.RBRDataExtPlugin
         internal static T ReadValue<T>(IntPtr hProcess, IntPtr address) where T : struct
         {
             if (hProcess == IntPtr.Zero || address == IntPtr.Zero || address.ToInt64() < 0x1000)
-            {
-                return default(T); // Null/zero address = safe default
-            }
+                return default;
 
-            int size;
+            int size = typeof(T) == typeof(bool) || typeof(T) == typeof(byte) ? 1 :
+                       typeof(T) == typeof(short) ? sizeof(short) :
+                       typeof(T) == typeof(int) ? sizeof(int) :
+                       typeof(T) == typeof(uint) ? sizeof(uint) :
+                       typeof(T) == typeof(float) ? sizeof(float) :
+                       throw new NotSupportedException($"Type {typeof(T)} is not supported.");
 
-            if (typeof(T) == typeof(bool) || typeof(T) == typeof(byte))
-                size = 1;
-            else if (typeof(T) == typeof(short))
-                size = sizeof(short);
-            else if (typeof(T) == typeof(int))
-                size = sizeof(int);
-            else if (typeof(T) == typeof(uint))
-                size = sizeof(uint);
-            else if (typeof(T) == typeof(float))
-                size = sizeof(float);
-            else
-                throw new NotSupportedException($"Type {typeof(T)} is not supported.");
+            var buffer = new byte[size];
 
-            byte[] buffer = new byte[size];
             if (!ReadProcessMemory(hProcess, address, buffer, (uint)size, out _))
-                throw new InvalidOperationException($"Failed to read memory at 0x{address.ToInt64():X}");
+            {
+                // Optionally: very low-rate log here with a static stopwatch if you want diagnostics
+                return default;
+            }
 
             if (typeof(T) == typeof(float)) return (T)(object)BitConverter.ToSingle(buffer, 0);
             if (typeof(T) == typeof(int)) return (T)(object)BitConverter.ToInt32(buffer, 0);
@@ -100,6 +93,7 @@ namespace maorc287.RBRDataExtPlugin
 
             throw new NotSupportedException($"Type {typeof(T)} is not supported.");
         }
+
 
         internal static IntPtr ReadPointer(IntPtr hProcess, IntPtr address)
         {
@@ -170,6 +164,7 @@ namespace maorc287.RBRDataExtPlugin
                 _cachedProcessId = 0;
                 _cachedProcessName = null;
                 _cachedDllBases.Clear(); // Clear DLL cache
+                RBRGamePath = null;
                 TelemetryData.pointerCache.ClearAllCache(); // Clear cached pointers when handle is closed
             }
         }

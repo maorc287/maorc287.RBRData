@@ -167,7 +167,7 @@ namespace maorc287.RBRDataExtPlugin
 
         //Calculates the slip angle in radians from longitudinal and lateral speeds of wheel.
         internal static float GetSlipAngleRad(float groundSpeed, float wheelSpeed,
-            float longitudinalSpeed, float lateralSpeed,bool atan2Off = false, 
+            float longitudinalSpeed, float lateralSpeed, bool atan2Off = false,
             float correction = 0f)
         {
             const float epsSpeed = 1.5f;
@@ -181,7 +181,7 @@ namespace maorc287.RBRDataExtPlugin
 
             // simple approximation without Atan2 used in RBR calculations with small correction factor
             else
-                slipAngle = (lateralSpeed /longitudinalSpeed) - (correction * 0.1f) ;
+                slipAngle = (lateralSpeed / longitudinalSpeed) - (correction * 0.1f);
 
             // the slip angle in radians
             return slipAngle;

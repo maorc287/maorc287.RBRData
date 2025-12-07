@@ -130,53 +130,35 @@ namespace maorc287.RBRDataExtPlugin
                 _cacheExpiry = DateTime.Now + CacheTtl;
             }
         }
-        internal static float CalculateDelta(float currentDistanceM, float currentTimeS)
+        internal static float CalculateDelta(float travelledDistanceM, float currentTimeS)
         {
             if (!_isLoaded || _ghostSplitTimes == null || _ghostSplitTimes.Length == 0)
                 return 0f;
 
-            float delta = 0f;
-            float dist = currentDistanceM;
-
-            // RBRHUD: idx = floor(dist / 10)
-            int idx = (int)(dist / 10.0f);
+            int idx = (int)(travelledDistanceM / 10.0f);  // ← METERS, not time!
             int count = _ghostSplitTimes.Length;
 
-            if (count > 1)
+            float ghostTime;
+            if (idx < 0)
             {
-                if (idx < 0)
-                {
-                    // Before first split, just use first value
-                    float ghostTime0 = _ghostSplitTimes[0];
-                    delta = currentTimeS - ghostTime0;
-                }
-                else if (idx < count - 1)
-                {
-                    // Normal interpolation between idx and idx+1
-                    float t0 = _ghostSplitTimes[idx];
-                    float t1 = _ghostSplitTimes[idx + 1];
-
-                    float segmentStartDist = idx * 10.0f;
-                    float factor = (dist - segmentStartDist) / 10.0f;
-
-                    float ghostTime = t0 + (t1 - t0) * factor;
-                    delta = currentTimeS - ghostTime;
-                }
-                else
-                {
-                    // Past last split, clamp to last value
-                    float ghostTimeLast = _ghostSplitTimes[count - 1];
-                    delta = currentTimeS - ghostTimeLast;
-                }
+                ghostTime = _ghostSplitTimes[0];
+            }
+            else if (idx >= count - 1)
+            {
+                ghostTime = _ghostSplitTimes[count - 1];
             }
             else
             {
-                // Only one split, use it directly
-                delta = currentTimeS - _ghostSplitTimes[0];
+                float t0 = _ghostSplitTimes[idx];
+                float t1 = _ghostSplitTimes[idx + 1];
+                float segmentStartDist = idx * 10.0f;
+                float factor = (travelledDistanceM - segmentStartDist) / 10.0f;
+                ghostTime = t0 + (t1 - t0) * factor;
             }
 
-            return delta;
+            return currentTimeS - ghostTime;  // Time - interpolated ghost time
         }
+
 
 
         // --------------------------------------------------------------------

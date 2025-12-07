@@ -73,6 +73,7 @@ namespace maorc287.RBRDataExtPlugin
             public const int EngineStatus = 0x2B8;
             public const int BatteryStatus = 0x2B4;
             public const int Timer = 0x140; // Timer in seconds
+            public const int DistanceFromStartControl = 0x20; // Odometer in meters
         }
 
         public static class CarMov

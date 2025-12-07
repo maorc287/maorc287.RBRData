@@ -195,9 +195,12 @@ namespace maorc287.RBRDataExtPlugin
             rbrData.FRWheelPercentLongitudinal = percentKappaFR;
             rbrData.RLWheelPercentLongitudinal = percentKappaRL;
             rbrData.RRWheelPercentLongitudinal = percentKappaRR;
+
+            rbrData.TravelledDistance = ReadFloat(hProcess, pointerCache.CarInfoBasePtr + CarInfo.DistanceFromStartControl);
+           
         }
 
-        private static void ReadExternalPluginData(RBRTelemetryData rbrData)
+        private static void ReadOtherData( RBRTelemetryData rbrData)
         {
             if (!MemoryReader.TryReadFromDll("GaugerPlugin.dll", 0x7ADFC, out float GaugerPluginLockSlip))
                 GaugerPluginLockSlip = 0.0f;
@@ -210,6 +213,10 @@ namespace maorc287.RBRDataExtPlugin
             if (!MemoryReader.TryReadFromDll("Rallysimfans.hu.dll", 0x39859C, out int rsfCarId))
                 rsfCarId = 0;
             rbrData.CarId = rsfCarId;
+
+            if (!MemoryReader.TryReadFromDll("Rallysimfans.hu.dll", 0x3986F8, out int rsfStartLine))
+                rsfStartLine = 0;
+            rbrData.StartLine = rsfStartLine;
 
         }
 
@@ -255,7 +262,7 @@ namespace maorc287.RBRDataExtPlugin
                 ReadVelocityData(hProcess, rbrData);
                 ReadWheelData(hProcess, rbrData);
                 ReadSlipAndTireModel(hProcess, rbrData);
-                ReadExternalPluginData(rbrData);
+                ReadOtherData(rbrData);
             }
             catch (Exception ex)
             {
@@ -351,6 +358,8 @@ namespace maorc287.RBRDataExtPlugin
 
             public float RBRHUDDeltaTime { get; set; } = 0.0f;
 
+            public float TravelledDistance { get; set; } = 0.0f;
+            public float StartLine { get; set; } = 0.0f;
             public int CarId { get; set; } = 0;
         }
     }

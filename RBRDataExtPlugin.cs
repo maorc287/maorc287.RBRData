@@ -77,7 +77,10 @@ namespace maorc287.RBRDataExtPlugin
 
         }
 
-        public void End(PluginManager pluginManager) { }
+        public void End(PluginManager pluginManager)
+        { 
+            pointerCache.ClearAllCache();
+        }
 
         public System.Windows.Controls.Control GetWPFSettingsControl(PluginManager pluginManager) => null;
 
@@ -158,8 +161,8 @@ namespace maorc287.RBRDataExtPlugin
 
             if (raceTime > 0.005f && DeltaCalc.IsReady)
             {
-                DeltaCalc.SetStageLength(travelledDistance + distanceToFinish);
-                float deltaTime = DeltaCalc.CalculateDelta(travelledDistance, raceTime);
+                DeltaCalc.SetStageLength(rbrData.TravelledDistance - rbrData.StartLine + distanceToFinish);
+                float deltaTime = DeltaCalc.CalculateDelta(rbrData.TravelledDistance- rbrData.StartLine, raceTime);
                 float bestTime = DeltaCalc.BestTimeSeconds;
                 string fBestTime = (string)FormatTime(bestTime);
                 PluginManager.SetPropertyValue("RBR.Time.Delta", GetType(), deltaTime);

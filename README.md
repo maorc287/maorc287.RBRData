@@ -1,4 +1,4 @@
-# RBR Data Extension (RBRDataExt)
+# Richard Burns Rally Additional Data Reader (RBRDataExt)
 
 SimHub plugin that exposes additional Richard Burns Rally (RBR) telemetry data for use in dashboards, LEDs, and scripts.
 
@@ -48,5 +48,8 @@ SimHub plugin that exposes additional Richard Burns Rally (RBR) telemetry data f
 
 ## Installation (Quick)
 
-- Build the project and copy the generated `RBRDataExt.dll` to the SimHub folder.
+- Close SimHub if running.
+- Extract the contents of the latest release zip file to the SimHub installation folder or
+  build the project and copy the generated `RBRDataExt.dll` and `SqlNado.dll` to the SimHub installation folder.
+- Usually located at `C:\Program Files (x86)\SimHub\`.
 - Restart SimHub and enable the plugin in the Additional Plugins section.

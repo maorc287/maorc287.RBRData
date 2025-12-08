@@ -429,25 +429,24 @@ namespace maorc287.RBRDataExtPlugin
             switch (tireID)
             {
                 case 0:
-                    return "Dry Gravel";
-                case 1:
-                    return "Inters Gravel";
-                case 2:
-                    return "Wet Gravel";
-                case 3:
                     return "Dry Tarmac";
-                case 4:
+                case 1:
                     return "Inters Tarmac";
-                case 5:
+                case 2:
                     return "Wet Tarmac";
+                case 3:
+                    return "Dry Gravel";
+                case 4:
+                    return "Inters Gravel";
+                case 5:
+                    return "Wet Gravel";
                 case 6:
                     return "Snow";
                 default:
-                    return "No Tires";
+                    return "Unknown Tire";
             }
         }
 
-  
 
     }
 }

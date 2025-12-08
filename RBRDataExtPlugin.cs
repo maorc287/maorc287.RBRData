@@ -1,7 +1,5 @@
-﻿using SimHub;
-using SimHub.Plugins;
+﻿using SimHub.Plugins;
 using System.Windows.Media;
-using static maorc287.RBRDataExtPlugin.TelemetryCalc;
 using static maorc287.RBRDataExtPlugin.TelemetryData;
 
 

@@ -132,6 +132,7 @@ namespace maorc287.RBRDataExtPlugin
             public const int LateralSpeedOffset = 0x1268; // Offset to lateral speed (m/s)
             public const int CorrectionOffset = 0x12AC; // Offset to correction value?
 
+            // not sure about these values, seems related to slip
             public const int LockSlipMagnitude = 0x1330; // ?? Offset to wheel lock slip magnitude? (0.5 to 2.0 float value)
             public const int LateralGripValue = 0x12E0; // ?? Offset to wheel lateral grip value? (0.0 to 2.0 float value)
             public const int LongitudinalGripValue = 0x12E4; // ?? Offset to wheel longitudinal grip value? (0.0 to 2.0 float value)
@@ -179,6 +180,7 @@ namespace maorc287.RBRDataExtPlugin
 
             // 10 Parameters for Gearbox Damage all float values, 1.0f is the best condition,
             //0x48 is the first parameter, 0x6C is the last (4bytes interval)
+            //Mayebe correspond to the gearbox gears? DO NOT KNOW FOR SURE
             //I will write only the first offset, the rest can be calculated
             //Need to create a method to read all 10 parameters and calculate the GearboxDamage
             public const int GearboxDamage = 0x48;
@@ -205,14 +207,16 @@ namespace maorc287.RBRDataExtPlugin
 
         public static class Pointers
         {
-            public const int CarMov = 0x8EF660;  // Dynamic!
+            public const int CarMov = 0x8EF660;
             public const int GameMode = 0x7EAC48;
             public const int CarInfo = 0x165FC68;
 
             public const int GameModeOffset = 0x728;
+
             public const int TireModel = 0x007C8318; // Pointer to the tires.lsp file structure in memory
             public const int WheelContact = 0x00893038; // Pointer to the Wheel Surface Contact structure in memory
 
+            // These pointers could change after updates
             public const uint RSFStartLineDistance = 0x3986F8;
             public const uint RSFCarId = 0x39859C;
             public const uint GaugerSlip = 0x7ADFC;

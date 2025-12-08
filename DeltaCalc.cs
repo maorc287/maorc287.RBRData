@@ -45,7 +45,7 @@ namespace maorc287.RBRDataExtPlugin
         private static bool IsNewRunWindow(float countdownTime)
         {
             // Active just before start (RBR: ~3–5 seconds)
-            return countdownTime > 2.9f && countdownTime < 4.9f;
+            return countdownTime > 2.9f && countdownTime < 5.9f;
         }
 
         internal static void LoadDeltaData(int stageId, int carId, float countdownTime)

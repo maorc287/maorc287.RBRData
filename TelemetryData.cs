@@ -1,4 +1,5 @@
 ﻿using SimHub;
+using SimHub.Plugins;
 using System;
 using static maorc287.RBRDataExtPlugin.MemoryReader;
 using static maorc287.RBRDataExtPlugin.Offsets;
@@ -76,30 +77,52 @@ namespace maorc287.RBRDataExtPlugin
 
         private static void ReadDamageData(IntPtr hProcess, RBRTelemetryData rbrData)
         {
-            rbrData.BatteryWearLevel = BatteryHealthLevel(ReadFloat(hProcess, pointerCache.DamageBasePtr + Damage.BatteryWearPercent));
-            rbrData.OilPumpDamage = OilPumpDamageLevel(ReadFloat(hProcess, pointerCache.DamageBasePtr + Damage.OilPump));
-            rbrData.WaterPumpDamage = PartWorkingStatus(ReadInt(hProcess, pointerCache.DamageBasePtr + Damage.WaterPump));
-            rbrData.ElectricSystemDamage = PartWorkingStatus(ReadInt(hProcess, pointerCache.DamageBasePtr + Damage.ElectricSystem));
-            rbrData.BrakeCircuitDamage = PartWorkingStatus(ReadInt(hProcess, pointerCache.DamageBasePtr + Damage.BrakeCircuit));
-            rbrData.GearboxActuatorDamage = PartWorkingStatus(ReadInt(hProcess, pointerCache.DamageBasePtr + Damage.GearboxActuator));
-            rbrData.RadiatorDamage = RadiatorDamageLevel(ReadFloat(hProcess, pointerCache.DamageBasePtr + Damage.Radiator));
-            rbrData.IntercoolerDamage = IntercoolerDamageLevel(ReadFloat(hProcess, pointerCache.DamageBasePtr + Damage.Intercooler));
-            rbrData.StarterDamage = PartWorkingStatus(ReadInt(hProcess, pointerCache.DamageBasePtr + Damage.Starter));
-            rbrData.HydraulicsDamage = PartWorkingStatus(ReadInt(hProcess, pointerCache.DamageBasePtr + Damage.Hydraulics));
-            rbrData.OilCoolerDamage = InversePartWorkingStatus(ReadInt(hProcess, pointerCache.DamageBasePtr + Damage.OilCooler));
+            rbrData.BatteryWearLevel = BatteryHealthLevel(ReadFloat(hProcess,
+                pointerCache.DamageBasePtr + Damage.BatteryWearPercent));
+            rbrData.OilPumpDamage = OilPumpDamageLevel(ReadFloat(hProcess, 
+                pointerCache.DamageBasePtr + Damage.OilPump));
+            rbrData.WaterPumpDamage = PartWorkingStatus(ReadInt(hProcess, 
+                pointerCache.DamageBasePtr + Damage.WaterPump));
+            rbrData.ElectricSystemDamage = PartWorkingStatus(ReadInt(hProcess, 
+                pointerCache.DamageBasePtr + Damage.ElectricSystem));
+            rbrData.BrakeCircuitDamage = PartWorkingStatus(ReadInt(hProcess, 
+                pointerCache.DamageBasePtr + Damage.BrakeCircuit));
+            rbrData.GearboxActuatorDamage = PartWorkingStatus(ReadInt(hProcess, 
+                pointerCache.DamageBasePtr + Damage.GearboxActuator));
+            rbrData.RadiatorDamage = RadiatorDamageLevel(ReadFloat(hProcess, 
+                pointerCache.DamageBasePtr + Damage.Radiator));
+            rbrData.IntercoolerDamage = IntercoolerDamageLevel(ReadFloat(hProcess, 
+                pointerCache.DamageBasePtr + Damage.Intercooler));
+            rbrData.StarterDamage = PartWorkingStatus(ReadInt(hProcess, 
+                pointerCache.DamageBasePtr + Damage.Starter));
+            rbrData.HydraulicsDamage = PartWorkingStatus(ReadInt(hProcess, 
+                pointerCache.DamageBasePtr + Damage.Hydraulics));
+            rbrData.OilCoolerDamage = InversePartWorkingStatus(ReadInt(hProcess, 
+                pointerCache.DamageBasePtr + Damage.OilCooler));
         }
 
-        private static void ReadEngineAndFluids(IntPtr hProcess, RBRTelemetryData rbrData)
+        private static void ReadEngineAndFluids(IntPtr hProcess, RBRTelemetryData rbrData, PluginManager pluginManager)
         {
+            string pressureUnit = (string)pluginManager.GetPropertyValue("DataCorePlugin.GameData.OilPressureUnit");
+            string temperatureUnit = (string)pluginManager.GetPropertyValue("DataCorePlugin.GameData.TemperatureUnit");
+
             rbrData.IsEngineOn = ReadFloat(hProcess, pointerCache.CarInfoBasePtr + CarInfo.EngineStatus) == 1.0f;
 
-            rbrData.RadiatorCoolantTemperature = ReadFloat(hProcess, pointerCache.CarMovBasePtr + CarMov.RadiatorCoolantTemperature);
-            rbrData.OilTemperature = ReadFloat(hProcess, pointerCache.CarMovBasePtr + CarMov.OilTempKelvin);
+            float radiatorCoolantTemperature = ReadFloat(hProcess, 
+                pointerCache.CarMovBasePtr + CarMov.RadiatorCoolantTemperature);
+
+            float oilTemperature = ReadFloat(hProcess, pointerCache.CarMovBasePtr + CarMov.OilTempKelvin);
+
+            rbrData.RadiatorCoolantTemperature = FormatTemperature(radiatorCoolantTemperature, temperatureUnit);
+            rbrData.OilTemperature = FormatTemperature(oilTemperature, temperatureUnit);
+
             rbrData.OilTemperatureWarning = rbrData.OilTemperature > 140.0f + kelvin_Celcius;
 
+            //Pressure calculation
             float oilPRawBase = ReadFloat(hProcess, pointerCache.CarMovBasePtr + CarMov.OilPressureRawBase);
             float oilPRaw = ReadFloat(hProcess, pointerCache.CarMovBasePtr + CarMov.OilPressureRaw);
-            rbrData.OilPressure = ComputeOilPressure(oilPRawBase, oilPRaw);
+            float oilPressure = ComputeOilPressure(oilPRawBase, oilPRaw);
+            rbrData.OilPressure = FormatPressure(oilPressure, pressureUnit);
 
             rbrData.OilPressureWarning = !rbrData.IsEngineOn
                 || rbrData.OilPressure < 0.2
@@ -117,16 +140,29 @@ namespace maorc287.RBRDataExtPlugin
             rbrData.LowBatteryWarning = rbrData.BatteryStatus < 10.0f;
         }
 
-        private static void ReadVelocityData(IntPtr hProcess, RBRTelemetryData rbrData)
+        private static void ReadTimingData(IntPtr hProcess, RBRTelemetryData rbrData, PluginManager pluginManager)
         {
-            float velX = ReadFloat(hProcess, pointerCache.CarMovBasePtr + CarMov.VelocityX);
-            float velY = ReadFloat(hProcess, pointerCache.CarMovBasePtr + CarMov.VelocityY);
-            float velZ = ReadFloat(hProcess, pointerCache.CarMovBasePtr + CarMov.VelocityZ);
-            float fwdX = ReadFloat(hProcess, pointerCache.CarMovBasePtr + CarMov.ForwardX);
-            float fwdY = ReadFloat(hProcess, pointerCache.CarMovBasePtr + CarMov.ForwardY);
-            float fwdZ = ReadFloat(hProcess, pointerCache.CarMovBasePtr + CarMov.ForwardZ);
+            // Delta Time Calculation
+            if (rbrData.IsOnStage)
+            {
+                // Data Needed from SimHub Core Plugin For Delta calculation:
+             float countdownTime = (float)pluginManager.GetPropertyValue("DataCorePlugin.GameRawData.StageStartCountdown");
+             int trackId = (int)pluginManager.GetPropertyValue("DataCorePlugin.GameRawData.TrackId");
+             float travelledDistance = (float)pluginManager.GetPropertyValue("DataCorePlugin.GameRawData.DistanceFromStart");
+             float raceTime = (float)pluginManager.GetPropertyValue("DataCorePlugin.GameRawData.RaceTime");
 
-            rbrData.GroundSpeed = ComputeGroundSpeed(velX, velY, velZ, fwdX, fwdY, fwdZ);
+             DeltaCalc.LoadDeltaData(trackId, rbrData.CarId, countdownTime);
+
+                if (DeltaCalc.IsReady)
+                {
+                    float travelledM = travelledDistance - rbrData.StartLine;
+                    if (travelledM < 0f) travelledM = 0f;
+
+                    rbrData.DeltaTime = DeltaCalc.CalculateDelta(travelledM, raceTime);
+                    float bestTime = DeltaCalc.BestTimeSeconds;
+                    rbrData.BestTime = (string)FormatTime(bestTime);
+                }
+            }
         }
 
         private static void ReadWheelData(IntPtr hProcess, RBRTelemetryData rbrData)
@@ -220,13 +256,15 @@ namespace maorc287.RBRDataExtPlugin
         private static DateTime _lastTelemetryRead = DateTime.MinValue;
         private static readonly TimeSpan NoProcessInterval = TimeSpan.FromSeconds(5);   // Only when no RBR
         private static bool _rbrRunning = false;
+        private static bool _nameFixed = false;
 
         /// Reads telemetry data from the Richard Burns Rally process.
         /// this method accesses the game's memory to retrieve various telemetry values.
         /// as a result, it requires the game to be running and the process to be accessible.
         /// without the game running and on stage, it will return default values.
-        internal static RBRTelemetryData ReadTelemetryData()
+        internal static RBRTelemetryData ReadTelemetryData(PluginManager pluginManager)
         {
+
             // Skip only when no RBR (non-blocking rate limit)
             if (!_rbrRunning && DateTime.Now - _lastTelemetryRead < NoProcessInterval)
                 return LatestValidTelemetry;
@@ -253,12 +291,12 @@ namespace maorc287.RBRDataExtPlugin
                 }
 
                 ReadDamageData(hProcess, rbrData);
-                ReadEngineAndFluids(hProcess, rbrData);
+                ReadEngineAndFluids(hProcess, rbrData, pluginManager);
                 ReadBatteryData(hProcess, rbrData);
-                ReadVelocityData(hProcess, rbrData);
-                ReadWheelData(hProcess, rbrData);
                 ReadSlipAndTireModel(hProcess, rbrData);
                 ReadOtherData(rbrData);
+                ReadTimingData(hProcess, rbrData, pluginManager);
+
             }
             catch (Exception ex)
             {
@@ -274,6 +312,9 @@ namespace maorc287.RBRDataExtPlugin
         {
             public bool IsOnStage { get; set; } = false;
             public bool IsEngineOn { get; set; } = false;
+
+            public float DeltaTime { get; set; } = 0.0f;
+            public string BestTime { get; set; } = "0:00.000";
 
             public bool OilPressureWarning { get; set; } = false;
             public bool LowBatteryWarning { get; set; } = false;

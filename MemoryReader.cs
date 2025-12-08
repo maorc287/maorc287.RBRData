@@ -243,5 +243,6 @@ namespace maorc287.RBRDataExtPlugin
         internal static uint ReadUInt(IntPtr hProcess, IntPtr address) => ReadValue<uint>(hProcess, address);
         internal static short ReadShort(IntPtr hProcess, IntPtr address) => ReadValue<short>(hProcess, address);
         internal static byte ReadByte(IntPtr hProcess, IntPtr address) => ReadValue<byte>(hProcess, address);
+
     }
 }

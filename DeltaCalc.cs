@@ -15,6 +15,7 @@ namespace maorc287.RBRDataExtPlugin
         private static int _lastStageId = -1;
         private static int _lastCarId = -1;
         private static bool _noSplitFound = false;
+        private static bool _runResetDone;
 
         // C#6: use string as cache key "stage_car"
         private static readonly Dictionary<string, int> _uidCache =
@@ -31,19 +32,40 @@ namespace maorc287.RBRDataExtPlugin
         private static float _bestTime = 0f;
         internal static float BestTimeSeconds { get { return _bestTime; } }
 
+
+        private static void ResetRunState()
+        {
+            _noDataFound = false;
+            _noSplitFound = false;
+            _isLoaded = false;
+            _lastStageId = -1;
+            _lastCarId = -1;
+        }
+
+        private static bool IsNewRunWindow(float countdownTime)
+        {
+            // Active just before start (RBR: ~3–5 seconds)
+            return countdownTime > 2.9f && countdownTime < 4.9f;
+        }
+
         internal static void LoadDeltaData(int stageId, int carId, float countdownTime)
         {
             // CRITICAL: REFRESH PATH RIGHT BEFORE DB ACCESS
             MemoryReader.UpdateRBRGamePath();
 
-            // NEW RUN: allow scanning again
-            if (countdownTime > 2.9f && countdownTime < 4.9f)
+            // NEW RUN: reset ONCE when countdown is in the target window
+            if (IsNewRunWindow(countdownTime))
             {
-                _noDataFound = false;
-                _noSplitFound = false;
-                _isLoaded = false;        // ← recommended: reset loaded state for new run
-                _lastStageId = -1;        // ← optional but helps force reload
-                _lastCarId = -1;
+                if (!_runResetDone)
+                {
+                    ResetRunState();
+                    _runResetDone = true; // Only once per window
+                }
+            }
+            else
+            {
+                // Outside the window → next run can reset again
+                _runResetDone = false;
             }
 
             if (_noSplitFound) return;    // no UID for this stage/car this run

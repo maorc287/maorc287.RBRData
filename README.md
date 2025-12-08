@@ -46,10 +46,15 @@ SimHub plugin that exposes additional Richard Burns Rally (RBR) telemetry data f
   - `RBR.GaugerPlugin.LockSlip`
   - `RBR.RBRHUD.DeltaTime`
 
-## Installation (Quick)
+## Installation
 
 - Close SimHub if running.
-- Extract the contents of the latest release zip file to the SimHub installation folder or
-  build the project and copy the generated `RBRDataExt.dll` and `SqlNado.dll` to the SimHub installation folder.
+- Extract the contents of the latest release zip file to the SimHub installation folder or build the project and copy the generated `RBRDataExt.dll` and `SqlNado.dll` to the SimHub installation folder.
 - Usually located at `C:\Program Files (x86)\SimHub\`.
 - Restart SimHub and enable the plugin in the Additional Plugins section.
+
+## Usage of RBRHUD Delta Time Property
+
+- To use the RBRHUD Delta time property (`RBR.RBRHUD.DeltaTime`) the overlay elements must be present in the active RBRHUD overlay.
+- To activate those elements copy the `delta.ini` file from the zip file to the `RBRHUD\Overlays\` folder in your RBR Plugins directory and select the overlay in the in game RBRHUD menu (`F4`).
+- If you already have an Active overlay without delta times you can merge the contents of `delta.ini` into your existing overlay ini file.

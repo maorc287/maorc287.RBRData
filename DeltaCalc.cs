@@ -140,9 +140,6 @@ namespace maorc287.RBRDataExtPlugin
             }
 
             int splitCount = _bestSplitTimes != null ? _bestSplitTimes.Length : 0;
-            Logging.Current.Info(string.Format(
-                "[RBRDataExt] Loaded {0} splits for best UID {1}",
-                splitCount, bestUid));
 
             _isLoaded = splitCount > 0;
             _lastStageId = stageId;
@@ -278,7 +275,7 @@ namespace maorc287.RBRDataExtPlugin
 
                         _bestTime = bestT;
 
-                        Logging.Current.Debug(string.Format(
+                        Logging.Current.Info(string.Format(
                             "[RBRDataExt] Best UID (group fallback): {0} (time: {1:F3}s) for stage_id {2}, car_id {3}, group '{4}'",
                             uid, bestT, dbStage, dbCar, dbGrp));
 

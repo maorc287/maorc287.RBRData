@@ -102,8 +102,8 @@ namespace maorc287.RBRDataExtPlugin
             rbrData.OilPressure = ComputeOilPressure(oilPRawBase, oilPRaw);
 
             rbrData.OilPressureWarning = !rbrData.IsEngineOn
-                | rbrData.OilPressure < 0.2
-                | rbrData.OilPumpDamage >= 2;
+                || rbrData.OilPressure < 0.2
+                || rbrData.OilPumpDamage >= 2;
 
             float waterTemperature = ReadFloat(hProcess, pointerCache.CarInfoBasePtr + CarInfo.WaterTemperatureCelsius);
             rbrData.WaterTemperatureWarning = waterTemperature > 120.0f;

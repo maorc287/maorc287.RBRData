@@ -14,42 +14,40 @@ namespace maorc287.RBRDataExtPlugin
         private static bool _noDataFound = false;
         private static int _lastStageId = -1;
         private static int _lastCarId = -1;
-        private static DateTime _lastLoadAttempt = DateTime.MinValue;
-        private static readonly TimeSpan LoadCooldown = TimeSpan.FromSeconds(2);
+        private static bool _noSplitFound = false;
 
         // C#6: use string as cache key "stage_car"
         private static readonly Dictionary<string, int> _uidCache =
             new Dictionary<string, int>();
         private static readonly Dictionary<string, float[]> _splitsCache =
             new Dictionary<string, float[]>();
-        private static readonly TimeSpan CacheTtl = TimeSpan.FromMinutes(10);
-        private static DateTime _cacheExpiry = DateTime.MinValue;
-
-        private static float _stageLength = 0f;
 
         internal static bool IsReady { get { return _isLoaded; } }
         internal static bool HasData { get { return !_noDataFound; } }
+        internal static bool HasSplit { get { return !_noSplitFound; } }
         internal static int SplitCount { get { return _bestSplitTimes != null ? _bestSplitTimes.Length : 0; } }
 
 
         private static float _bestTime = 0f;
         internal static float BestTimeSeconds { get { return _bestTime; } }
 
-        internal static void SetStageLength(float stageLengthMeters)
-        {
-            _stageLength = stageLengthMeters;
-        }
-        internal static void LoadDeltaData(int stageId, int carId)
+        internal static void LoadDeltaData(int stageId, int carId, float countdownTime)
         {
             // CRITICAL: REFRESH PATH RIGHT BEFORE DB ACCESS
             MemoryReader.UpdateRBRGamePath();
 
-            if (DateTime.Now - _lastLoadAttempt < LoadCooldown)
-                return;
-            _lastLoadAttempt = DateTime.Now;
+            // NEW RUN: allow scanning again
+            if (countdownTime > 2.9f && countdownTime < 4.9f)
+            {
+                _noDataFound = false;
+                _noSplitFound = false;
+                _isLoaded = false;        // ← recommended: reset loaded state for new run
+                _lastStageId = -1;        // ← optional but helps force reload
+                _lastCarId = -1;
+            }
 
-            Logging.Current.Debug(string.Format(
-                "[RBRDataExt] LoadDeltaData - Stage: {0}, Car: {1}", stageId, carId));
+            if (_noSplitFound) return;    // no UID for this stage/car this run
+            if (_noDataFound) return;     // DB missing or persistent error
 
             if (stageId <= 0)
             {
@@ -71,22 +69,11 @@ namespace maorc287.RBRDataExtPlugin
             {
                 Logging.Current.Warn("[RBRDataExt]Data file NOT FOUND: " + dbPath);
                 _isLoaded = false;
-                _noDataFound = true;
+                _noDataFound = true;      // global: don’t try again until countdownTime reset
                 return;
             }
 
             string key = stageId + "_" + carId;
-
-            // Cache: if still valid, reuse splits
-            if (DateTime.Now < _cacheExpiry && _splitsCache.ContainsKey(key))
-            {
-                Logging.Current.Info("[RBRDataExt] Using cached splits");
-                _bestSplitTimes = _splitsCache[key];
-                _isLoaded = _bestSplitTimes != null && _bestSplitTimes.Length > 0;
-                _lastStageId = stageId;
-                _lastCarId = carId;
-                return;
-            }
 
             // Find best UID in records table
             int bestUid = FindBestUid(dbPath, stageId, carId);
@@ -95,7 +82,10 @@ namespace maorc287.RBRDataExtPlugin
                 Logging.Current.Warn(string.Format(
                     "[RBRDataExt] No matching UID found for stage {0}, car {1}",
                     stageId, carId));
-                _isLoaded = false;
+                _isLoaded = false;        // keep false
+                _noSplitFound = true;     // only this stage/car this run
+                _lastStageId = stageId;   // optional but consistent
+                _lastCarId = carId;
                 return;
             }
 
@@ -118,7 +108,11 @@ namespace maorc287.RBRDataExtPlugin
                     }
                     else
                     {
-                        throw;
+                        // Some other IO error: mark as no data for this session
+                        Logging.Current.Warn("[RBRDataExt] Error loading splits: " + ex.Message);
+                        _isLoaded = false;
+                        _noDataFound = true;   // global “don’t try again” until restart
+                        return;
                     }
                 }
             }
@@ -136,9 +130,10 @@ namespace maorc287.RBRDataExtPlugin
             {
                 _uidCache[key] = bestUid;
                 _splitsCache[key] = _bestSplitTimes;
-                _cacheExpiry = DateTime.Now + CacheTtl;
             }
         }
+
+
         internal static float CalculateDelta(float travelledDistanceM, float currentTimeS)
         {
             if (!_isLoaded || _bestSplitTimes == null || _bestSplitTimes.Length == 0)

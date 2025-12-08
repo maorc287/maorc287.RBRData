@@ -149,16 +149,16 @@ namespace maorc287.RBRDataExtPlugin
             PluginManager.SetPropertyValue("RBR.RBRHUD.DeltaTime", GetType(), rbrData.RBRHUDDeltaTime);
 
             // Delta Time Calculation
-            if (rbrData.IsOnStage && DeltaCalc.HasData)
+            if (rbrData.IsOnStage)
             {
                 // Data Needed from SimHub Core Plugin For Delta calculation:
                 int trackId = (int)PluginManager.GetPropertyValue("DataCorePlugin.GameRawData.TrackId");
                 float travelledDistance = (float)PluginManager.GetPropertyValue("DataCorePlugin.GameRawData.DistanceFromStart");
                 float distanceToFinish = (float)PluginManager.GetPropertyValue("DataCorePlugin.GameRawData.DistanceToFinish");
                 float raceTime = (float)PluginManager.GetPropertyValue("DataCorePlugin.GameRawData.RaceTime");
+                float countdownTime = (float)PluginManager.GetPropertyValue("DataCorePlugin.GameRawData.StageStartCountdown");
 
-                if (raceTime > 0.005f)
-                    DeltaCalc.LoadDeltaData(trackId, rbrData.CarId);
+                DeltaCalc.LoadDeltaData(trackId, rbrData.CarId, countdownTime);
 
                 if (DeltaCalc.IsReady)
                 {

@@ -85,11 +85,11 @@ namespace maorc287.RBRDataExtPlugin
 
             string dbPath = Path.Combine(MemoryReader.RBRGamePath ?? "",
                                          "Plugins", "RBRHUD", "delta_times.db");
-            Logging.Current.Info("[RBRDataExt] RBRHUD Delta Times DB Path: " + dbPath);
+            Logging.Current.Debug("[RBRDataExt] RBRHUD Delta Times DB Path: " + dbPath);
 
             if (!File.Exists(dbPath))
             {
-                Logging.Current.Warn("[RBRDataExt]Data file NOT FOUND: " + dbPath);
+                Logging.Current.Info("[RBRDataExt]Data file NOT FOUND: " + dbPath);
                 _isLoaded = false;
                 _noDataFound = true;      // global: don’t try again until countdownTime reset
                 return;
@@ -101,7 +101,7 @@ namespace maorc287.RBRDataExtPlugin
             int bestUid = FindBestUid(dbPath, stageId, carId);
             if (bestUid == 0)
             {
-                Logging.Current.Warn(string.Format(
+                Logging.Current.Debug(string.Format(
                     "[RBRDataExt] No matching UID found for stage {0}, car {1}",
                     stageId, carId));
                 _isLoaded = false;        // keep false
@@ -243,7 +243,7 @@ namespace maorc287.RBRDataExtPlugin
 
                     if (groupObj == null || groupObj == DBNull.Value)
                     {
-                        Logging.Current.Info(string.Format(
+                        Logging.Current.Debug(string.Format(
                             "[RBRDataExt] No car_group found for car_id={0}, cannot use group fallback", carId));
                         return 0;
                     }
@@ -278,14 +278,14 @@ namespace maorc287.RBRDataExtPlugin
 
                         _bestTime = bestT;
 
-                        Logging.Current.Info(string.Format(
+                        Logging.Current.Debug(string.Format(
                             "[RBRDataExt] Best UID (group fallback): {0} (time: {1:F3}s) for stage_id {2}, car_id {3}, group '{4}'",
                             uid, bestT, dbStage, dbCar, dbGrp));
 
                         return uid;
                     }
 
-                    Logging.Current.Info(string.Format(
+                    Logging.Current.Debug(string.Format(
                         "[RBRDataExt] No row found for stage_id={0} in car_group='{1}'", stageId, carGroup));
                 }
             }

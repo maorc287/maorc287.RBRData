@@ -58,7 +58,7 @@ namespace maorc287.RBRDataExtPlugin
         {
             if (!pointerCache.IsGeameModeBaseValid() || pointerCache.GameModeBasePtr == IntPtr.Zero)
             {
-                Logging.Current.Warn("[RBRDataExt] GameMode pointer invalid");
+                Logging.Current.Debug("[RBRDataExt] GameMode pointer invalid");
                 return false;
             }
 
@@ -262,7 +262,7 @@ namespace maorc287.RBRDataExtPlugin
             }
             catch (Exception ex)
             {
-                SimHub.Logging.Current.Warn($"[RBRDataExt] Failed to read memory: {ex.Message}");
+                SimHub.Logging.Current.Debug($"[RBRDataExt] Failed to read memory: {ex.Message}");
             }
 
             LatestValidTelemetry = rbrData;

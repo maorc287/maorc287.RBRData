@@ -24,6 +24,8 @@ namespace maorc287.RBRDataExtPlugin
             pluginManager.AddProperty("RBR.Game.OnStage", GetType(), 0, "");
 
             pluginManager.AddProperty("RBR.Data.EngineOn", GetType(), 0, "");
+            pluginManager.AddProperty("RBR.Data.TireType", GetType(), 0, "");
+
 
             pluginManager.AddProperty("RBR.Data.OilPressure", GetType(), 0, "");
             pluginManager.AddProperty("RBR.Data.RadiatorCoolantTemeperature", GetType(), 0, "");
@@ -91,6 +93,7 @@ namespace maorc287.RBRDataExtPlugin
             pluginManager.SetPropertyValue("RBR.Game.OnStage", GetType(), rbrData.IsOnStage);
 
             pluginManager.SetPropertyValue("RBR.Data.EngineOn", GetType(), rbrData.IsEngineOn);
+            pluginManager.SetPropertyValue("RBR.Data.TireType", GetType(), rbrData.CurrentTireType);
 
             pluginManager.SetPropertyValue("RBR.Data.OilPressure", GetType(),
                rbrData.OilPressure);

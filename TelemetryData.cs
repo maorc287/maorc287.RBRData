@@ -1,6 +1,9 @@
 ﻿using SimHub;
 using SimHub.Plugins;
+using SimHub.Plugins.UI;
 using System;
+using System.Diagnostics;
+using static maorc287.RBRDataExtPlugin.DeltaCalc;
 using static maorc287.RBRDataExtPlugin.MemoryReader;
 using static maorc287.RBRDataExtPlugin.Offsets;
 using static maorc287.RBRDataExtPlugin.TelemetryCalc;
@@ -151,7 +154,7 @@ namespace maorc287.RBRDataExtPlugin
             rbrData.LowBatteryWarning = rbrData.BatteryStatus < 10.0f;
         }
 
-        private static void ReadTimingData(RBRTelemetryData rbrData, PluginManager pluginManager)
+        private static void ReadTimingData(IntPtr hProcess, RBRTelemetryData rbrData, PluginManager pluginManager)
         {
             // Delta Time Calculation
             if (rbrData.IsOnStage)
@@ -162,15 +165,22 @@ namespace maorc287.RBRDataExtPlugin
                 float travelledDistance = (float)pluginManager.GetPropertyValue(DistanceFromStartProperty);
                 float raceTime = (float)pluginManager.GetPropertyValue(RaceTimeProperty);
 
-                DeltaCalc.LoadDeltaData(trackId, rbrData.CarId, countdownTime);
+                if (IsNewRunWindow(countdownTime))
+                {
+                    int tireType = ReadInt(hProcess, pointerCache.TireModelBasePtr + TireModel.TireType);
+                    rbrData.CurrentTireType = GetTireType(tireType);
+                }
 
-                if (DeltaCalc.IsReady)
+
+                LoadDeltaData(trackId, rbrData.CarId, countdownTime);
+
+                if (IsReady)
                 {
                     float travelledM = travelledDistance - rbrData.StartLine;
                     if (travelledM < 0f) travelledM = 0f;
 
-                    rbrData.DeltaTime = DeltaCalc.CalculateDelta(travelledM, raceTime);
-                    float bestTime = DeltaCalc.BestTimeSeconds;
+                    rbrData.DeltaTime = CalculateDelta(travelledM, raceTime);
+                    float bestTime = BestTimeSeconds;
                     rbrData.BestTime = (string)FormatTime(bestTime);
                 }
             }
@@ -196,10 +206,6 @@ namespace maorc287.RBRDataExtPlugin
 
             rbrData.FLWheelSteeringAngle = ReadFloat(hProcess, pointerCache.FLWheelPtr + Wheel.SteeringAngle);
             rbrData.FRWheelSteeringAngle = ReadFloat(hProcess, pointerCache.FRWheelPtr + Wheel.SteeringAngle);
-
-            int tireType = ReadInt(hProcess, pointerCache.TireModelBasePtr + TireModel.TireType);
-
-            rbrData.CurrentTireType = GetTireType(tireType);
 
         }
 
@@ -281,7 +287,7 @@ namespace maorc287.RBRDataExtPlugin
 
             // Skip only when no RBR (non-blocking rate limit)
             if (!_rbrRunning && DateTime.Now - _lastTelemetryRead < NoProcessInterval)
-                return LatestValidTelemetry;
+                return new RBRTelemetryData();
 
             _lastTelemetryRead = DateTime.Now;
 
@@ -289,8 +295,8 @@ namespace maorc287.RBRDataExtPlugin
             IntPtr hProcess = GetProcess();
             if (hProcess == IntPtr.Zero)
             {
-                _rbrRunning = false; // Extend interval only when no RBR
-                return rbrData;
+                _rbrRunning = false; // Extend interval only when no RBR 
+                return new RBRTelemetryData();
             }
 
             _rbrRunning = true; // Full speed when RBR running - no interval
@@ -315,6 +321,7 @@ namespace maorc287.RBRDataExtPlugin
             catch (Exception ex)
             {
                 SimHub.Logging.Current.Debug($"[RBRDataExt] Failed to read memory: {ex.Message}");
+                return LatestValidTelemetry;
             }
 
             LatestValidTelemetry = rbrData;
@@ -327,8 +334,6 @@ namespace maorc287.RBRDataExtPlugin
             public bool IsOnStage { get; set; } = false;
             public bool IsEngineOn { get; set; } = false;
 
-            public float DeltaTime { get; set; } = 0.0f;
-            public string BestTime { get; set; } = "0:00.000";
 
             public bool OilPressureWarning { get; set; } = false;
             public bool LowBatteryWarning { get; set; } = false;
@@ -343,7 +348,6 @@ namespace maorc287.RBRDataExtPlugin
             public float GroundSpeed { get; set; } = 0.0f;
             public float WheelLock { get; set; } = 0.0f;
             public float WheelSlip { get; set; } = 0.0f;
-            public float GaugerSlip { get; set; } = 0.0f;
             public float FLWheelSpeed { get; set; } = 0.0f;
             public float FRWheelSpeed { get; set; } = 0.0f;
             public float RLWheelSpeed { get; set; } = 0.0f;
@@ -408,7 +412,12 @@ namespace maorc287.RBRDataExtPlugin
             public uint GearboxDamage { get; set; } = 1;
             public uint OilCoolerDamage { get; set; } = 1;
 
+            //External data not in Vanilla RBR Memory
+            public float GaugerSlip { get; set; } = 0.0f;
             public float RBRHUDDeltaTime { get; set; } = 0.0f;
+
+            public float DeltaTime { get; set; } = 0.0f;
+            public string BestTime { get; set; } = "0:00.000";
 
             public float TravelledDistance { get; set; } = 0.0f;
             public float StartLine { get; set; } = 0.0f;

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Data;
 
 
 namespace maorc287.RBRDataExtPlugin
@@ -423,6 +424,13 @@ namespace maorc287.RBRDataExtPlugin
         {
             return value == 0 ? 1u : 5u;
         }
+
+        internal static bool IsNewRunWindow(float countdownTime)
+        {
+            // Active just before start (RBR: ~3–5 seconds)
+            return countdownTime > 3.9f && countdownTime < 6.9f;
+        }
+
 
         internal static string GetTireType(int tireID)
         {

@@ -4,6 +4,9 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using static maorc287.RBRDataExtPlugin.TelemetryCalc;
+using static maorc287.RBRDataExtPlugin.MemoryReader;
+using static SimHub.Logging;
 
 namespace maorc287.RBRDataExtPlugin
 {
@@ -42,16 +45,11 @@ namespace maorc287.RBRDataExtPlugin
             _lastCarId = -1;
         }
 
-        private static bool IsNewRunWindow(float countdownTime)
-        {
-            // Active just before start (RBR: ~3–5 seconds)
-            return countdownTime > 2.9f && countdownTime < 5.9f;
-        }
 
         internal static void LoadDeltaData(int stageId, int carId, float countdownTime)
         {
             // CRITICAL: REFRESH PATH RIGHT BEFORE DB ACCESS
-            MemoryReader.UpdateRBRGamePath();
+            UpdateRBRGamePath();
 
             // NEW RUN: reset ONCE when countdown is in the target window
             if (IsNewRunWindow(countdownTime))
@@ -73,23 +71,23 @@ namespace maorc287.RBRDataExtPlugin
 
             if (stageId <= 0)
             {
-                Logging.Current.Debug("[RBRDataExt] Invalid stage ID");
+                Current.Debug("[RBRDataExt] Invalid stage ID");
                 return;
             }
 
             if (stageId == _lastStageId && carId == _lastCarId && _isLoaded)
             {
-                Logging.Current.Debug("[RBRDataExt] Already loaded, skipping");
+                Current.Debug("[RBRDataExt] Already loaded, skipping");
                 return;
             }
 
-            string dbPath = Path.Combine(MemoryReader.RBRGamePath ?? "",
+            string dbPath = Path.Combine(RBRGamePath ?? "",
                                          "Plugins", "RBRHUD", "delta_times.db");
-            Logging.Current.Debug("[RBRDataExt] RBRHUD Delta Times DB Path: " + dbPath);
+            Current.Debug("[RBRDataExt] RBRHUD Delta Times DB Path: " + dbPath);
 
             if (!File.Exists(dbPath))
             {
-                Logging.Current.Info("[RBRDataExt]Data file NOT FOUND: " + dbPath);
+                Current.Info("[RBRDataExt]Data file NOT FOUND: " + dbPath);
                 _isLoaded = false;
                 _noDataFound = true;      // global: don’t try again until countdownTime reset
                 return;
@@ -101,7 +99,7 @@ namespace maorc287.RBRDataExtPlugin
             int bestUid = FindBestUid(dbPath, stageId, carId);
             if (bestUid == 0)
             {
-                Logging.Current.Debug(string.Format(
+                Current.Debug(string.Format(
                     "[RBRDataExt] No matching UID found for stage {0}, car {1}",
                     stageId, carId));
                 _isLoaded = false;        // keep false
@@ -123,7 +121,7 @@ namespace maorc287.RBRDataExtPlugin
                 {
                     if (ex.HResult == -2147024864) // sharing violation
                     {
-                        Logging.Current.Warn(string.Format(
+                        Current.Warn(string.Format(
                             "[RBRDataExt] Splits load locked (attempt {0}/3)", attempt));
                         if (attempt < 3)
                             System.Threading.Thread.Sleep(250);
@@ -131,7 +129,7 @@ namespace maorc287.RBRDataExtPlugin
                     else
                     {
                         // Some other IO error: mark as no data for this session
-                        Logging.Current.Warn("[RBRDataExt] Error loading splits: " + ex.Message);
+                        Current.Warn("[RBRDataExt] Error loading splits: " + ex.Message);
                         _isLoaded = false;
                         _noDataFound = true;   // global “don’t try again” until restart
                         return;
@@ -218,7 +216,7 @@ namespace maorc287.RBRDataExtPlugin
 
                         _bestTime = bestT;
 
-                        Logging.Current.Info(string.Format(
+                        Current.Info(string.Format(
                             "[RBRDataExt] Best UID (exact): {0} (time: {1:F3}s) for stage_id {2}, car_id {3}",
                             uid, bestT, dbStage, dbCar));
 
@@ -240,14 +238,14 @@ namespace maorc287.RBRDataExtPlugin
 
                     if (groupObj == null || groupObj == DBNull.Value)
                     {
-                        Logging.Current.Debug(string.Format(
+                        Current.Debug(string.Format(
                             "[RBRDataExt] No car_group found for car_id={0}, cannot use group fallback", carId));
                         return 0;
                     }
 
                     string carGroup = Convert.ToString(groupObj, CultureInfo.InvariantCulture);
 
-                    Logging.Current.Info(string.Format(
+                    Current.Info(string.Format(
                         "[RBRDataExt] Using car_group '{0}' as fallback for car_id={1}", carGroup, carId));
 
                     // 3) Fallback: best time on this stage for same group
@@ -275,20 +273,20 @@ namespace maorc287.RBRDataExtPlugin
 
                         _bestTime = bestT;
 
-                        Logging.Current.Info(string.Format(
+                        Current.Info(string.Format(
                             "[RBRDataExt] Best UID (group fallback): {0} (time: {1:F3}s) for stage_id {2}, car_id {3}, group '{4}'",
                             uid, bestT, dbStage, dbCar, dbGrp));
 
                         return uid;
                     }
 
-                    Logging.Current.Debug(string.Format(
+                    Current.Debug(string.Format(
                         "[RBRDataExt] No row found for stage_id={0} in car_group='{1}'", stageId, carGroup));
                 }
             }
             catch (Exception ex)
             {
-                Logging.Current.Warn("[RBRDataExt] FindBestUid error: " + ex.Message);
+                Current.Warn("[RBRDataExt] FindBestUid error: " + ex.Message);
             }
 
             return 0;
@@ -337,7 +335,7 @@ namespace maorc287.RBRDataExtPlugin
                         if (kv.Key >= 0 && kv.Key < arr.Length)
                             arr[kv.Key] = kv.Value;
 
-                    Logging.Current.Info(string.Format(
+                    Current.Info(string.Format(
                         "[RBRDataExt] Loaded {0} splits (0..{1}) for uid={2}",
                         splits.Count, maxIndex, uid));
 
@@ -346,7 +344,7 @@ namespace maorc287.RBRDataExtPlugin
             }
             catch (Exception ex)
             {
-                Logging.Current.Warn("[RBRDataExt] LoadSplits error: " + ex.Message);
+                Current.Warn("[RBRDataExt] LoadSplits error: " + ex.Message);
                 return null;
             }
         }

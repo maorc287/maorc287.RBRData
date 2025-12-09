@@ -170,7 +170,8 @@ namespace maorc287.RBRDataExtPlugin
                     int tireType = ReadInt(hProcess, pointerCache.TireModelBasePtr + TireModel.TireType);
                     rbrData.CurrentTireType = GetTireType(tireType);
                 }
-
+                else
+                    rbrData.CurrentTireType = LatestValidTelemetry.CurrentTireType;
 
                 LoadDeltaData(trackId, rbrData.CarId, countdownTime);
 

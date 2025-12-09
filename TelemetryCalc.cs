@@ -439,19 +439,19 @@ namespace maorc287.RBRDataExtPlugin
                 case 0:
                     return "Dry Tarmac";
                 case 1:
-                    return "Inters Tarmac";
+                    return "Intermediates Tarmac";
                 case 2:
                     return "Wet Tarmac";
                 case 3:
                     return "Dry Gravel";
                 case 4:
-                    return "Inters Gravel";
+                    return "Intermediates Gravel";
                 case 5:
                     return "Wet Gravel";
                 case 6:
                     return "Snow";
                 default:
-                    return "Unknown Tire";
+                    return "Unknown";
             }
         }
 

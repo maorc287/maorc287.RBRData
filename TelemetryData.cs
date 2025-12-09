@@ -315,7 +315,7 @@ namespace maorc287.RBRDataExtPlugin
                 ReadBatteryData(hProcess, rbrData);
                 ReadSlipAndTireModel(hProcess, rbrData);
                 ReadOtherData(rbrData);
-                ReadTimingData(rbrData, pluginManager);
+                ReadTimingData(hProcess, rbrData, pluginManager);
 
             }
             catch (Exception ex)

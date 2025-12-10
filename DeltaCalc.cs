@@ -13,12 +13,14 @@ namespace maorc287.RBRDataExtPlugin
     public class DeltaCalc
     {
         private static float[] _bestSplitTimes;
-        private static bool _isLoaded;
+        private static bool _isLoaded = false;
         private static bool _noDataFound = false;
-        private static int _lastStageId = -1;
-        private static int _lastCarId = -1;
+        internal static int _lastStageId = -1;
+        internal static int _lastCarId = -1;
         private static bool _noSplitFound = false;
-        private static bool _runResetDone;
+
+
+
 
         // C#6: use string as cache key "stage_car"
         private static readonly Dictionary<string, int> _uidCache =
@@ -29,6 +31,7 @@ namespace maorc287.RBRDataExtPlugin
         internal static bool IsReady { get { return _isLoaded; } }
         internal static bool HasData { get { return !_noDataFound; } }
         internal static bool HasSplit { get { return !_noSplitFound; } }
+
         internal static int SplitCount { get { return _bestSplitTimes != null ? _bestSplitTimes.Length : 0; } }
 
 
@@ -36,35 +39,10 @@ namespace maorc287.RBRDataExtPlugin
         internal static float BestTimeSeconds { get { return _bestTime; } }
 
 
-        private static void ResetRunState()
-        {
-            _noDataFound = false;
-            _noSplitFound = false;
-            _isLoaded = false;
-            _lastStageId = -1;
-            _lastCarId = -1;
-        }
-
-
-        internal static void LoadDeltaData(int stageId, int carId, float countdownTime)
+        internal static void LoadDeltaData(int stageId, int carId)
         {
             // CRITICAL: REFRESH PATH RIGHT BEFORE DB ACCESS
             UpdateRBRGamePath();
-
-            // NEW RUN: reset ONCE when countdown is in the target window
-            if (IsNewRunWindow(countdownTime))
-            {
-                if (!_runResetDone)
-                {
-                    ResetRunState();
-                    _runResetDone = true; // Only once per window
-                }
-            }
-            else
-            {
-                // Outside the window → next run can reset again
-                _runResetDone = false;
-            }
 
             if (_noSplitFound) return;    // no UID for this stage/car this run
             if (_noDataFound) return;     // DB missing or persistent error
@@ -89,7 +67,7 @@ namespace maorc287.RBRDataExtPlugin
             {
                 Current.Info("[RBRDataExt]Data file NOT FOUND: " + dbPath);
                 _isLoaded = false;
-                _noDataFound = true;      // global: don’t try again until countdownTime reset
+                _noDataFound = true;      // global: don’t try again 
                 return;
             }
 
@@ -180,11 +158,6 @@ namespace maorc287.RBRDataExtPlugin
             return currentTimeS - ghostTime;  // Time - interpolated ghost time
         }
 
-
-
-        // --------------------------------------------------------------------
-        // Find best UID for given stageId and carId
-        // --------------------------------------------------------------------
         private static int FindBestUid(string dbPath, int stageId, int carId)
         {
             try

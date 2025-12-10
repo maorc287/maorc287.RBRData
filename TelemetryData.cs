@@ -1,8 +1,10 @@
 ﻿using SimHub;
+
 using SimHub.Plugins;
 using SimHub.Plugins.UI;
 using System;
 using System.Diagnostics;
+using static SimHub.Logging;
 using static maorc287.RBRDataExtPlugin.DeltaCalc;
 using static maorc287.RBRDataExtPlugin.MemoryReader;
 using static maorc287.RBRDataExtPlugin.Offsets;
@@ -18,7 +20,6 @@ namespace maorc287.RBRDataExtPlugin
         // Process name for Richard Burns Rally
         private const string RBRProcessName = "RichardBurnsRally_SSE";
 
-        private const string GaugerPluginDllName = "GaugerPlugin.dll";
         private const string RBRHUDPluginDllName = "RBRHUD.dll";
         private const string RSFPluginDllName = "Rallysimfans.hu.dll";
 
@@ -77,9 +78,9 @@ namespace maorc287.RBRDataExtPlugin
 
         private static bool OnStage(IntPtr hProcess, RBRTelemetryData rbrData)
         {
-            if (!pointerCache.IsGeameModeBaseValid() || pointerCache.GameModeBasePtr == IntPtr.Zero)
+            if (!pointerCache.IsGeameModeBaseValid())
             {
-                Logging.Current.Debug("[RBRDataExt] GameMode pointer invalid");
+                Current.Debug("[RBRDataExt] GameMode pointer invalid");
                 return false;
             }
 
@@ -160,18 +161,19 @@ namespace maorc287.RBRDataExtPlugin
             rbrData.LowBatteryWarning = rbrData.BatteryStatus < 10.0f;
         }
 
-        private static void ReadTimingData(IntPtr hProcess, RBRTelemetryData rbrData, PluginManager pluginManager)
+        private static void ReadTimingData( RBRTelemetryData rbrData, PluginManager pluginManager)
         {
             // Delta Time Calculation
             if (rbrData.IsOnStage)
             {
                 // Data Needed from SimHub Core Plugin For Delta calculation:
-                float countdownTime = (float)pluginManager.GetPropertyValue(StageStartCountdownProperty);
+                //float countdownTime = (float)pluginManager.GetPropertyValue(StageStartCountdownProperty);
                 int trackId = (int)pluginManager.GetPropertyValue(TrackIdProperty);
                 float travelledDistance = (float)pluginManager.GetPropertyValue(DistanceFromStartProperty);
                 float raceTime = (float)pluginManager.GetPropertyValue(RaceTimeProperty);
 
-                LoadDeltaData(trackId, rbrData.CarId, countdownTime);
+                if(_lastCarId != rbrData.CarId || _lastStageId != trackId)
+                LoadDeltaData(trackId, rbrData.CarId);
 
                 if (IsReady)
                 {
@@ -208,7 +210,7 @@ namespace maorc287.RBRDataExtPlugin
 
         }
 
-        private static void ReadSlipAndTireModel(IntPtr hProcess, RBRTelemetryData rbrData)
+        private static void ReadTiresData(IntPtr hProcess, RBRTelemetryData rbrData)
         {
 
             float lateralGripFL = ReadFloat(hProcess, pointerCache.FLWheelPtr + Wheel.LateralGripValue);
@@ -256,21 +258,21 @@ namespace maorc287.RBRDataExtPlugin
 
         private static void ReadOtherData(RBRTelemetryData rbrData)
         {
-            /*
+            /* Gauger Plugin Slip Value - Deprecated
             if (!MemoryReader.TryReadFromDll(GaugerPluginDllName, Pointers.GaugerSlip, out float GaugerPluginSlip))
                 GaugerPluginSlip = 0.0f;
             rbrData.GaugerSlip = GaugerPluginSlip;
             */
 
-            if (!MemoryReader.TryReadFromDll(RBRHUDPluginDllName, Pointers.RBRHUDTimeDelta, out float DeltaTime))
+            if (!TryReadFromDll(RBRHUDPluginDllName, Pointers.RBRHUDTimeDelta, out float DeltaTime))
                 DeltaTime = 0.0f;
             rbrData.RBRHUDDeltaTime = DeltaTime;
 
-            if (!MemoryReader.TryReadFromDll(RSFPluginDllName, Pointers.RSFCarId, out int rsfCarId))
+            if (!TryReadFromDll(RSFPluginDllName, Pointers.RSFCarId, out int rsfCarId))
                 rsfCarId = 0;
             rbrData.CarId = rsfCarId;
 
-            if (!MemoryReader.TryReadFromDll(RSFPluginDllName, Pointers.RSFStartLineDistance, out float rsfStartLine))
+            if (!TryReadFromDll(RSFPluginDllName, Pointers.RSFStartLineDistance, out float rsfStartLine))
                 rsfStartLine = 0;
             rbrData.StartLine = rsfStartLine;
 
@@ -316,14 +318,14 @@ namespace maorc287.RBRDataExtPlugin
                 ReadDamageData(hProcess, rbrData);
                 ReadEngineAndFluids(hProcess, rbrData, pluginManager);
                 ReadBatteryData(hProcess, rbrData);
-                ReadSlipAndTireModel(hProcess, rbrData);
+                ReadTiresData(hProcess, rbrData);
                 ReadOtherData(rbrData);
-                ReadTimingData(hProcess, rbrData, pluginManager);
+                ReadTimingData(rbrData, pluginManager);
 
             }
             catch (Exception ex)
             {
-                SimHub.Logging.Current.Debug($"[RBRDataExt] Failed to read memory: {ex.Message}");
+                Current.Debug($"[RBRDataExt] Failed to read memory: {ex.Message}");
                 return LatestValidTelemetry;
             }
 
@@ -416,7 +418,6 @@ namespace maorc287.RBRDataExtPlugin
             public uint OilCoolerDamage { get; set; } = 1;
 
             //External data not in Vanilla RBR Memory
-            public float GaugerSlip { get; set; } = 0.0f;
             public float RBRHUDDeltaTime { get; set; } = 0.0f;
 
             public float DeltaTime { get; set; } = 0.0f;

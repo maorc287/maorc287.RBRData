@@ -1,6 +1,7 @@
 ﻿using SimHub.Plugins;
 using System.Windows.Media;
 using static maorc287.RBRDataExtPlugin.TelemetryData;
+using static SimHub.Logging;
 
 
 namespace maorc287.RBRDataExtPlugin
@@ -17,7 +18,7 @@ namespace maorc287.RBRDataExtPlugin
 
         public void Init(PluginManager pluginManager)
         {
-            SimHub.Logging.Current.Info("[RBRDataExt] Plugin initialized.");
+            Current.Info("[RBRDataExt] Plugin initialized.");
 
             PluginManager = pluginManager;
 
@@ -69,7 +70,6 @@ namespace maorc287.RBRDataExtPlugin
             pluginManager.AddProperty("RBR.LongitudinalGrip.RL.Falloff", GetType(), 0, "");
             pluginManager.AddProperty("RBR.LongitudinalGrip.RR.Falloff", GetType(), 0, "");
 
-            //pluginManager.AddProperty("RBR.GaugerPlugin.LockSlip", GetType(), 0, "");
             pluginManager.AddProperty("RBR.RBRHUD.DeltaTime", GetType(), 0, "");
 
             pluginManager.AddProperty("RBR.Time.Delta", GetType(), 0, "");
@@ -142,7 +142,6 @@ namespace maorc287.RBRDataExtPlugin
             pluginManager.SetPropertyValue("RBR.LongitudinalGrip.RL.Falloff", GetType(), rbrData.RLWheelExcessLongitudinal);
             pluginManager.SetPropertyValue("RBR.LongitudinalGrip.RR.Falloff", GetType(), rbrData.RRWheelExcessLongitudinal);
 
-            //pluginManager.SetPropertyValue("RBR.GaugerPlugin.LockSlip", GetType(), rbrData.GaugerSlip);
             pluginManager.SetPropertyValue("RBR.RBRHUD.DeltaTime", GetType(), rbrData.RBRHUDDeltaTime);
 
             pluginManager.SetPropertyValue("RBR.Time.Delta", GetType(), rbrData.DeltaTime);

@@ -122,7 +122,7 @@ namespace maorc287.RBRDataExtPlugin
                 pointerCache.DamageBasePtr + Damage.OilCooler));
         }
 
-        private static void ReadEngineAndFluids(IntPtr hProcess, RBRTelemetryData rbrData, PluginManager pluginManager)
+        private static void ReadEngineData(IntPtr hProcess, RBRTelemetryData rbrData, PluginManager pluginManager)
         {
             string pressureUnit = (string)pluginManager.GetPropertyValue(PressureUnitProperty);
             string temperatureUnit = (string)pluginManager.GetPropertyValue(TemperatureUnitProperty);
@@ -167,7 +167,6 @@ namespace maorc287.RBRDataExtPlugin
             if (rbrData.IsOnStage)
             {
                 // Data Needed from SimHub Core Plugin For Delta calculation:
-                //float countdownTime = (float)pluginManager.GetPropertyValue(StageStartCountdownProperty);
                 int trackId = (int)pluginManager.GetPropertyValue(TrackIdProperty);
                 float travelledDistance = (float)pluginManager.GetPropertyValue(DistanceFromStartProperty);
                 float raceTime = (float)pluginManager.GetPropertyValue(RaceTimeProperty);
@@ -182,6 +181,7 @@ namespace maorc287.RBRDataExtPlugin
                     if (travelledM < 0f) travelledM = 0f;
 
                     rbrData.DeltaTime = CalculateDelta(travelledM, raceTime);
+
                     float bestTime = BestTimeSeconds;
                     rbrData.BestTime = (string)FormatTime(bestTime);
                 }
@@ -317,7 +317,7 @@ namespace maorc287.RBRDataExtPlugin
                 }
 
                 ReadDamageData(hProcess, rbrData);
-                ReadEngineAndFluids(hProcess, rbrData, pluginManager);
+                ReadEngineData(hProcess, rbrData, pluginManager);
                 ReadBatteryData(hProcess, rbrData);
                 ReadTiresData(hProcess, rbrData);
                 ReadOtherData(rbrData);
@@ -351,9 +351,6 @@ namespace maorc287.RBRDataExtPlugin
             public float OilTemperature { get; set; } = 0.0f;
             public float BatteryVoltage { get; set; } = 12.8f;
             public float BatteryStatus { get; set; } = 12.0f;
-            public float GroundSpeed { get; set; } = 0.0f;
-            public float WheelLock { get; set; } = 0.0f;
-            public float WheelSlip { get; set; } = 0.0f;
             public float FLWheelSpeed { get; set; } = 0.0f;
             public float FRWheelSpeed { get; set; } = 0.0f;
             public float RLWheelSpeed { get; set; } = 0.0f;
@@ -363,16 +360,6 @@ namespace maorc287.RBRDataExtPlugin
             // Steering angles for front wheels.
             public float FLWheelSteeringAngle { get; set; } = 0.0f;
             public float FRWheelSteeringAngle { get; set; } = 0.0f;
-
-            public float FLWheelSlipAngle { get; set; } = 0.0f;
-            public float FRWheelSlipAngle { get; set; } = 0.0f;
-            public float RLWheelSlipAngle { get; set; } = 0.0f;
-            public float RRWheelSlipAngle { get; set; } = 0.0f;
-
-            public float FLWheelSlipRatio { get; set; } = 0.0f;
-            public float FRWheelSlipRatio { get; set; } = 0.0f;
-            public float RLWheelSlipRatio { get; set; } = 0.0f;
-            public float RRWheelSlipRatio { get; set; } = 0.0f;
 
             public float FLWheelPercentLateral { get; set; } = 0.0f;
             public float FRWheelPercentLateral { get; set; } = 0.0f;
@@ -384,10 +371,6 @@ namespace maorc287.RBRDataExtPlugin
             public float RLWheelExcessLateral { get; set; } = 0.0f;
             public float RRWheelExcessLateral { get; set; } = 0.0f;
 
-            public float FLWheelLimitSlipAngleRad { get; set; } = 0.0f;
-            public float FRWheelLimitSlipAngleRad { get; set; } = 0.0f;
-            public float RLWheelLimitSlipAngleRad { get; set; } = 0.0f;
-            public float RRWheelLimitSlipAngleRad { get; set; } = 0.0f;
 
             public float FLWheelPercentLongitudinal { get; set; } = 0.0f;
             public float FRWheelPercentLongitudinal { get; set; } = 0.0f;
@@ -399,10 +382,6 @@ namespace maorc287.RBRDataExtPlugin
             public float RLWheelExcessLongitudinal { get; set; } = 0.0f;
             public float RRWheelExcessLongitudinal { get; set; } = 0.0f;
 
-            public float FLWheelLimitSlipRatio { get; set; } = 0.0f;
-            public float FRWheelLimitSlipRatio { get; set; } = 0.0f;
-            public float RLWheelLimitSlipRatio { get; set; } = 0.0f;
-            public float RRWheelLimitSlipRatio { get; set; } = 0.0f;
 
             // Damage Value, when Value is 5 means part is lost, 1 means part is Fine
             public uint OilPumpDamage { get; set; } = 1;
@@ -415,7 +394,6 @@ namespace maorc287.RBRDataExtPlugin
             public uint GearboxActuatorDamage { get; set; } = 1;
             public uint StarterDamage { get; set; } = 1;
             public uint HydraulicsDamage { get; set; } = 1;
-            public uint GearboxDamage { get; set; } = 1;
             public uint OilCoolerDamage { get; set; } = 1;
 
             //External data not in Vanilla RBR Memory

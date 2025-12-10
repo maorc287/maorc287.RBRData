@@ -43,7 +43,6 @@ SimHub plugin that exposes additional Richard Burns Rally (RBR) telemetry data f
   - Over the limit value 0 to 1: `RBR.LongitudinalGrip.FL.Falloff/FR.Falloff/RL.Falloff/RR.Falloff`
 
 - **Other**
-  - `RBR.GaugerPlugin.LockSlip`
   - `RBR.RBRHUD.DeltaTime`
 
 ## Installation

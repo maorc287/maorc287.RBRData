@@ -69,7 +69,7 @@ namespace maorc287.RBRDataExtPlugin
             pluginManager.AddProperty("RBR.LongitudinalGrip.RL.Falloff", GetType(), 0, "");
             pluginManager.AddProperty("RBR.LongitudinalGrip.RR.Falloff", GetType(), 0, "");
 
-            pluginManager.AddProperty("RBR.GaugerPlugin.LockSlip", GetType(), 0, "");
+            //pluginManager.AddProperty("RBR.GaugerPlugin.LockSlip", GetType(), 0, "");
             pluginManager.AddProperty("RBR.RBRHUD.DeltaTime", GetType(), 0, "");
 
             pluginManager.AddProperty("RBR.Time.Delta", GetType(), 0, "");
@@ -142,7 +142,7 @@ namespace maorc287.RBRDataExtPlugin
             pluginManager.SetPropertyValue("RBR.LongitudinalGrip.RL.Falloff", GetType(), rbrData.RLWheelExcessLongitudinal);
             pluginManager.SetPropertyValue("RBR.LongitudinalGrip.RR.Falloff", GetType(), rbrData.RRWheelExcessLongitudinal);
 
-            pluginManager.SetPropertyValue("RBR.GaugerPlugin.LockSlip", GetType(), rbrData.GaugerSlip);
+            //pluginManager.SetPropertyValue("RBR.GaugerPlugin.LockSlip", GetType(), rbrData.GaugerSlip);
             pluginManager.SetPropertyValue("RBR.RBRHUD.DeltaTime", GetType(), rbrData.RBRHUDDeltaTime);
 
             pluginManager.SetPropertyValue("RBR.Time.Delta", GetType(), rbrData.DeltaTime);

@@ -29,6 +29,8 @@ namespace maorc287.RBRDataExtPlugin
         private const string PressureUnitProperty = "DataCorePlugin.GameData.OilPressureUnit";
         private const string TemperatureUnitProperty = "DataCorePlugin.GameData.TemperatureUnit";
 
+        private static int _tireType = -1;
+
         // Cache for pointers to avoid repeated memory reads
         internal static readonly PointerCache pointerCache = new PointerCache();
 
@@ -60,7 +62,11 @@ namespace maorc287.RBRDataExtPlugin
             }
 
             if (!pointerCache.IsTireModelPointerValid())
-                pointerCache.TireModelBasePtr = ReadPointer(hProcess, (IntPtr)Pointers.TireModel);
+            { 
+            pointerCache.TireModelBasePtr = ReadPointer(hProcess, (IntPtr)Pointers.TireModel);
+            _tireType = ReadInt(hProcess, pointerCache.TireModelBasePtr + TireModel.TireType);
+            }
+
 
             if (!pointerCache.IsDamagePointerValid())
             {
@@ -69,7 +75,7 @@ namespace maorc287.RBRDataExtPlugin
             }
         }
 
-        private static bool IsOnStage(IntPtr hProcess, RBRTelemetryData rbrData)
+        private static bool OnStage(IntPtr hProcess, RBRTelemetryData rbrData)
         {
             if (!pointerCache.IsGeameModeBaseValid() || pointerCache.GameModeBasePtr == IntPtr.Zero)
             {
@@ -165,14 +171,6 @@ namespace maorc287.RBRDataExtPlugin
                 float travelledDistance = (float)pluginManager.GetPropertyValue(DistanceFromStartProperty);
                 float raceTime = (float)pluginManager.GetPropertyValue(RaceTimeProperty);
 
-                if (IsNewRunWindow(countdownTime))
-                {
-                    int tireType = ReadInt(hProcess, pointerCache.TireModelBasePtr + TireModel.TireType);
-                    rbrData.CurrentTireType = GetTireType(tireType);
-                }
-                else
-                    rbrData.CurrentTireType = LatestValidTelemetry.CurrentTireType;
-
                 LoadDeltaData(trackId, rbrData.CarId, countdownTime);
 
                 if (IsReady)
@@ -252,13 +250,17 @@ namespace maorc287.RBRDataExtPlugin
             rbrData.FRWheelPercentLongitudinal = percentKappaFR;
             rbrData.RLWheelPercentLongitudinal = percentKappaRL;
             rbrData.RRWheelPercentLongitudinal = percentKappaRR;
+
+            rbrData.CurrentTireType = GetTireType(_tireType);
         }
 
         private static void ReadOtherData(RBRTelemetryData rbrData)
         {
+            /*
             if (!MemoryReader.TryReadFromDll(GaugerPluginDllName, Pointers.GaugerSlip, out float GaugerPluginSlip))
                 GaugerPluginSlip = 0.0f;
             rbrData.GaugerSlip = GaugerPluginSlip;
+            */
 
             if (!MemoryReader.TryReadFromDll(RBRHUDPluginDllName, Pointers.RBRHUDTimeDelta, out float DeltaTime))
                 DeltaTime = 0.0f;
@@ -306,7 +308,7 @@ namespace maorc287.RBRDataExtPlugin
             {
                 InitializePointers(hProcess);
 
-                if (!IsOnStage(hProcess, rbrData))
+                if (!OnStage(hProcess, rbrData))
                 {
                     return LatestValidTelemetry;
                 }
@@ -423,6 +425,7 @@ namespace maorc287.RBRDataExtPlugin
             public float TravelledDistance { get; set; } = 0.0f;
             public float StartLine { get; set; } = 0.0f;
             public int CarId { get; set; } = 0;
+
         }
     }
 }

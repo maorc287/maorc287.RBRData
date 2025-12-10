@@ -173,10 +173,11 @@ namespace maorc287.RBRDataExtPlugin
                 float raceTime = (float)pluginManager.GetPropertyValue(RaceTimeProperty);
 
                 if(_lastCarId != rbrData.CarId || _lastStageId != trackId)
-                LoadDeltaData(trackId, rbrData.CarId);
+                    LoadDeltaData(trackId, rbrData.CarId);
 
                 if (IsReady)
                 {
+
                     float travelledM = travelledDistance - rbrData.StartLine;
                     if (travelledM < 0f) travelledM = 0f;
 

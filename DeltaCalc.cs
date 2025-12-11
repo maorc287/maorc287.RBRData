@@ -62,7 +62,7 @@ namespace maorc287.RBRDataExtPlugin
 
             if (stageId == _lastStageId && carId == _lastCarId && _isLoaded)
             {
-                Current.Debug("[RBRDataExt] Already loaded, skipping");
+                Current.Debug("[RBRDataExt] Delta data already loaded");
                 return;
             }
 

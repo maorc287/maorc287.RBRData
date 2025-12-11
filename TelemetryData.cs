@@ -189,7 +189,6 @@ namespace maorc287.RBRDataExtPlugin
 
                 if (IsReady)
                 {
-
                     float travelledM = travelledDistance - rbrData.StartLine;
                     if (travelledM < 0f) travelledM = 0f;
 
@@ -278,9 +277,11 @@ namespace maorc287.RBRDataExtPlugin
             rbrData.StartLine = rsfStartLine;
 
         }
+
+
         private static bool _sessionInitialized = false;
         private static int _notRunningFrames = 0;
-        private const int NotRunningThreshold = 5; // number of plugin ticks to treat as not running
+        private const int NotRunningThreshold = 10; // number of plugin ticks to treat as not running
 
         /// Reads telemetry data from the Richard Burns Rally process.
         /// this method accesses the game's memory to retrieve various telemetry values.

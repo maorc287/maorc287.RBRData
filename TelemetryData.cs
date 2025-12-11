@@ -1,9 +1,11 @@
-﻿using SimHub;
+﻿using GameReaderCommon;
+using SimHub;
 using SimHub.Plugins;
 using SimHub.Plugins.DataPlugins.DataCore;
 using SimHub.Plugins.UI;
 using System;
 using System.Diagnostics;
+using System.IO;
 using static maorc287.RBRDataExtPlugin.DeltaCalc;
 using static maorc287.RBRDataExtPlugin.MemoryReader;
 using static maorc287.RBRDataExtPlugin.Offsets;
@@ -29,6 +31,10 @@ namespace maorc287.RBRDataExtPlugin
         private const string StageStartCountdownProperty = "DataCorePlugin.GameRawData.StageStartCountdown";
         private const string PressureUnitProperty = "DataCorePlugin.GameData.OilPressureUnit";
         private const string TemperatureUnitProperty = "DataCorePlugin.GameData.TemperatureUnit";
+        private const string CurrentGame = "DataCorePlugin.CurrentGame";
+        private const string GamePaused = "DataCorePlugin.GamePaused";
+        private const string GameRunning = "DataCorePlugin.GameRunning";
+        private const string IsRunning = "DataCorePlugin.GameRawData.IsRunning";
 
         private static int _tireType = -1;
         private static string _carSetupName = string.Empty;
@@ -72,7 +78,8 @@ namespace maorc287.RBRDataExtPlugin
             if(!pointerCache.IsCarInfoSetupPointerValid())
             {
                 pointerCache.CarInfoSetupBasePtr = ReadPointer(hProcess, (IntPtr)Pointers.CarInfoSetup);
-                _carSetupName = ReadStringNulTerminated(hProcess, pointerCache.CarInfoSetupBasePtr + CarInfo.SetupName, 64);
+                _carSetupName = Path.GetFileNameWithoutExtension(ReadStringNulTerminated(hProcess, 
+                                pointerCache.CarInfoSetupBasePtr + CarInfo.SetupName, 64));
             }
 
             if (!pointerCache.IsDamagePointerValid())
@@ -295,8 +302,8 @@ namespace maorc287.RBRDataExtPlugin
         /// without the game running and on stage, it will return default values.
         internal static RBRTelemetryData ReadTelemetryData(PluginManager pluginManager)
         {
-            bool isRBR = (string)pluginManager.GetPropertyValue("DataCorePlugin.CurrentGame") == "RBR";
-            bool isGameActive = (bool)pluginManager.GetPropertyValue("DataCorePlugin.GameRawData.IsRunning");
+            bool isRBR = (string)pluginManager.GetPropertyValue(CurrentGame) == "RBR";
+            bool isGameActive = (bool)pluginManager.GetPropertyValue(IsRunning);
 
             // Skip when no RBR or RBR is not the Current Game in simhub
             if (!isGameActive || !isRBR)
@@ -315,8 +322,8 @@ namespace maorc287.RBRDataExtPlugin
                 return new RBRTelemetryData();
             }
 
-            int isGamePaused = (int)pluginManager.GetPropertyValue("DataCorePlugin.GamePaused");
-            int isGameRunningRaw = (int)pluginManager.GetPropertyValue("DataCorePlugin.GameRunning");
+            int isGamePaused = (int)pluginManager.GetPropertyValue(GamePaused);
+            int isGameRunningRaw = (int)pluginManager.GetPropertyValue(GameRunning); 
 
             // Debounce GameRunning
             if (isGameRunningRaw == 0)

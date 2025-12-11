@@ -77,9 +77,9 @@ namespace maorc287.RBRDataExtPlugin
 
             if(!pointerCache.IsCarInfoSetupPointerValid())
             {
-                pointerCache.CarInfoSetupBasePtr = ReadPointer(hProcess, (IntPtr)Pointers.CarInfoSetup);
+                pointerCache.CarInfoSetupBasePtr = ReadPointer(hProcess, (IntPtr)Pointers.CarSetup);
                 _carSetupName = Path.GetFileNameWithoutExtension(ReadStringNulTerminated(hProcess, 
-                                pointerCache.CarInfoSetupBasePtr + CarInfo.SetupName, 64));
+                                pointerCache.CarInfoSetupBasePtr + CarSetup.SetupName, 64));
             }
 
             if (!pointerCache.IsDamagePointerValid())
@@ -313,14 +313,14 @@ namespace maorc287.RBRDataExtPlugin
                 return new RBRTelemetryData();
             }
             
-            var rbrData = new RBRTelemetryData();
-
             IntPtr hProcess = GetProcess();
 
             if (hProcess == IntPtr.Zero)
             {
                 return new RBRTelemetryData();
             }
+
+            var rbrData = new RBRTelemetryData();
 
             int isGamePaused = (int)pluginManager.GetPropertyValue(GamePaused);
             int isGameRunningRaw = (int)pluginManager.GetPropertyValue(GameRunning); 
@@ -351,11 +351,9 @@ namespace maorc287.RBRDataExtPlugin
                 // Only initialize pointers once per session (while running)
                 if (!_sessionInitialized)
                 {
-                    // First get just GameMode pointer and check if we are on stage
                     if (!pointerCache.IsGeameModeBaseValid())
                         pointerCache.GameModeBasePtr = ReadPointer(hProcess, (IntPtr)Pointers.GameMode);
 
-                    // If we still cannot read GameMode, bail out
                     if (!pointerCache.IsGeameModeBaseValid())
                         return LatestValidTelemetry;
 
@@ -372,7 +370,6 @@ namespace maorc287.RBRDataExtPlugin
                 }
 
                 // From here on, use cached pointers.
-                // No more InitializePointers spam in menus or during connect/disconnect noise.
                 if (!OnStage(hProcess, rbrData))
                 {
                     _sessionInitialized = false;

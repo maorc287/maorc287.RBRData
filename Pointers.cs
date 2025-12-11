@@ -92,7 +92,10 @@ namespace maorc287.RBRDataExtPlugin
             public const int BatteryStatus = 0x2B4;
             public const int Timer = 0x140; // Timer in seconds
             public const int DistanceFromStartControl = 0x20; // Start control distance in meters incorrect value
+        }
 
+        public static class CarSetup
+        {
             public const int SetupName = 0x2C; // Car setup name string offset
         }
 
@@ -156,7 +159,7 @@ namespace maorc287.RBRDataExtPlugin
             public const int SurfaceEffectScaling = 0xB9C;
             public const int SurfaceFrictionScaling = 0xAEC;
 
-            // Active Slip Peak Cornering value integer (0 to 7) based on load,
+            // Active load table value integer (0 to 7) based on load,
             // index for the array in the TireModel structure.
             // Weight of the 2 active load value in float (0.0 to 1.0)
             public const int ActiveLoad1 = 0x74C;
@@ -221,7 +224,7 @@ namespace maorc287.RBRDataExtPlugin
             public const int GameMode = 0x7EAC48;
             public const int CarInfo = 0x165FC68;
 
-            public const int CarInfoSetup = 0x7EA7E8;
+            public const int CarSetup = 0x7EA7E8;
 
             public const int GameModeOffset = 0x728;
 

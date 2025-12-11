@@ -80,6 +80,7 @@
   <ItemGroup>
     <Compile Include="DeltaCalc.cs" />
     <Compile Include="Pointers.cs" />
+    <Compile Include="Properties.cs" />
     <Compile Include="TelemetryCalc.cs" />
     <Compile Include="TelemetryData.cs" />
     <Compile Include="MemoryReader.cs" />

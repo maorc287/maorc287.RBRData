@@ -65,15 +65,14 @@ namespace maorc287.RBRDataExtPlugin
 
             if (!pointerCache.IsTireModelPointerValid())
             { 
-            pointerCache.TireModelBasePtr = ReadPointer(hProcess, (IntPtr)Pointers.TireModel);
-            _tireType = ReadInt(hProcess, pointerCache.TireModelBasePtr + TireModel.TireType);
+                pointerCache.TireModelBasePtr = ReadPointer(hProcess, (IntPtr)Pointers.TireModel);
+                _tireType = ReadInt(hProcess, pointerCache.TireModelBasePtr + TireModel.TireType);
             }
 
             if(!pointerCache.IsCarInfoSetupPointerValid())
             {
                 pointerCache.CarInfoSetupBasePtr = ReadPointer(hProcess, (IntPtr)Pointers.CarInfoSetup);
                 _carSetupName = ReadStringNulTerminated(hProcess, pointerCache.CarInfoSetupBasePtr + CarInfo.SetupName, 64);
-                Current.Info($"[RBRDataExt] Car Setup Name: {_carSetupName}");
             }
 
             if (!pointerCache.IsDamagePointerValid())
@@ -262,6 +261,7 @@ namespace maorc287.RBRDataExtPlugin
             rbrData.RRWheelPercentLongitudinal = percentKappaRR;
 
             rbrData.CurrentTireType = GetTireType(_tireType);
+            rbrData.CurrentSetupFile = _carSetupName;
         }
 
         private static void ReadOtherData(RBRTelemetryData rbrData)
@@ -412,6 +412,7 @@ namespace maorc287.RBRDataExtPlugin
             public float RLWheelSpeed { get; set; } = 0.0f;
             public float RRWheelSpeed { get; set; } = 0.0f;
             public string CurrentTireType { get; set; } = "Unknown";
+            public string CurrentSetupFile { get; set; } = "Unknown";
 
             // Steering angles for front wheels.
             public float FLWheelSteeringAngle { get; set; } = 0.0f;

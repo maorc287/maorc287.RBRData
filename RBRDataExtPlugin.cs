@@ -72,7 +72,7 @@ namespace maorc287.RBRDataExtPlugin
             pluginManager.AddProperty(Info_Best, GetType(), 0, "");
             pluginManager.AddProperty(Info_TravelledDistance, GetType(), 0, "");
 
-            Current.Info("RBRDataExtPlugin initialized.");
+            Current.Info("[RBRDataExt] Plugin initialized.");
         }
 
 

@@ -72,7 +72,7 @@ namespace maorc287.RBRDataExtPlugin
 
             if (!File.Exists(dbPath))
             {
-                Current.Info("[RBRDataExt]Data file NOT FOUND: " + dbPath);
+                Current.Info("[RBRDataExt] Data file NOT FOUND: " + dbPath);
                 _isLoaded = false;
                 _noSplitFound = false;  // only this stage/car this run
                 _noDataFound = true;      // global: don’t try again 

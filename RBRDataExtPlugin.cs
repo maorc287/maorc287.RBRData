@@ -74,8 +74,10 @@ namespace maorc287.RBRDataExtPlugin
 
             pluginManager.AddProperty("RBR.RBRHUD.DeltaTime", GetType(), 0, "");
 
-            pluginManager.AddProperty("RBR.Time.Delta", GetType(), 0, "");
-            pluginManager.AddProperty("RBR.Time.Best", GetType(), 0, "");
+            pluginManager.AddProperty("RBR.Info.Delta", GetType(), 0, "");
+            pluginManager.AddProperty("RBR.Info.Best", GetType(), 0, "");
+            pluginManager.AddProperty("RBR.Info.TravelledDistance", GetType(), 0, "");
+
 
 
         }
@@ -150,8 +152,9 @@ namespace maorc287.RBRDataExtPlugin
 
             pluginManager.SetPropertyValue("RBR.RBRHUD.DeltaTime", GetType(), rbrData.RBRHUDDeltaTime);
 
-            pluginManager.SetPropertyValue("RBR.Time.Delta", GetType(), rbrData.DeltaTime);
-            pluginManager.SetPropertyValue("RBR.Time.Best", GetType(), rbrData.BestTime);
+            pluginManager.SetPropertyValue("RBR.Info.Delta", GetType(), rbrData.DeltaTime);
+            pluginManager.SetPropertyValue("RBR.Info.Best", GetType(), rbrData.BestTime);
+            pluginManager.SetPropertyValue("RBR.Info.TravelledDistance", GetType(), rbrData.TravelledDistance);
 
         }
     }

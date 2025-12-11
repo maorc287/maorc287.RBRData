@@ -197,27 +197,13 @@ namespace maorc287.RBRDataExtPlugin
 
                     float bestTime = BestTimeSeconds;
                     rbrData.BestTime = (string)FormatTime(bestTime);
+                    rbrData.TravelledDistance = travelledM;
                 }
             }
         }
 
         private static void ReadWheelData(IntPtr hProcess, RBRTelemetryData rbrData)
         {
-            rbrData.FLWheelSpeed = ComputeWheelSpeed(
-                ReadFloat(hProcess, pointerCache.FLWheelPtr + Wheel.WheelRadiusOffset),
-                ReadFloat(hProcess, pointerCache.FLWheelPtr + Wheel.WheelRotationOffset));
-
-            rbrData.FRWheelSpeed = ComputeWheelSpeed(
-                ReadFloat(hProcess, pointerCache.FRWheelPtr + Wheel.WheelRadiusOffset),
-                ReadFloat(hProcess, pointerCache.FRWheelPtr + Wheel.WheelRotationOffset));
-
-            rbrData.RLWheelSpeed = ComputeWheelSpeed(
-                ReadFloat(hProcess, pointerCache.RLWheelPtr + Wheel.WheelRadiusOffset),
-                ReadFloat(hProcess, pointerCache.RLWheelPtr + Wheel.WheelRotationOffset));
-
-            rbrData.RRWheelSpeed = ComputeWheelSpeed(
-                ReadFloat(hProcess, pointerCache.RRWheelPtr + Wheel.WheelRadiusOffset),
-                ReadFloat(hProcess, pointerCache.RRWheelPtr + Wheel.WheelRotationOffset));
 
             rbrData.FLWheelSteeringAngle = ReadFloat(hProcess, pointerCache.FLWheelPtr + Wheel.SteeringAngle);
             rbrData.FRWheelSteeringAngle = ReadFloat(hProcess, pointerCache.FRWheelPtr + Wheel.SteeringAngle);
@@ -411,10 +397,8 @@ namespace maorc287.RBRDataExtPlugin
             public float OilTemperature { get; set; } = 0.0f;
             public float BatteryVoltage { get; set; } = 12.8f;
             public float BatteryStatus { get; set; } = 12.0f;
-            public float FLWheelSpeed { get; set; } = 0.0f;
-            public float FRWheelSpeed { get; set; } = 0.0f;
-            public float RLWheelSpeed { get; set; } = 0.0f;
-            public float RRWheelSpeed { get; set; } = 0.0f;
+
+
             public string TireType { get; set; } = "Unknown";
             public string CarSetup { get; set; } = "Unknown";
 
@@ -456,6 +440,7 @@ namespace maorc287.RBRDataExtPlugin
             public uint StarterDamage { get; set; } = 1;
             public uint HydraulicsDamage { get; set; } = 1;
             public uint OilCoolerDamage { get; set; } = 1;
+
 
             //External data not in Vanilla RBR Memory
             public float RBRHUDDeltaTime { get; set; } = 0.0f;

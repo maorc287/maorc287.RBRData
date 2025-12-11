@@ -38,6 +38,7 @@ namespace maorc287.RBRDataExtPlugin
             pluginManager.AddProperty("RBR.Info.WaterTemperatureWarning", GetType(), 0, "");
             pluginManager.AddProperty("RBR.Info.OilTemperatureWarning", GetType(), 0, "");
             pluginManager.AddProperty("RBR.Info.TireType", GetType(), 0, "");
+            pluginManager.AddProperty("RBR.Info.CarSetup", GetType(), 0, "");
 
             pluginManager.AddProperty("RBR.Damage.Battery", GetType(), 0, "");
             pluginManager.AddProperty("RBR.Damage.OilPump", GetType(), 0, "");
@@ -110,7 +111,10 @@ namespace maorc287.RBRDataExtPlugin
             pluginManager.SetPropertyValue("RBR.Info.LowBatteryWarning", GetType(), rbrData.LowBatteryWarning);
             pluginManager.SetPropertyValue("RBR.Info.WaterTemperatureWarning", GetType(), rbrData.WaterTemperatureWarning);
             pluginManager.SetPropertyValue("RBR.Info.OilTemperatureWarning", GetType(), rbrData.OilTemperatureWarning);
-            pluginManager.SetPropertyValue("RBR.Info.TireType", GetType(), rbrData.CurrentTireType);
+
+            pluginManager.SetPropertyValue("RBR.Info.TireType", GetType(), rbrData.TireType);
+            pluginManager.SetPropertyValue("RBR.Info.CarSetup", GetType(), rbrData.CarSetup);
+
 
             pluginManager.SetPropertyValue("RBR.Damage.Battery", GetType(), rbrData.BatteryWearLevel);
             pluginManager.SetPropertyValue("RBR.Damage.OilPump", GetType(), rbrData.OilPumpDamage);

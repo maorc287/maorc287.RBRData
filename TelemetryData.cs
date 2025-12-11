@@ -267,8 +267,8 @@ namespace maorc287.RBRDataExtPlugin
             rbrData.RLWheelPercentLongitudinal = percentKappaRL;
             rbrData.RRWheelPercentLongitudinal = percentKappaRR;
 
-            rbrData.CurrentTireType = GetTireType(_tireType);
-            rbrData.CurrentSetupFile = _carSetupName;
+            rbrData.TireType = GetTireType(_tireType);
+            rbrData.CarSetup = _carSetupName;
         }
 
         private static void ReadOtherData(RBRTelemetryData rbrData)
@@ -418,8 +418,8 @@ namespace maorc287.RBRDataExtPlugin
             public float FRWheelSpeed { get; set; } = 0.0f;
             public float RLWheelSpeed { get; set; } = 0.0f;
             public float RRWheelSpeed { get; set; } = 0.0f;
-            public string CurrentTireType { get; set; } = "Unknown";
-            public string CurrentSetupFile { get; set; } = "Unknown";
+            public string TireType { get; set; } = "Unknown";
+            public string CarSetup { get; set; } = "Unknown";
 
             // Steering angles for front wheels.
             public float FLWheelSteeringAngle { get; set; } = 0.0f;

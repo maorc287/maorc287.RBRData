@@ -44,6 +44,13 @@ namespace maorc287.RBRDataExtPlugin
             // CRITICAL: REFRESH PATH RIGHT BEFORE DB ACCESS
             UpdateRBRGamePath();
 
+            // If stage or car changed, reset per-stage flags
+            if (stageId != _lastStageId || carId != _lastCarId)
+            {
+                _noSplitFound = false;
+                _isLoaded = false;
+            }
+
             if (_noSplitFound) return;    // no UID for this stage/car this run
             if (_noDataFound) return;     // DB missing or persistent error
 
@@ -67,6 +74,7 @@ namespace maorc287.RBRDataExtPlugin
             {
                 Current.Info("[RBRDataExt]Data file NOT FOUND: " + dbPath);
                 _isLoaded = false;
+                _noSplitFound = false;  // only this stage/car this run
                 _noDataFound = true;      // global: don’t try again 
                 return;
             }
@@ -109,6 +117,7 @@ namespace maorc287.RBRDataExtPlugin
                         // Some other IO error: mark as no data for this session
                         Current.Warn("[RBRDataExt] Error loading splits: " + ex.Message);
                         _isLoaded = false;
+                        _noSplitFound = false;
                         _noDataFound = true;   // global “don’t try again” until restart
                         return;
                     }
@@ -134,7 +143,7 @@ namespace maorc287.RBRDataExtPlugin
             if (!_isLoaded || _bestSplitTimes == null || _bestSplitTimes.Length == 0)
                 return 0f;
 
-            int idx = (int)(travelledDistanceM / 10.0f);  // ← METERS, not time!
+            int idx = (int)(travelledDistanceM / 10.0f); 
             int count = _bestSplitTimes.Length;
 
             float ghostTime;

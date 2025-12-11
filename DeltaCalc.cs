@@ -41,9 +41,6 @@ namespace maorc287.RBRDataExtPlugin
 
         internal static void LoadDeltaData(int stageId, int carId)
         {
-            // CRITICAL: REFRESH PATH RIGHT BEFORE DB ACCESS
-            UpdateRBRGamePath();
-
             // If stage or car changed, reset per-stage flags
             if (stageId != _lastStageId || carId != _lastCarId)
             {
@@ -65,6 +62,9 @@ namespace maorc287.RBRDataExtPlugin
                 Current.Debug("[RBRDataExt] Delta data already loaded");
                 return;
             }
+
+            // CRITICAL: REFRESH PATH RIGHT BEFORE DB ACCESS
+            UpdateRBRGamePath();
 
             string dbPath = Path.Combine(RBRGamePath ?? "",
                                          "Plugins", "RBRHUD", "delta_times.db");

@@ -14,7 +14,7 @@ namespace maorc287.RBRDataExtPlugin
     {
         public PluginManager PluginManager { get; set; }
         public ImageSource PictureIcon => this.ToIcon(Properties.Resources.sdkmenuicon);
-        public string LeftMenuTitle => "RBR Data Extension";
+        public string LeftMenuTitle => "RBR Additional Data";
 
         public void Init(PluginManager pluginManager)
         {

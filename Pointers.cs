@@ -8,6 +8,8 @@ namespace maorc287.RBRDataExtPlugin
 
         // pointer only valid in stage
         public IntPtr CarInfoBasePtr { get; set; } = IntPtr.Zero;
+
+        public IntPtr CarInfoSetupBasePtr { get; set; } = IntPtr.Zero;
         public IntPtr CarMovBasePtr { get; set; } = IntPtr.Zero;
         public IntPtr DamageBasePtr { get; set; } = IntPtr.Zero;
         public IntPtr FLWheelPtr { get; set; } = IntPtr.Zero;
@@ -20,6 +22,7 @@ namespace maorc287.RBRDataExtPlugin
         internal void ClearAllCache()
         {
             CarInfoBasePtr = IntPtr.Zero;
+            CarInfoSetupBasePtr = IntPtr.Zero;
             CarMovBasePtr = IntPtr.Zero;
             GameModeBasePtr = IntPtr.Zero;
             DamageBasePtr = IntPtr.Zero;
@@ -38,6 +41,11 @@ namespace maorc287.RBRDataExtPlugin
         internal bool IsCarInfoPointerValid()
         {
             return CarInfoBasePtr != IntPtr.Zero;
+        }
+
+        internal bool IsCarInfoSetupPointerValid()
+        {
+            return CarInfoSetupBasePtr != IntPtr.Zero;
         }
 
         internal bool IsCarMovPointerValid()
@@ -84,6 +92,8 @@ namespace maorc287.RBRDataExtPlugin
             public const int BatteryStatus = 0x2B4;
             public const int Timer = 0x140; // Timer in seconds
             public const int DistanceFromStartControl = 0x20; // Start control distance in meters incorrect value
+
+            public const int SetupName = 0x2C; // Car setup name string offset
         }
 
         public static class CarMov
@@ -210,6 +220,8 @@ namespace maorc287.RBRDataExtPlugin
             public const int CarMov = 0x8EF660;
             public const int GameMode = 0x7EAC48;
             public const int CarInfo = 0x165FC68;
+
+            public const int CarInfoSetup = 0x7EA7E8;
 
             public const int GameModeOffset = 0x728;
 

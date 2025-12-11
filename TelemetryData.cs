@@ -1,14 +1,14 @@
 ﻿using SimHub;
-
 using SimHub.Plugins;
+using SimHub.Plugins.DataPlugins.DataCore;
 using SimHub.Plugins.UI;
 using System;
 using System.Diagnostics;
-using static SimHub.Logging;
 using static maorc287.RBRDataExtPlugin.DeltaCalc;
 using static maorc287.RBRDataExtPlugin.MemoryReader;
 using static maorc287.RBRDataExtPlugin.Offsets;
 using static maorc287.RBRDataExtPlugin.TelemetryCalc;
+using static SimHub.Logging;
 
 namespace maorc287.RBRDataExtPlugin
 
@@ -31,6 +31,7 @@ namespace maorc287.RBRDataExtPlugin
         private const string TemperatureUnitProperty = "DataCorePlugin.GameData.TemperatureUnit";
 
         private static int _tireType = -1;
+        private static string _carSetupName = string.Empty;
 
         // Cache for pointers to avoid repeated memory reads
         internal static readonly PointerCache pointerCache = new PointerCache();
@@ -68,6 +69,12 @@ namespace maorc287.RBRDataExtPlugin
             _tireType = ReadInt(hProcess, pointerCache.TireModelBasePtr + TireModel.TireType);
             }
 
+            if(!pointerCache.IsCarInfoSetupPointerValid())
+            {
+                pointerCache.CarInfoSetupBasePtr = ReadPointer(hProcess, (IntPtr)Pointers.CarInfoSetup);
+                _carSetupName = ReadStringNulTerminated(hProcess, pointerCache.CarInfoSetupBasePtr + CarInfo.SetupName, 64);
+                Current.Info($"[RBRDataExt] Car Setup Name: {_carSetupName}");
+            }
 
             if (!pointerCache.IsDamagePointerValid())
             {
@@ -278,11 +285,9 @@ namespace maorc287.RBRDataExtPlugin
             rbrData.StartLine = rsfStartLine;
 
         }
-
-
-        private static DateTime _lastTelemetryRead = DateTime.MinValue;
-        private static readonly TimeSpan NoProcessInterval = TimeSpan.FromSeconds(5);   // Only when no RBR
-        private static bool _rbrRunning = false;
+        private static bool _sessionInitialized = false;
+        private static int _notRunningFrames = 0;
+        private const int NotRunningThreshold = 5; // number of plugin ticks to treat as not running
 
         /// Reads telemetry data from the Richard Burns Rally process.
         /// this method accesses the game's memory to retrieve various telemetry values.
@@ -290,29 +295,80 @@ namespace maorc287.RBRDataExtPlugin
         /// without the game running and on stage, it will return default values.
         internal static RBRTelemetryData ReadTelemetryData(PluginManager pluginManager)
         {
+            bool isRBR = (string)pluginManager.GetPropertyValue("DataCorePlugin.CurrentGame") == "RBR";
+            bool isGameActive = (bool)pluginManager.GetPropertyValue("DataCorePlugin.GameRawData.IsRunning");
 
-            // Skip only when no RBR (non-blocking rate limit)
-            if (!_rbrRunning && DateTime.Now - _lastTelemetryRead < NoProcessInterval)
+            // Skip when no RBR or RBR is not the Current Game in simhub
+            if (!isGameActive || !isRBR)
+            {
+                _sessionInitialized = false;
+                pointerCache.ClearAllCache();
                 return new RBRTelemetryData();
-
-            _lastTelemetryRead = DateTime.Now;
-
+            }
+            
             var rbrData = new RBRTelemetryData();
+
             IntPtr hProcess = GetProcess();
+
             if (hProcess == IntPtr.Zero)
             {
-                _rbrRunning = false; // Extend interval only when no RBR 
                 return new RBRTelemetryData();
             }
 
-            _rbrRunning = true; // Full speed when RBR running - no interval
+            int isGamePaused = (int)pluginManager.GetPropertyValue("DataCorePlugin.GamePaused");
+            int isGameRunningRaw = (int)pluginManager.GetPropertyValue("DataCorePlugin.GameRunning");
+
+            // Debounce GameRunning
+            if (isGameRunningRaw == 0)
+                _notRunningFrames++;
+            else
+                _notRunningFrames = 0;
+
+            bool isGameRunning = _notRunningFrames < NotRunningThreshold;
 
             try
             {
-                InitializePointers(hProcess);
+                // If not running (after debounce), end session and return latest
+                if (!isGameRunning)
+                {
+                    _sessionInitialized = false;
+                    pointerCache.ClearAllCache();
+                    LatestValidTelemetry.IsOnStage = false;
+                    return LatestValidTelemetry;
+                }
 
+                // Do not update while paused
+                if (isGamePaused == 1)
+                    return LatestValidTelemetry;
+
+                // Only initialize pointers once per session (while running)
+                if (!_sessionInitialized)
+                {
+                    // First get just GameMode pointer and check if we are on stage
+                    if (!pointerCache.IsGeameModeBaseValid())
+                        pointerCache.GameModeBasePtr = ReadPointer(hProcess, (IntPtr)Pointers.GameMode);
+
+                    // If we still cannot read GameMode, bail out
+                    if (!pointerCache.IsGeameModeBaseValid())
+                        return LatestValidTelemetry;
+
+                    // Use OnStage to decide whether to init the rest
+                    if (!OnStage(hProcess, rbrData))
+                    {
+                        _sessionInitialized = false;
+                        return LatestValidTelemetry;
+                    }
+
+                    // Now we know we are actually on stage: init the rest once
+                    InitializePointers(hProcess);
+                    _sessionInitialized = true;
+                }
+
+                // From here on, use cached pointers.
+                // No more InitializePointers spam in menus or during connect/disconnect noise.
                 if (!OnStage(hProcess, rbrData))
                 {
+                    _sessionInitialized = false;
                     return LatestValidTelemetry;
                 }
 

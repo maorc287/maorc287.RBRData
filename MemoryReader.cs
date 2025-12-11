@@ -238,6 +238,27 @@ namespace maorc287.RBRDataExtPlugin
             return result;
         }
 
+        internal static string ReadStringNulTerminated(IntPtr hProcess, IntPtr address, int maxBytes = 256)
+        {
+            if (hProcess == IntPtr.Zero || address == IntPtr.Zero || address.ToInt64() < 0x1000)
+                return string.Empty;
+
+            byte[] buffer = new byte[maxBytes];
+
+            if (!ReadProcessMemory(hProcess, address, buffer, (uint)maxBytes, out int bytesRead) || bytesRead <= 0)
+                return string.Empty;
+
+            int len = 0;
+            while (len < bytesRead && buffer[len] != 0)
+                len++;
+
+            if (len == 0)
+                return string.Empty;
+
+            return System.Text.Encoding.ASCII.GetString(buffer, 0, len);
+        }
+
+
         internal static float ReadFloat(IntPtr hProcess, IntPtr address) => ReadValue<float>(hProcess, address);
         internal static int ReadInt(IntPtr hProcess, IntPtr address) => ReadValue<int>(hProcess, address);
         internal static uint ReadUInt(IntPtr hProcess, IntPtr address) => ReadValue<uint>(hProcess, address);

@@ -16,10 +16,16 @@ namespace maorc287.RBRDataExtPlugin
         public PluginManager PluginManager { get; set; }
         public ImageSource PictureIcon => this.ToIcon(Properties.Resources.sdkmenuicon);
         public string LeftMenuTitle => "RBR Additional Data";
+        public RBRSettings Settings { get; private set; } = new RBRSettings();
 
 
         public void Init(PluginManager pluginManager)
         {
+            PluginManager = pluginManager;
+
+            // Expose this plugin instance to internal static helpers.
+            PluginAccessor.Instance = this;
+
             pluginManager.AddProperty(Game_OnStage, GetType(), 0, "");
 
             pluginManager.AddProperty(Data_EngineOn, GetType(), 0, "");
@@ -82,8 +88,12 @@ namespace maorc287.RBRDataExtPlugin
             pointerCache.ClearAllCache();
         }
 
-        public System.Windows.Controls.Control GetWPFSettingsControl(PluginManager pluginManager) => null;
+        //public System.Windows.Controls.Control GetWPFSettingsControl(PluginManager pluginManager) => null;
 
+        public System.Windows.Controls.Control GetWPFSettingsControl(PluginManager pluginManager)
+        {
+            return new SettingsControl(Settings);
+        }
 
         public void DataUpdate(PluginManager pluginManager, ref GameReaderCommon.GameData data)
         {

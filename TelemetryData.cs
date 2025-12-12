@@ -8,7 +8,7 @@ using static maorc287.RBRDataExtPlugin.DeltaCalc;
 using static maorc287.RBRDataExtPlugin.MemoryReader;
 using static maorc287.RBRDataExtPlugin.Offsets;
 using static maorc287.RBRDataExtPlugin.TelemetryCalc;
-using static maorc287.RBRDataExtPlugin.RBRDataExtPlugin;
+using static maorc287.RBRDataExtPlugin.PluginAccessor;
 
 using static SimHub.Logging;
 
@@ -385,15 +385,27 @@ namespace maorc287.RBRDataExtPlugin
                     return LatestValidTelemetry;
                 }
 
+                // Fetch plugin settings safely (fallback to enabled if plugin not yet initialized).
+                var plugin = Instance;
+                var settings = plugin?.Settings;
+                bool enableDamage = settings?.EnableDamage ?? true;
+                bool enableGrip = settings?.EnableGrip ?? true;
+                bool enableDelta = settings?.EnableDelta ?? true;
+                bool enableExtras = settings?.EnableExtras ?? true;
+
+                if(enableDamage)
                 ReadDamageData(hProcess, rbrData);
 
                 ReadEngineData(hProcess, rbrData, pluginManager);
                 ReadBatteryData(hProcess, rbrData);
 
+                if(enableGrip)
                 ReadTiresData(hProcess, rbrData);
 
+                if(enableExtras)
                 ReadRBRHUD(rbrData);
 
+                if(enableDelta)
                 ReadRSF(rbrData);
                 ReadTimingData(rbrData, pluginManager);
                

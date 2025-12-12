@@ -7,7 +7,7 @@
     <ProjectGuid>{833040C9-FE5E-4CCF-B21D-71979E049B6B}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>maorc287.RBRDataPluginExt</RootNamespace>
+    <RootNamespace>maorc287.RBRDataExtPlugin</RootNamespace>
     <AssemblyName>maorc287.RBRDataExtPlugin</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
@@ -79,8 +79,13 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DeltaCalc.cs" />
+    <Compile Include="PluginAccessor.cs" />
     <Compile Include="Pointers.cs" />
     <Compile Include="Properties.cs" />
+    <Compile Include="RBRSettings.cs" />
+    <Compile Include="SettingsControl.xaml.cs">
+      <DependentUpon>SettingsControl.xaml</DependentUpon>
+    </Compile>
     <Compile Include="TelemetryCalc.cs" />
     <Compile Include="TelemetryData.cs" />
     <Compile Include="MemoryReader.cs" />
@@ -97,6 +102,10 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
       <ContainsDesignTimeResources>true</ContainsDesignTimeResources>
+    </Page>
+    <Page Include="SettingsControl.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>
   <ItemGroup>

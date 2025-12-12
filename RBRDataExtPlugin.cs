@@ -17,6 +17,7 @@ namespace maorc287.RBRDataExtPlugin
         public ImageSource PictureIcon => this.ToIcon(Properties.Resources.sdkmenuicon);
         public string LeftMenuTitle => "RBR Additional Data";
 
+
         public void Init(PluginManager pluginManager)
         {
             pluginManager.AddProperty(Game_OnStage, GetType(), 0, "");

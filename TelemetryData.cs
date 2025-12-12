@@ -1,15 +1,15 @@
-﻿using GameReaderCommon;
-using SimHub;
+﻿
 using SimHub.Plugins;
-using SimHub.Plugins.DataPlugins.DataCore;
-using SimHub.Plugins.UI;
+
 using System;
-using System.Diagnostics;
+
 using System.IO;
 using static maorc287.RBRDataExtPlugin.DeltaCalc;
 using static maorc287.RBRDataExtPlugin.MemoryReader;
 using static maorc287.RBRDataExtPlugin.Offsets;
 using static maorc287.RBRDataExtPlugin.TelemetryCalc;
+using static maorc287.RBRDataExtPlugin.RBRDataExtPlugin;
+
 using static SimHub.Logging;
 
 namespace maorc287.RBRDataExtPlugin
@@ -256,13 +256,35 @@ namespace maorc287.RBRDataExtPlugin
             rbrData.CarSetup = _carSetupName;
         }
 
-        private static void ReadOtherData(RBRTelemetryData rbrData)
+        private static void ReadRSF(RBRTelemetryData rbrData)
+        {
+            // Only RSF data needed for delta calc
+            if (!TryReadFromDll(RSFPluginDllName, Pointers.RSFCarId, out int rsfCarId))
+                rsfCarId = 0;
+            rbrData.CarId = rsfCarId;
+
+            if (!TryReadFromDll(RSFPluginDllName, Pointers.RSFStartLineDistance, out float rsfStartLine))
+                rsfStartLine = 0f;
+            rbrData.StartLine = rsfStartLine;
+        }
+
+        private static void ReadRBRHUD(RBRTelemetryData rbrData)
+        {
+
+            // RBRHUD built-in delta time - optional
+            if (!TryReadFromDll(RBRHUDPluginDllName, Pointers.RBRHUDTimeDelta, out float deltaTime))
+                deltaTime = 0.0f;
+            rbrData.RBRHUDDeltaTime = deltaTime;
+        }
+
+
+        /*private static void ReadOtherData(RBRTelemetryData rbrData)
         {
             /* Gauger Plugin Slip Value - Deprecated
             if (!MemoryReader.TryReadFromDll(GaugerPluginDllName, Pointers.GaugerSlip, out float GaugerPluginSlip))
                 GaugerPluginSlip = 0.0f;
             rbrData.GaugerSlip = GaugerPluginSlip;
-            */
+            
 
             if (!TryReadFromDll(RBRHUDPluginDllName, Pointers.RBRHUDTimeDelta, out float DeltaTime))
                 DeltaTime = 0.0f;
@@ -276,7 +298,7 @@ namespace maorc287.RBRDataExtPlugin
                 rsfStartLine = 0;
             rbrData.StartLine = rsfStartLine;
 
-        }
+        }*/
 
 
         private static bool _sessionInitialized = false;
@@ -364,11 +386,17 @@ namespace maorc287.RBRDataExtPlugin
                 }
 
                 ReadDamageData(hProcess, rbrData);
+
                 ReadEngineData(hProcess, rbrData, pluginManager);
                 ReadBatteryData(hProcess, rbrData);
+
                 ReadTiresData(hProcess, rbrData);
-                ReadOtherData(rbrData);
+
+                ReadRBRHUD(rbrData);
+
+                ReadRSF(rbrData);
                 ReadTimingData(rbrData, pluginManager);
+               
 
             }
             catch (Exception ex)

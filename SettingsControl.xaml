@@ -10,42 +10,50 @@
 
                     <!-- Damage -->
                     <DockPanel Margin="0,2,0,2">
-                        <TextBlock Text="Enable damage telemetry"
+                        <TextBlock Text="Damage telemetry"
                                    VerticalAlignment="Center"
                                    Margin="0,0,8,0" />
                         <styles:SHToggleButton IsChecked="{Binding EnableDamage, Mode=TwoWay}"
                                                HorizontalAlignment="Right"
-                                               DockPanel.Dock="Right" />
+                                               DockPanel.Dock="Right"
+                                               Checked="Toggle_Changed"
+                                               Unchecked="Toggle_Changed" />
                     </DockPanel>
 
                     <!-- Grip -->
                     <DockPanel Margin="0,2,0,2">
-                        <TextBlock Text="Enable grip data"
+                        <TextBlock Text="Grip telemetry"
                                    VerticalAlignment="Center"
                                    Margin="0,0,8,0" />
                         <styles:SHToggleButton IsChecked="{Binding EnableGrip, Mode=TwoWay}"
                                                HorizontalAlignment="Right"
-                                               DockPanel.Dock="Right" />
+                                               DockPanel.Dock="Right" 
+                                               Checked="Toggle_Changed"
+                                               Unchecked="Toggle_Changed"/>
                     </DockPanel>
 
                     <!-- Delta -->
                     <DockPanel Margin="0,2,0,2">
-                        <TextBlock Text="Enable Delta Time"
+                        <TextBlock Text="Delta time calculation"
                                    VerticalAlignment="Center"
                                    Margin="0,0,8,0" />
                         <styles:SHToggleButton IsChecked="{Binding EnableDelta, Mode=TwoWay}"
                                                HorizontalAlignment="Right"
-                                               DockPanel.Dock="Right" />
+                                               DockPanel.Dock="Right" 
+                                               Checked="Toggle_Changed"
+                                               Unchecked="Toggle_Changed"/>
                     </DockPanel>
 
                     <!-- RBRHUD / extras -->
                     <DockPanel Margin="0,2,0,2">
-                        <TextBlock Text="Enable RBRHUD"
+                        <TextBlock Text="RBRHUD Delta Time"
                                    VerticalAlignment="Center"
                                    Margin="0,0,8,0" />
                         <styles:SHToggleButton IsChecked="{Binding EnableExtras, Mode=TwoWay}"
                                                HorizontalAlignment="Right"
-                                               DockPanel.Dock="Right" />
+                                               DockPanel.Dock="Right" 
+                                               Checked="Toggle_Changed"
+                                               Unchecked="Toggle_Changed" />
                     </DockPanel>
 
                 </StackPanel>

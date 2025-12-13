@@ -51,10 +51,19 @@ namespace maorc287.RBRDataExtPlugin
             return hProcess;
         }
 
+        internal static void ResetSetupCache()
+        {
+            _tireType = -1;
+            _carSetupName = string.Empty;
+        }
+
         private static void InitializePointers(IntPtr hProcess)
         {
             if (!pointerCache.IsGeameModeBaseValid())
+            {
+                ResetSetupCache();
                 pointerCache.GameModeBasePtr = ReadPointer(hProcess, (IntPtr)Pointers.GameMode);
+            }
 
             if (!pointerCache.IsCarInfoPointerValid())
                 pointerCache.CarInfoBasePtr = ReadPointer(hProcess, (IntPtr)Pointers.CarInfo);
@@ -79,7 +88,7 @@ namespace maorc287.RBRDataExtPlugin
             {
                 pointerCache.CarInfoSetupBasePtr = ReadPointer(hProcess, (IntPtr)Pointers.CarSetup);
                 _carSetupName = Path.GetFileNameWithoutExtension(ReadStringNulTerminated(hProcess, 
-                                pointerCache.CarInfoSetupBasePtr + CarSetup.SetupName, 64));
+                                pointerCache.CarInfoSetupBasePtr + CarSetup.SetupName, 128));
             }
 
             if (!pointerCache.IsDamagePointerValid())
@@ -278,29 +287,6 @@ namespace maorc287.RBRDataExtPlugin
         }
 
 
-        /*private static void ReadOtherData(RBRTelemetryData rbrData)
-        {
-            /* Gauger Plugin Slip Value - Deprecated
-            if (!MemoryReader.TryReadFromDll(GaugerPluginDllName, Pointers.GaugerSlip, out float GaugerPluginSlip))
-                GaugerPluginSlip = 0.0f;
-            rbrData.GaugerSlip = GaugerPluginSlip;
-            
-
-            if (!TryReadFromDll(RBRHUDPluginDllName, Pointers.RBRHUDTimeDelta, out float DeltaTime))
-                DeltaTime = 0.0f;
-            rbrData.RBRHUDDeltaTime = DeltaTime;
-
-            if (!TryReadFromDll(RSFPluginDllName, Pointers.RSFCarId, out int rsfCarId))
-                rsfCarId = 0;
-            rbrData.CarId = rsfCarId;
-
-            if (!TryReadFromDll(RSFPluginDllName, Pointers.RSFStartLineDistance, out float rsfStartLine))
-                rsfStartLine = 0;
-            rbrData.StartLine = rsfStartLine;
-
-        }*/
-
-
         private static bool _sessionInitialized = false;
         private static int _notRunningFrames = 0;
         private const int NotRunningThreshold = 10; // number of plugin ticks to treat as not running
@@ -361,7 +347,10 @@ namespace maorc287.RBRDataExtPlugin
                 if (!_sessionInitialized)
                 {
                     if (!pointerCache.IsGeameModeBaseValid())
+                    {
+                        ResetSetupCache();
                         pointerCache.GameModeBasePtr = ReadPointer(hProcess, (IntPtr)Pointers.GameMode);
+                    }
 
                     if (!pointerCache.IsGeameModeBaseValid())
                         return LatestValidTelemetry;

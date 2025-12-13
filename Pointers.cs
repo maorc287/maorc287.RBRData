@@ -96,7 +96,7 @@ namespace maorc287.RBRDataExtPlugin
 
         public static class CarSetup
         {
-            public const int SetupName = 0x2C; // Car setup name string offset
+            public const int SetupName = 0x24; // Car setup name string offset
         }
 
         public static class CarMov

@@ -16,7 +16,9 @@ namespace maorc287.RBRDataExtPlugin
         public PluginManager PluginManager { get; set; }
         public ImageSource PictureIcon => this.ToIcon(Properties.Resources.sdkmenuicon);
         public string LeftMenuTitle => "RBR Additional Data";
-        public RBRSettings Settings { get; private set; } = new RBRSettings();
+
+        // Load settings at startup
+        public RBRSettings Settings { get; private set; } = SettingsStorage.Load();
 
 
         public void Init(PluginManager pluginManager)
@@ -85,6 +87,9 @@ namespace maorc287.RBRDataExtPlugin
 
         public void End(PluginManager pluginManager)
         {
+            // Save settings on SimHub shutdown
+            SettingsStorage.Save(Settings);
+
             pointerCache.ClearAllCache();
         }
 

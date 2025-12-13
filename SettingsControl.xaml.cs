@@ -11,5 +11,10 @@ namespace maorc287.RBRDataExtPlugin
             InitializeComponent();
             DataContext = settings;
         }
+
+        private void UserControl_Loaded(object sender, System.Windows.RoutedEventArgs e)
+        {
+
+        }
     }
 }

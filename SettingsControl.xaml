@@ -5,7 +5,7 @@
              MinWidth="260" MinHeight="140">
     <ScrollViewer HorizontalScrollBarVisibility="Auto">
         <Grid>
-            <styles:SHSection Title="Richard Burns Rally Additional Data - Settings">
+            <styles:SHSection Title="RBRDataExt Plugin Settings">
                 <StackPanel Margin="10">
 
                     <!-- Damage -->
